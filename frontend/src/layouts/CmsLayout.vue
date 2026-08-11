@@ -1,7 +1,7 @@
 <template>
   <div class="cms-shell cms-theme">
     <aside class="sidebar d-none d-lg-flex flex-column">
-      <RouterLink class="brand px-4" to="/cms/dashboard"><img class="brand-mark" src="/images/learnhub-mark.svg" alt=""><span><strong>LearnHub</strong><small>Quản trị đào tạo</small></span></RouterLink>
+      <RouterLink class="brand px-4" to="/cms/dashboard"><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"></RouterLink>
       <nav class="px-3 overflow-auto">
         <template v-for="group in menu" :key="group.label">
           <div class="menu-label">{{ group.label }}</div>
@@ -17,7 +17,7 @@
       </header>
       <main class="p-3 p-lg-4 page-content"><RouterView /></main>
     </div>
-    <div id="mobileMenu" class="offcanvas offcanvas-start mobile-sidebar"><div class="offcanvas-header"><RouterLink class="brand" to="/cms/dashboard" data-bs-dismiss="offcanvas"><img class="brand-mark" src="/images/learnhub-mark.svg" alt=""><span><strong>LearnHub</strong><small>Quản trị đào tạo</small></span></RouterLink><button class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button></div><div class="offcanvas-body"><template v-for="group in menu" :key="group.label"><div class="menu-label">{{ group.label }}</div><RouterLink v-for="item in group.items" :key="item.to" class="side-link" :to="item.to" data-bs-dismiss="offcanvas"><i :class="['bi',item.icon]"></i>{{ item.text }}</RouterLink></template></div></div>
+    <div id="mobileMenu" class="offcanvas offcanvas-start mobile-sidebar"><div class="offcanvas-header"><RouterLink class="brand" to="/cms/dashboard" data-bs-dismiss="offcanvas"><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"></RouterLink><button class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button></div><div class="offcanvas-body"><template v-for="group in menu" :key="group.label"><div class="menu-label">{{ group.label }}</div><RouterLink v-for="item in group.items" :key="item.to" class="side-link" :to="item.to" data-bs-dismiss="offcanvas"><i :class="['bi',item.icon]"></i>{{ item.text }}</RouterLink></template></div></div>
   </div>
 </template>
 <script setup>
@@ -40,7 +40,7 @@ function signOut(){auth.logout();router.push('/login')}
 .cms-main{margin-left:276px;background:var(--eduvers-primary)}
 .brand{height:78px;color:var(--eduvers-black);border-bottom:1px solid var(--eduvers-bdr-color);font-size:1rem;font-weight:700}
 .brand:hover{color:var(--eduvers-black)}.brand>span{display:grid;line-height:1.1}.brand strong{font-size:1.08rem}.brand small{margin-top:.3rem;color:var(--eduvers-base);font-size:.58rem;font-weight:750;letter-spacing:.08em}
-.brand-mark{width:42px;height:42px;border-radius:9px;box-shadow:0 5px 16px rgba(13,41,68,.1)}
+.eduvers-logo{display:block;width:150px;height:auto}
 .sidebar nav{padding-top:.4rem;padding-bottom:1rem}.menu-label{margin:1.35rem .85rem .5rem;color:#9a9f9d;font-size:.62rem;font-weight:750;letter-spacing:.11em}
 .side-link{min-height:44px;margin:.18rem 0;padding:.65rem .75rem;color:#56635f;border-radius:8px;font-weight:650}
 .side-link:hover{color:var(--eduvers-black);background:var(--eduvers-primary)}.side-link.router-link-active{color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.10);box-shadow:none}
