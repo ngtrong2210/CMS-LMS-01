@@ -15,4 +15,13 @@ async function save(){saving.value=true;try{const body={code:form.code,title:for
 async function remove(item){if(!window.confirm(`Xóa khóa học “${item.title}”?`))return;try{await axiosClient.delete(`/courses/${item.id}`);await load();show('Đã xóa khóa học.')}catch(error){show(error.message,'danger')}}
 function show(text,type='success'){message.value=text;messageType.value=type}
 </script>
-<style scoped>.course-thumb{width:50px;height:42px;border-radius:8px;background:var(--eduvers-black);display:grid;place-items:center;color:white;font-size:1.2rem}.modal-mask{position:fixed;inset:0;background:rgba(10,31,24,.62);display:grid;place-items:center;z-index:2000;padding:1rem}.form-modal{width:min(760px,96vw);max-height:94vh;overflow:auto;padding:1.5rem}</style>
+<style scoped>
+.course-thumb{width:62px;height:48px;flex:0 0 62px;border-radius:8px;display:block;overflow:hidden;background-position:center;background-repeat:no-repeat;background-size:cover;box-shadow:0 4px 12px rgba(13,41,68,.12)}
+.course-thumb i{display:none}
+tbody tr:nth-child(5n+1) .course-thumb{background-image:url('../../assets/eduvers/images/courses/course-list-img-1.jpg')}
+tbody tr:nth-child(5n+2) .course-thumb{background-image:url('../../assets/eduvers/images/courses/course-list-img-2.jpg')}
+tbody tr:nth-child(5n+3) .course-thumb{background-image:url('../../assets/eduvers/images/courses/course-list-img-3.jpg')}
+tbody tr:nth-child(5n+4) .course-thumb{background-image:url('../../assets/eduvers/images/courses/course-list-img-4.jpg')}
+tbody tr:nth-child(5n+5) .course-thumb{background-image:url('../../assets/eduvers/images/courses/course-list-img-5.jpg')}
+.modal-mask{position:fixed;inset:0;background:rgba(10,31,24,.62);display:grid;place-items:center;z-index:2000;padding:1rem}.form-modal{width:min(760px,96vw);max-height:94vh;overflow:auto;padding:1.5rem}
+</style>
