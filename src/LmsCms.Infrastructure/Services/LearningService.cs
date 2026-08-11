@@ -8,6 +8,41 @@ namespace LmsCms.Infrastructure.Services;
 
 public sealed class LearningService(ISqlConnectionFactory connections) : ILearningService
 {
+    public async Task<object> GetDashboardAsync(long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        using var result = await connection.QueryMultipleAsync(new CommandDefinition("dbo.LMS_StudentDashboard_Get", new { StudentId = studentId }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
+        var summary = await result.ReadSingleAsync();
+        var courses = (await result.ReadAsync()).ToArray();
+        return new { Summary = summary, Courses = courses };
+    }
+
+    public async Task<IReadOnlyCollection<object>> GetCoursesAsync(long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return (await connection.QueryAsync(new CommandDefinition("dbo.LMS_StudentCourse_GetList", new { StudentId = studentId }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken))).Cast<object>().ToArray();
+    }
+
+    public async Task<object?> GetCourseAsync(long courseId, long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        using var result = await connection.QueryMultipleAsync(new CommandDefinition("dbo.LMS_StudentCourse_GetDetail", new { CourseId = courseId, StudentId = studentId }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
+        var course = await result.ReadSingleOrDefaultAsync();
+        if (course is null) return null;
+        var chapters = (await result.ReadAsync()).ToArray();
+        var lessons = (await result.ReadAsync()).ToArray();
+        return new { Course = course, Chapters = chapters, Lessons = lessons };
+    }
+
+    public async Task<object> GetResultsAsync(long studentId, long? courseId = null, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        using var result = await connection.QueryMultipleAsync(new CommandDefinition("dbo.LMS_StudentResults_Get", new { StudentId = studentId, CourseId = courseId }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
+        var courses = (await result.ReadAsync()).ToArray();
+        var lessons = (await result.ReadAsync()).ToArray();
+        return new { Courses = courses, Lessons = lessons };
+    }
+
     public async Task<PlayerDataDto?> GetPlayerAsync(long lessonId, long studentId, CancellationToken cancellationToken = default)
     {
         using var connection = connections.CreateConnection();

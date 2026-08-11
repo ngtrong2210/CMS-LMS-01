@@ -1,3 +1,58 @@
+CREATE OR ALTER PROCEDURE dbo.LMS_StudentCourse_GetList @StudentId BIGINT AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT c.Id,c.Code,c.Title,c.Slug,c.ThumbnailUrl,c.ShortDescription,c.Level,c.Status,cc.Name CategoryName,u.FullName TeacherName,
+  e.Status EnrollmentStatus,e.ProgressPercent,e.FinalScore,e.LastAccessAt,
+  (SELECT COUNT(*) FROM dbo.Lessons l WHERE l.CourseId=c.Id AND l.IsDeleted=0 AND l.Status='ACTIVE') LessonCount,
+  (SELECT COUNT(*) FROM dbo.StudentLessonProgress p JOIN dbo.Lessons l ON l.Id=p.LessonId WHERE p.StudentId=@StudentId AND l.CourseId=c.Id AND p.Completed=1) CompletedLessonCount,
+  (SELECT TOP 1 l.Id FROM dbo.Lessons l LEFT JOIN dbo.StudentLessonProgress p ON p.LessonId=l.Id AND p.StudentId=@StudentId WHERE l.CourseId=c.Id AND l.IsDeleted=0 AND l.Status='ACTIVE' ORDER BY IIF(p.Completed=1,1,0),l.SortOrder,l.Id) ContinueLessonId
+ FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId JOIN dbo.Users u ON u.Id=c.TeacherId LEFT JOIN dbo.CourseCategories cc ON cc.Id=c.CategoryId
+ WHERE e.StudentId=@StudentId AND e.Status<>'CANCELLED' AND c.Status='PUBLISHED' AND c.IsDeleted=0 ORDER BY COALESCE(e.LastAccessAt,e.EnrolledAt) DESC;
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.LMS_StudentDashboard_Get @StudentId BIGINT AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT u.FullName,
+  (SELECT COUNT(*) FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId WHERE e.StudentId=@StudentId AND e.Status IN('ENROLLED','IN_PROGRESS') AND c.Status='PUBLISHED' AND c.IsDeleted=0) ActiveCourseCount,
+  (SELECT COUNT(*) FROM dbo.StudentLessonProgress WHERE StudentId=@StudentId AND Completed=1) CompletedLessonCount,
+  CAST(ISNULL((SELECT AVG(CAST(Score AS DECIMAL(8,2))) FROM dbo.StudentLessonProgress WHERE StudentId=@StudentId AND Score>0),0) AS DECIMAL(8,2)) AverageScore,
+  (SELECT ISNULL(SUM(WatchDurationSeconds),0) FROM dbo.LearningSessions WHERE StudentId=@StudentId) LearningSeconds
+ FROM dbo.Users u WHERE u.Id=@StudentId AND u.IsDeleted=0;
+ EXEC dbo.LMS_StudentCourse_GetList @StudentId;
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.LMS_StudentCourse_GetDetail @CourseId BIGINT,@StudentId BIGINT AS
+BEGIN
+ SET NOCOUNT ON;
+ IF NOT EXISTS(SELECT 1 FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId WHERE e.StudentId=@StudentId AND e.CourseId=@CourseId AND e.Status<>'CANCELLED' AND c.Status='PUBLISHED' AND c.IsDeleted=0) RETURN;
+ SELECT c.Id,c.Code,c.Title,c.Slug,c.ThumbnailUrl,c.ShortDescription,c.Description,c.Level,c.PassingScore,cc.Name CategoryName,u.FullName TeacherName,e.Status EnrollmentStatus,e.ProgressPercent,e.FinalScore,e.LastAccessAt
+ FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId JOIN dbo.Enrollments e ON e.CourseId=c.Id AND e.StudentId=@StudentId LEFT JOIN dbo.CourseCategories cc ON cc.Id=c.CategoryId WHERE c.Id=@CourseId;
+ SELECT Id,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 AND Status='ACTIVE' ORDER BY SortOrder,Id;
+ SELECT l.Id,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.SortOrder,l.IsRequired,l.PassingScore,l.Status,
+  CAST(ISNULL(p.ProgressPercent,0) AS DECIMAL(5,2)) ProgressPercent,CAST(ISNULL(p.Score,0) AS DECIMAL(8,2)) Score,CAST(ISNULL(p.Completed,0) AS BIT) Completed
+ FROM dbo.Lessons l LEFT JOIN dbo.StudentLessonProgress p ON p.LessonId=l.Id AND p.StudentId=@StudentId
+ WHERE l.CourseId=@CourseId AND l.IsDeleted=0 AND l.Status='ACTIVE' ORDER BY l.ChapterId,l.SortOrder,l.Id;
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.LMS_StudentResults_Get @StudentId BIGINT,@CourseId BIGINT=NULL AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT e.CourseId,c.Code,c.Title,e.Status,e.ProgressPercent,e.FinalScore,e.EnrolledAt,e.CompletedAt,
+  (SELECT COUNT(*) FROM dbo.StudentAnswers a WHERE a.StudentId=@StudentId AND a.CourseId=c.Id) AnswerCount,
+  (SELECT COUNT(*) FROM dbo.StudentAnswers a WHERE a.StudentId=@StudentId AND a.CourseId=c.Id AND a.IsCorrect=1) CorrectCount
+ FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId WHERE e.StudentId=@StudentId AND e.Status<>'CANCELLED' AND c.Status='PUBLISHED' AND c.IsDeleted=0 AND (@CourseId IS NULL OR c.Id=@CourseId) ORDER BY e.EnrolledAt DESC;
+ SELECT p.CourseId,p.LessonId,l.Title,p.ProgressPercent,p.Score,p.Completed,p.CompletedAt,p.LastAccessAt,
+  (SELECT COUNT(*) FROM dbo.StudentAnswers a WHERE a.StudentId=@StudentId AND a.LessonId=l.Id) AnswerCount,
+  (SELECT COUNT(*) FROM dbo.StudentAnswers a WHERE a.StudentId=@StudentId AND a.LessonId=l.Id AND a.IsCorrect=1) CorrectCount
+ FROM dbo.StudentLessonProgress p JOIN dbo.Lessons l ON l.Id=p.LessonId JOIN dbo.Courses c ON c.Id=l.CourseId
+ WHERE p.StudentId=@StudentId AND (@CourseId IS NULL OR l.CourseId=@CourseId) AND c.Status='PUBLISHED' AND c.IsDeleted=0 ORDER BY l.CourseId,l.SortOrder;
+END
+GO
+
 CREATE OR ALTER PROCEDURE dbo.LMS_LessonPlayer_GetData @LessonId BIGINT,@StudentId BIGINT AS
 BEGIN
  SET NOCOUNT ON;
@@ -94,13 +149,20 @@ BEGIN
  IF @CourseId IS NULL OR @Type IS NULL THROW 50002,N'Câu hỏi hoặc bài học không hợp lệ.',1;
  IF NOT EXISTS(SELECT 1 FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId WHERE e.StudentId=@StudentId AND e.CourseId=@CourseId AND e.Status<>'CANCELLED' AND c.Status='PUBLISHED' AND c.IsDeleted=0) THROW 50003,N'Bạn chưa được ghi danh vào khóa học này.',1;
  IF @VideoId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Videos WHERE Id=@VideoId AND LessonId=@LessonId AND Status='ACTIVE') THROW 50005,N'Video không thuộc bài học này.',1;
+ IF @InteractionId IS NULL AND EXISTS(SELECT 1 FROM dbo.Videos WHERE LessonId=@LessonId AND Status='ACTIVE') THROW 50005,N'Bài học video yêu cầu một tương tác câu hỏi hợp lệ.',1;
  IF @InteractionId IS NOT NULL
  BEGIN
    SELECT @AttemptLimit=vi.AttemptLimit,@Score=vi.Score FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId WHERE vi.Id=@InteractionId AND vi.QuestionId=@QuestionId AND v.LessonId=@LessonId AND (@VideoId IS NULL OR v.Id=@VideoId) AND vi.IsDeleted=0 AND vi.Status='ACTIVE';
    IF @@ROWCOUNT=0 OR @AttemptLimit IS NULL THROW 50005,N'Câu hỏi không thuộc tương tác của bài học này.',1;
  END
- SELECT @Attempt=COUNT(*)+1 FROM dbo.StudentAnswers WHERE StudentId=@StudentId AND QuestionId=@QuestionId AND ISNULL(InteractionId,0)=ISNULL(@InteractionId,0);
- IF @Attempt>@AttemptLimit THROW 50004,N'Bạn đã sử dụng hết số lần trả lời cho câu hỏi này.',1;
+ BEGIN TRY
+   BEGIN TRANSACTION;
+   DECLARE @LockResult INT;
+   DECLARE @LockResource NVARCHAR(255)=CONCAT('LMS:Answer:',@StudentId,':',@QuestionId,':',ISNULL(@InteractionId,0));
+   EXEC @LockResult=sys.sp_getapplock @Resource=@LockResource,@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=10000;
+   IF @LockResult<0 THROW 50004,N'Không thể khóa lượt trả lời. Vui lòng thử lại.',1;
+   SELECT @Attempt=COUNT(*)+1 FROM dbo.StudentAnswers WITH(UPDLOCK,HOLDLOCK) WHERE StudentId=@StudentId AND QuestionId=@QuestionId AND ISNULL(InteractionId,0)=ISNULL(@InteractionId,0);
+   IF @Attempt>@AttemptLimit THROW 50004,N'Bạn đã sử dụng hết số lần trả lời cho câu hỏi này.',1;
  IF @Type IN('SINGLE_CHOICE','TRUE_FALSE','MULTIPLE_CHOICE')
  BEGIN
    SELECT @Correct=STRING_AGG(UPPER(LTRIM(RTRIM(OptionCode))),'|') WITHIN GROUP(ORDER BY UPPER(LTRIM(RTRIM(OptionCode)))) FROM dbo.QuestionOptions WHERE QuestionId=@QuestionId AND IsCorrect=1 AND IsDeleted=0;
@@ -111,8 +173,6 @@ BEGIN
    SET @IsCorrect=IIF(EXISTS(SELECT 1 FROM dbo.QuestionAnswerKeys WHERE QuestionId=@QuestionId AND ((IsCaseSensitive=1 AND CHARINDEX(AnswerText,@AnswerText COLLATE Latin1_General_100_CS_AS)>0) OR (IsCaseSensitive=0 AND CHARINDEX(LOWER(AnswerText),LOWER(@AnswerText))>0))),1,0);
  ELSE
    SET @IsCorrect=IIF(EXISTS(SELECT 1 FROM dbo.QuestionAnswerKeys WHERE QuestionId=@QuestionId AND ((IsCaseSensitive=1 AND AnswerText=@AnswerText COLLATE Latin1_General_100_CS_AS) OR (IsCaseSensitive=0 AND LOWER(AnswerText)=LOWER(@AnswerText)))),1,0);
- BEGIN TRY
-   BEGIN TRANSACTION;
    INSERT dbo.StudentAnswers(StudentId,CourseId,LessonId,VideoId,InteractionId,QuestionId,AttemptNumber,AnswerText,IsCorrect,ScoreAwarded,ReviewStatus,TimeInVideoSeconds,TimeSpentSeconds)
    VALUES(@StudentId,@CourseId,@LessonId,@VideoId,@InteractionId,@QuestionId,@Attempt,@AnswerText,@IsCorrect,IIF(@IsCorrect=1,@Score,0),IIF(@IsCorrect IS NULL,'PENDING_REVIEW','AUTO_GRADED'),@TimeInVideoSeconds,@TimeSpentSeconds);
    DECLARE @AnswerId BIGINT=SCOPE_IDENTITY();

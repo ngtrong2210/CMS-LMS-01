@@ -121,21 +121,35 @@ INSERT dbo.StudentVideoProgress(StudentId,CourseId,LessonId,VideoId,CurrentTimeS
 SELECT s.StudentId,s.CourseId,s.LessonId,s.VideoId,ROUND(s.DurationSeconds*s.ProgressPercent/100.0,2),ROUND(s.DurationSeconds*s.ProgressPercent/100.0,2),ROUND(s.DurationSeconds*s.ProgressPercent/100.0,2),s.ProgressPercent,IIF(s.ProgressPercent>=80,1,0),IIF(s.ProgressPercent>=80,SYSUTCDATETIME(),NULL),SYSUTCDATETIME()
 FROM Seed s WHERE NOT EXISTS(SELECT 1 FROM dbo.StudentVideoProgress p WHERE p.StudentId=s.StudentId AND p.VideoId=s.VideoId);
 
-/* About ten graded answers; official score is consistent with option B. */
+/* Remove legacy demo answers whose question no longer matches their interaction. */
+DELETE sao
+FROM dbo.StudentAnswerOptions sao
+JOIN dbo.StudentAnswers a ON a.Id=sao.StudentAnswerId
+JOIN dbo.VideoInteractions vi ON vi.Id=a.InteractionId
+WHERE a.QuestionId<>vi.QuestionId;
+
+DELETE a
+FROM dbo.StudentAnswers a
+JOIN dbo.VideoInteractions vi ON vi.Id=a.InteractionId
+WHERE a.QuestionId<>vi.QuestionId;
+
+/* About ten graded answers; question, interaction and selected option stay consistent. */
 ;WITH EnrollmentRows AS (
- SELECT TOP(10) e.Id,e.StudentId,e.CourseId,l.Id LessonId,v.Id VideoId,vi.Id InteractionId,ROW_NUMBER() OVER(ORDER BY e.Id) rn
+ SELECT TOP(10) e.Id,e.StudentId,e.CourseId,l.Id LessonId,v.Id VideoId,vi.Id InteractionId,vi.QuestionId,q.DefaultScore,
+  (SELECT TOP(1) qo.OptionCode FROM dbo.QuestionOptions qo WHERE qo.QuestionId=vi.QuestionId AND qo.IsCorrect=1 AND qo.IsDeleted=0 ORDER BY qo.SortOrder,qo.Id) CorrectOption
  FROM dbo.Enrollments e CROSS APPLY(SELECT TOP 1 Id FROM dbo.Lessons WHERE CourseId=e.CourseId ORDER BY SortOrder,Id) l
- LEFT JOIN dbo.Videos v ON v.LessonId=l.Id LEFT JOIN dbo.VideoInteractions vi ON vi.VideoId=v.Id AND vi.IsDeleted=0 ORDER BY e.Id
-), Questions AS (
- SELECT TOP(10) q.Id QuestionId,q.DefaultScore,ROW_NUMBER() OVER(ORDER BY q.Id) rn FROM dbo.Questions q WHERE q.QuestionType='SINGLE_CHOICE' AND q.IsDeleted=0
+ JOIN dbo.Videos v ON v.LessonId=l.Id JOIN dbo.VideoInteractions vi ON vi.VideoId=v.Id AND vi.IsDeleted=0
+ JOIN dbo.Questions q ON q.Id=vi.QuestionId AND q.QuestionType IN('SINGLE_CHOICE','TRUE_FALSE') AND q.IsDeleted=0
+ ORDER BY e.Id,vi.SortOrder,vi.Id
 )
 INSERT dbo.StudentAnswers(StudentId,CourseId,LessonId,VideoId,InteractionId,QuestionId,AttemptNumber,AnswerText,IsCorrect,ScoreAwarded,ReviewStatus,AnsweredAt,TimeInVideoSeconds,TimeSpentSeconds)
-SELECT e.StudentId,e.CourseId,e.LessonId,e.VideoId,e.InteractionId,q.QuestionId,1,'B',1,q.DefaultScore,'AUTO_GRADED',DATEADD(minute,-e.rn*20,SYSUTCDATETIME()),60,8+e.rn
-FROM EnrollmentRows e JOIN Questions q ON q.rn=e.rn
-WHERE NOT EXISTS(SELECT 1 FROM dbo.StudentAnswers a WHERE a.StudentId=e.StudentId AND a.LessonId=e.LessonId AND a.QuestionId=q.QuestionId);
+SELECT e.StudentId,e.CourseId,e.LessonId,e.VideoId,e.InteractionId,e.QuestionId,1,e.CorrectOption,1,e.DefaultScore,'AUTO_GRADED',DATEADD(minute,-ROW_NUMBER() OVER(ORDER BY e.Id,e.InteractionId)*20,SYSUTCDATETIME()),60,8+ROW_NUMBER() OVER(ORDER BY e.Id,e.InteractionId)
+FROM EnrollmentRows e
+WHERE e.CorrectOption IS NOT NULL
+ AND NOT EXISTS(SELECT 1 FROM dbo.StudentAnswers a WHERE a.StudentId=e.StudentId AND a.InteractionId=e.InteractionId AND a.QuestionId=e.QuestionId);
 
 INSERT dbo.StudentAnswerOptions(StudentAnswerId,QuestionOptionId)
-SELECT a.Id,o.Id FROM dbo.StudentAnswers a JOIN dbo.QuestionOptions o ON o.QuestionId=a.QuestionId AND o.OptionCode='B'
+SELECT a.Id,o.Id FROM dbo.StudentAnswers a JOIN dbo.QuestionOptions o ON o.QuestionId=a.QuestionId AND o.OptionCode=a.AnswerText AND o.IsCorrect=1 AND o.IsDeleted=0
 WHERE NOT EXISTS(SELECT 1 FROM dbo.StudentAnswerOptions x WHERE x.StudentAnswerId=a.Id AND x.QuestionOptionId=o.Id);
 
 /* Ten learning sessions with stable identifiers. */

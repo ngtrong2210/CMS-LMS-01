@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Dapper;
+using LmsCms.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -85,10 +87,35 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task StudentLearningEndpoints_ReturnOnlyEnrolledSqlBackedData()
+    {
+        await AuthorizeAs("student");
+        foreach (var path in new[] { "/api/lms/dashboard", "/api/lms/courses", "/api/lms/courses/1", "/api/lms/results", "/api/lms/results/1" })
+        {
+            var response = await _client.GetAsync(path);
+            Assert.True(response.IsSuccessStatusCode, $"{path} returned {(int)response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+            Assert.Contains("\"success\":true", await response.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        var courses = await _client.GetStringAsync("/api/lms/courses");
+        Assert.Contains("VUE3-001", courses, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("AGILE-010", courses, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/api/lms/courses/2")).StatusCode);
+    }
+
+    [Fact]
     public async Task Answer_RejectsInteractionQuestionMismatch_AndTamperingFields()
     {
         await AuthorizeAs("student");
         var response = await _client.PostAsJsonAsync("/api/lms/answers", new { lessonId = 1, videoId = 1, interactionId = 1, questionId = 2, answers = new[] { "B" }, isCorrect = true, scoreAwarded = 999999 });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Answer_ForVideoLesson_RejectsQuestionWithoutInteraction()
+    {
+        await AuthorizeAs("student");
+        var response = await _client.PostAsJsonAsync("/api/lms/answers", new { lessonId = 1, videoId = 1, interactionId = (long?)null, questionId = 1, answers = new[] { "B" } });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -131,6 +158,109 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
         var duplicate = await _client.PostAsJsonAsync("/api/courses", new { code = "VUE3-001", title = "Duplicate", slug = "vue-js-3-tu-co-ban-den-nang-cao", teacherId = 2, categoryId = 1, level = "BEGINNER", passingScore = 60, status = "DRAFT" });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
+    [Fact]
+    public async Task QuestionValidation_RejectsDuplicateOptionsWithoutPartialQuestion()
+    {
+        await AuthorizeAs("admin");
+        var marker = $"QA duplicate option {Guid.NewGuid():N}";
+        var response = await _client.PostAsJsonAsync("/api/questions", new
+        {
+            questionType = "SINGLE_CHOICE",
+            questionText = marker,
+            difficulty = "EASY",
+            defaultScore = 10,
+            status = "ACTIVE",
+            options = new[]
+            {
+                new { optionCode = "A", optionText = "Một", isCorrect = true, sortOrder = 1 },
+                new { optionCode = "A", optionText = "Trùng mã", isCorrect = false, sortOrder = 2 }
+            },
+            answerKeys = Array.Empty<object>()
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var search = await _client.GetStringAsync($"/api/questions?search={Uri.EscapeDataString(marker)}&pageSize=10");
+        Assert.DoesNotContain(marker, search, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task DatabaseSchemaAndDemoSeed_HaveRequiredIntegrity()
+    {
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var requiredTables = new[]
+        {
+            "Users", "Roles", "UserRoles", "Courses", "CourseCategories", "Chapters", "Lessons", "Videos",
+            "Questions", "QuestionOptions", "QuestionAnswerKeys", "VideoAssets", "VideoInteractions", "Enrollments",
+            "StudentVideoProgress", "StudentLessonProgress", "StudentAnswers", "StudentAnswerOptions", "LearningSessions", "AuditLogs"
+        };
+        var existingTables = (await connection.QueryAsync<string>("SELECT name FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo')")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Assert.Empty(requiredTables.Where(table => !existingTables.Contains(table)));
+
+        Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM sys.foreign_keys") >= 15);
+        Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM sys.indexes WHERE is_primary_key=0 AND name IS NOT NULL") >= 8);
+        Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM sys.procedures WHERE schema_id=SCHEMA_ID('dbo') AND name LIKE 'LMS[_]%'") >= 25);
+        Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.Users") >= 10);
+        Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.Courses") >= 10);
+        Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.Questions WHERE IsDeleted=0") >= 10);
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.StudentAnswers a JOIN dbo.VideoInteractions vi ON vi.Id=a.InteractionId WHERE a.QuestionId<>vi.QuestionId"));
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.StudentAnswerOptions sao JOIN dbo.StudentAnswers a ON a.Id=sao.StudentAnswerId JOIN dbo.QuestionOptions qo ON qo.Id=sao.QuestionOptionId WHERE qo.QuestionId<>a.QuestionId"));
+    }
+
+    [Fact]
+    public async Task ContentCrud_AndReusableVideoLibrary_PersistToSql()
+    {
+        await AuthorizeAs("admin");
+        var marker = $"QA content {Guid.NewGuid():N}";
+        long chapterId = 0, lesson1 = 0, lesson2 = 0, video1 = 0, video2 = 0;
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        try
+        {
+            var library = await _client.GetFromJsonAsync<JsonElement>("/api/video-library");
+            var asset = library.GetProperty("data").EnumerateArray().First();
+            var assetId = Int64(asset, "Id", "id");
+
+            var chapterResponse = await _client.PostAsJsonAsync("/api/courses/1/chapters", new { title = marker, description = "CRUD chapter", sortOrder = 99, status = "ACTIVE" });
+            chapterResponse.EnsureSuccessStatusCode();
+            chapterId = Int64((await chapterResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data"), "id", "Id");
+            (await _client.PutAsJsonAsync($"/api/chapters/{chapterId}", new { title = marker + " updated", description = "CRUD chapter updated", sortOrder = 98, status = "ACTIVE" })).EnsureSuccessStatusCode();
+
+            async Task<long> CreateLesson(string suffix, int order)
+            {
+                var response = await _client.PostAsJsonAsync($"/api/chapters/{chapterId}/lessons", new { title = marker + suffix, description = "Reusable video", lessonType = "INTERACTIVE_VIDEO", durationSeconds = 0, sortOrder = order, isRequired = true, passingScore = 0, status = "ACTIVE" });
+                response.EnsureSuccessStatusCode();
+                return Int64((await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data"), "id", "Id");
+            }
+            lesson1 = await CreateLesson(" lesson A", 1);
+            lesson2 = await CreateLesson(" lesson B", 2);
+
+            async Task<long> Attach(long lessonId)
+            {
+                var response = await _client.PostAsJsonAsync($"/api/lessons/{lessonId}/video-library/{assetId}", new { allowSeek = false, allowSpeed = true, requiredWatchPercent = 80 });
+                response.EnsureSuccessStatusCode();
+                return Int64((await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data"), "id", "Id");
+            }
+            video1 = await Attach(lesson1);
+            video2 = await Attach(lesson2);
+
+            var firstVideo = await _client.GetFromJsonAsync<JsonElement>($"/api/videos/{video1}");
+            var secondVideo = await _client.GetFromJsonAsync<JsonElement>($"/api/videos/{video2}");
+            Assert.Equal(assetId, Int64(firstVideo.GetProperty("data"), "VideoAssetId", "videoAssetId"));
+            Assert.Equal(assetId, Int64(secondVideo.GetProperty("data"), "VideoAssetId", "videoAssetId"));
+            var content = await _client.GetStringAsync("/api/courses/1/content");
+            Assert.Contains(marker + " updated", content, StringComparison.Ordinal);
+            Assert.Contains(marker + " lesson A", content, StringComparison.Ordinal);
+        }
+        finally
+        {
+            using var connection = factory.CreateConnection();
+            if (video1 > 0 || video2 > 0) await connection.ExecuteAsync("DELETE dbo.Videos WHERE Id IN @ids", new { ids = new[] { video1, video2 }.Where(x => x > 0).ToArray() });
+            if (lesson1 > 0 || lesson2 > 0) await connection.ExecuteAsync("DELETE dbo.Lessons WHERE Id IN @ids", new { ids = new[] { lesson1, lesson2 }.Where(x => x > 0).ToArray() });
+            if (chapterId > 0) await connection.ExecuteAsync("DELETE dbo.Chapters WHERE Id=@chapterId", new { chapterId });
+            await connection.ExecuteAsync("DELETE dbo.AuditLogs WHERE EntityId IN @ids", new { ids = new[] { chapterId, lesson1, lesson2, video1, video2 }.Where(x => x > 0).Select(x => x.ToString()).ToArray() });
+        }
     }
 
     [Fact]
@@ -246,7 +376,15 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task QuestionAndInteractionUpdates_AreImmediatelyVisibleToPreviewQueries()
     {
         await AuthorizeAs("admin");
-        var questionResponse = await _client.GetAsync("/api/questions/1");
+        var interactionsResponse = await _client.GetAsync("/api/videos/1/interactions");
+        interactionsResponse.EnsureSuccessStatusCode();
+        var interactions = (await interactionsResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data").EnumerateArray().ToArray();
+        var interaction = interactions.First();
+        var interactionId = Int64(interaction, "Id", "id");
+        var questionId = Int64(interaction, "QuestionId", "questionId");
+        var originalScore = Decimal(interaction, "Score", "score");
+
+        var questionResponse = await _client.GetAsync($"/api/questions/{questionId}");
         questionResponse.EnsureSuccessStatusCode();
         var questionData = (await questionResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data");
         var question = Property(questionData, "question", "Question");
@@ -254,12 +392,6 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         var answerKeys = Property(questionData, "answerKeys", "AnswerKeys").EnumerateArray().ToArray();
         var originalQuestionText = String(question, "QuestionText", "questionText")!;
 
-        var interactionsResponse = await _client.GetAsync("/api/videos/1/interactions");
-        interactionsResponse.EnsureSuccessStatusCode();
-        var interactions = (await interactionsResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data").EnumerateArray().ToArray();
-        var interaction = interactions.First(x => Int64(x, "QuestionId", "questionId") == 1);
-        var interactionId = Int64(interaction, "Id", "id");
-        var originalScore = Decimal(interaction, "Score", "score");
         var marker = $"{originalQuestionText} [QA-{Guid.NewGuid():N}]";
 
         Dictionary<string, object?> QuestionPayload(string text) => new()
@@ -304,8 +436,8 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
 
         try
         {
-            (await _client.PutAsJsonAsync("/api/questions/1", QuestionPayload(marker))).EnsureSuccessStatusCode();
-            var freshQuestion = await _client.GetFromJsonAsync<JsonElement>("/api/questions/1?_fresh=1");
+            (await _client.PutAsJsonAsync($"/api/questions/{questionId}", QuestionPayload(marker))).EnsureSuccessStatusCode();
+            var freshQuestion = await _client.GetFromJsonAsync<JsonElement>($"/api/questions/{questionId}?_fresh=1");
             Assert.Equal(marker, String(Property(freshQuestion.GetProperty("data"), "question", "Question"), "QuestionText", "questionText"));
 
             var preview = await _client.GetFromJsonAsync<JsonElement>("/api/videos/1/interactions?_fresh=1");
@@ -321,7 +453,7 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         finally
         {
             (await _client.PutAsJsonAsync($"/api/video-interactions/{interactionId}", InteractionPayload(originalScore))).EnsureSuccessStatusCode();
-            (await _client.PutAsJsonAsync("/api/questions/1", QuestionPayload(originalQuestionText))).EnsureSuccessStatusCode();
+            (await _client.PutAsJsonAsync($"/api/questions/{questionId}", QuestionPayload(originalQuestionText))).EnsureSuccessStatusCode();
         }
     }
 

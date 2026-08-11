@@ -11,6 +11,20 @@ namespace LmsCms.Api.Controllers;
 public sealed class LmsController(ILearningService learning) : ControllerBase
 {
     private long UserId => long.Parse(User.FindFirstValue("userId")!);
+    [HttpGet("dashboard")]
+    public async Task<ActionResult<ApiResponse<object>>> GetDashboard(CancellationToken cancellationToken) => Ok(ApiResponse<object>.Ok(await learning.GetDashboardAsync(UserId, cancellationToken)));
+    [HttpGet("courses")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<object>>>> GetCourses(CancellationToken cancellationToken) => Ok(ApiResponse<IReadOnlyCollection<object>>.Ok(await learning.GetCoursesAsync(UserId, cancellationToken)));
+    [HttpGet("courses/{courseId:long}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetCourse(long courseId, CancellationToken cancellationToken)
+    {
+        var data = await learning.GetCourseAsync(courseId, UserId, cancellationToken);
+        return data is null ? NotFound(ApiResponse<object>.Fail("Không tìm thấy khóa học hoặc bạn chưa được ghi danh.")) : Ok(ApiResponse<object>.Ok(data));
+    }
+    [HttpGet("results")]
+    public async Task<ActionResult<ApiResponse<object>>> GetResults(CancellationToken cancellationToken) => Ok(ApiResponse<object>.Ok(await learning.GetResultsAsync(UserId, null, cancellationToken)));
+    [HttpGet("results/{courseId:long}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetCourseResults(long courseId, CancellationToken cancellationToken) => Ok(ApiResponse<object>.Ok(await learning.GetResultsAsync(UserId, courseId, cancellationToken)));
     [HttpGet("lessons/{lessonId:long}/player")]
     public async Task<ActionResult<ApiResponse<PlayerDataDto>>> GetPlayer(long lessonId, CancellationToken cancellationToken)
     {

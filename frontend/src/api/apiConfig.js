@@ -1,6 +1,6 @@
 export const apiConfig = {
-  baseURL: import.meta.env.VITE_API_URL || 'https://localhost:7001/api',
-  dataMode: import.meta.env.VITE_DATA_MODE || 'mock',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:7001/api',
+  dataMode: import.meta.env.VITE_DATA_MODE || 'api',
   timeout: 15000,
 }
 

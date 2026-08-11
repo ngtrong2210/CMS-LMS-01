@@ -71,6 +71,22 @@ public sealed class VideoSaveRequest
     [Range(0, 100)] public decimal RequiredWatchPercent { get; init; } = 80;
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
 }
+public sealed class VideoAssetSaveRequest
+{
+    [Required, StringLength(500)] public string Title { get; init; } = "";
+    [Required, StringLength(1000)] public string VideoUrl { get; init; } = "";
+    [StringLength(1000)] public string? PosterUrl { get; init; }
+    [Range(1, int.MaxValue)] public int DurationSeconds { get; init; }
+    [StringLength(500)] public string? OriginalFileName { get; init; }
+    [Range(0, long.MaxValue)] public long? FileSize { get; init; }
+    [StringLength(150)] public string? MimeType { get; init; }
+}
+public sealed class VideoAttachRequest
+{
+    public bool AllowSeek { get; init; }
+    public bool AllowSpeed { get; init; } = true;
+    [Range(0, 100)] public decimal RequiredWatchPercent { get; init; } = 80;
+}
 public sealed class InteractionSaveRequest
 {
     [Range(1, long.MaxValue)] public long QuestionId { get; init; }

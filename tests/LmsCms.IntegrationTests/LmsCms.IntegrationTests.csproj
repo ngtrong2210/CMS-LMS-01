@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\LmsCms.Application\LmsCms.Application.csproj" />
     <ProjectReference Include="..\..\src\LmsCms.Api\LmsCms.Api.csproj" />
+    <ProjectReference Include="..\..\src\LmsCms.Infrastructure\LmsCms.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

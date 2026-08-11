@@ -32,7 +32,7 @@ npm run dev
 
 Frontend: `http://localhost:5173`
 
-Mặc định frontend chạy mock mode. Đổi `VITE_DATA_MODE=api` trong `.env.development` để gọi API.
+Frontend mặc định gọi API thật tại `http://localhost:7001/api`. Có thể đổi `VITE_API_URL` theo môi trường triển khai.
 
 ## Tài khoản demo
 

@@ -37,6 +37,14 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
         }
         return ScalarId(id is null?"dbo.LMS_Video_Create":"dbo.LMS_Video_Update",new{Id=id,LessonId=lessonId,r.Title,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.AllowSeek,r.AllowSpeed,r.RequiredWatchPercent,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
     }
+    public async Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoLibrary_GetList",new{Search=search},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
+    public Task<long> CreateVideoAssetAsync(VideoAssetSaveRequest r,long actorId,CancellationToken ct=default)
+    {
+        ValidateStoredVideoUrl(r.VideoUrl);
+        return ScalarId("dbo.LMS_VideoLibrary_Create",new{r.Title,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.OriginalFileName,r.FileSize,r.MimeType,ActorId=actorId},ct);
+    }
+    public Task<bool> DeleteVideoAssetAsync(long id,long actorId,CancellationToken ct=default)=>Affected("dbo.LMS_VideoLibrary_Delete",new{Id=id,ActorId=actorId},ct);
+    public Task<long> AttachVideoAssetAsync(long lessonId,long assetId,VideoAttachRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>ScalarId("dbo.LMS_VideoLibrary_Attach",new{LessonId=lessonId,VideoAssetId=assetId,r.AllowSeek,r.AllowSpeed,r.RequiredWatchPercent,ActorId=actorId,IsAdmin=isAdmin},ct);
     public async Task<IReadOnlyCollection<object>> GetInteractionsAsync(long videoId,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoInteraction_GetByVideo",new{VideoId=videoId},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
     public Task<long> CreateInteractionAsync(long videoId,InteractionSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>ScalarId("dbo.LMS_VideoInteraction_Create",new{VideoId=videoId,r.QuestionId,r.TimeSeconds,r.EndTimeSeconds,r.InteractionType,r.Required,r.PauseVideo,r.AllowSkip,r.Score,r.AttemptLimit,r.SortOrder,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
     public Task<bool> UpdateInteractionAsync(long id,InteractionSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_VideoInteraction_Update",new{Id=id,r.QuestionId,r.TimeSeconds,r.EndTimeSeconds,r.InteractionType,r.Required,r.PauseVideo,r.AllowSkip,r.Score,r.AttemptLimit,r.SortOrder,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
@@ -45,4 +53,9 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     private async Task<long> ScalarId(string procedure,object args,CancellationToken ct){using var db=connections.CreateConnection();return await db.QuerySingleAsync<long>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct));}
     private async Task<bool> Affected(string procedure,object args,CancellationToken ct){using var db=connections.CreateConnection();return await db.ExecuteScalarAsync<int>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct))>0;}
     private async Task Reorder(string procedure,ReorderRequest request,long actorId,bool isAdmin,CancellationToken ct){using var db=connections.CreateConnection();db.Open();using var tx=db.BeginTransaction();try{foreach(var item in request.Items)await db.ExecuteAsync(new CommandDefinition(procedure,new{item.Id,item.SortOrder,ActorId=actorId,IsAdmin=isAdmin},transaction:tx,commandType:CommandType.StoredProcedure,cancellationToken:ct));tx.Commit();}catch{tx.Rollback();throw;}}
+    private void ValidateStoredVideoUrl(string videoUrl)
+    {
+        if (!videoUrl.StartsWith("/uploads/videos/",StringComparison.OrdinalIgnoreCase)||videoUrl.Contains("..",StringComparison.Ordinal)||videoUrl.Contains('\\')||videoUrl.Contains('?')||videoUrl.Contains('#')) throw new ArgumentException("VideoUrl phải là URL tương đối an toàn trong /uploads/videos/.");
+        if (!videoStorage.Exists(videoUrl)) throw new ArgumentException("File video không tồn tại trong project.");
+    }
 }

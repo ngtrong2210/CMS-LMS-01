@@ -21,6 +21,10 @@ public interface ICourseService
 }
 public interface ILearningService
 {
+    Task<object> GetDashboardAsync(long studentId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<object>> GetCoursesAsync(long studentId, CancellationToken cancellationToken = default);
+    Task<object?> GetCourseAsync(long courseId, long studentId, CancellationToken cancellationToken = default);
+    Task<object> GetResultsAsync(long studentId, long? courseId = null, CancellationToken cancellationToken = default);
     Task<PlayerDataDto?> GetPlayerAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
     Task SaveVideoProgressAsync(long studentId, VideoProgressRequest request, CancellationToken cancellationToken = default);
     Task<AnswerResultDto> SubmitAnswerAsync(long studentId, SubmitAnswerRequest request, CancellationToken cancellationToken = default);
@@ -40,6 +44,10 @@ public interface IContentService
     Task ReorderLessonsAsync(ReorderRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<object?> GetVideoAsync(long id, CancellationToken ct = default);
     Task<long> SaveVideoAsync(long? id, long lessonId, VideoSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search, CancellationToken ct = default);
+    Task<long> CreateVideoAssetAsync(VideoAssetSaveRequest request, long actorId, CancellationToken ct = default);
+    Task<bool> DeleteVideoAssetAsync(long id, long actorId, CancellationToken ct = default);
+    Task<long> AttachVideoAssetAsync(long lessonId, long assetId, VideoAttachRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<IReadOnlyCollection<object>> GetInteractionsAsync(long videoId, CancellationToken ct = default);
     Task<long> CreateInteractionAsync(long videoId, InteractionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<bool> UpdateInteractionAsync(long id, InteractionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);

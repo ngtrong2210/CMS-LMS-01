@@ -12,7 +12,7 @@ CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetById @Id BIGINT AS
 BEGIN SET NOCOUNT ON; SELECT c.*,u.FullName TeacherName,cc.Name CategoryName FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId LEFT JOIN dbo.CourseCategories cc ON cc.Id=c.CategoryId WHERE c.Id=@Id AND c.IsDeleted=0; END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetContent @CourseId BIGINT AS
-BEGIN SET NOCOUNT ON; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder; SELECT Id,CourseId,ChapterId,Title,Description,LessonType,DurationSeconds,SortOrder,IsRequired,PassingScore,Status FROM dbo.Lessons WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY ChapterId,SortOrder; END
+BEGIN SET NOCOUNT ON; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder; SELECT l.Id,l.CourseId,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.SortOrder,l.IsRequired,l.PassingScore,l.Status,v.Id VideoId,v.VideoAssetId,v.Title VideoTitle,v.VideoUrl FROM dbo.Lessons l LEFT JOIN dbo.Videos v ON v.LessonId=l.Id WHERE l.CourseId=@CourseId AND l.IsDeleted=0 ORDER BY l.ChapterId,l.SortOrder; END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Course_Create
  @Code NVARCHAR(100),@Title NVARCHAR(500),@Slug NVARCHAR(500)=NULL,@ThumbnailUrl NVARCHAR(1000)=NULL,@ShortDescription NVARCHAR(1000)=NULL,@Description NVARCHAR(MAX)=NULL,
