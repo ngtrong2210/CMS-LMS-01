@@ -3,6 +3,7 @@ using LmsCms.Infrastructure.Data;
 using LmsCms.Infrastructure.Health;
 using LmsCms.Infrastructure.Security;
 using LmsCms.Infrastructure.Services;
+using LmsCms.Infrastructure.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LmsCms.Infrastructure;
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IContentService, ContentService>();
         services.AddScoped<IQuestionService, QuestionService>();
         services.AddScoped<IStudentService, StudentService>();
+        services.AddSingleton<IVideoStorageService, LocalVideoStorageService>();
         services.AddHealthChecks().AddCheck<SqlServerHealthCheck>("sql-server");
         return services;
     }

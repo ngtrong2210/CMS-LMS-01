@@ -62,4 +62,12 @@ public interface IStudentService
     Task<long> EnrollAsync(EnrollmentCreateRequest request, long actorId, CancellationToken ct = default);
     Task<bool> CancelEnrollmentAsync(long id, long actorId, CancellationToken ct = default);
 }
+public sealed record StoredVideoFile(string OriginalFileName, string StoredFileName, string VideoUrl, long FileSize, string MimeType);
+public interface IVideoStorageService
+{
+    Task<StoredVideoFile> SaveAsync(Stream content, string originalFileName, string contentType, long fileSize, CancellationToken ct = default);
+    Task<bool> DeleteAsync(string videoUrl, CancellationToken ct = default);
+    bool Exists(string videoUrl);
+    string GetUrl(string videoUrl);
+}
 public interface ITokenService { (string Token, DateTime ExpiresAt) CreateAccessToken(long userId, string username, string role); string CreateRefreshToken(); }

@@ -2,14 +2,21 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LmsCms.IntegrationTests;
 
 public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly HttpClient _client;
-    public SystemTests(WebApplicationFactory<Program> factory) => _client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+    private readonly WebApplicationFactory<Program> _factory;
+    public SystemTests(WebApplicationFactory<Program> factory)
+    {
+        _factory = factory;
+        _client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+    }
 
     [Fact]
     public async Task Health_Reports_ApiAndSqlHealthy()
@@ -134,6 +141,60 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
         var duplicate = await _client.PostAsJsonAsync("/api/cms/enrollments", new { courseId = 1, studentId = 3 });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
+    [Fact]
+    public async Task VideoUpload_SavesInsideProject_AndServesStaticRelativeUrl()
+    {
+        await AuthorizeAs("admin");
+        var bytes = "00000018ftypmp42lms-cms-test-video"u8.ToArray();
+        using var multipart = new MultipartFormDataContent();
+        using var file = new ByteArrayContent(bytes);
+        file.Headers.ContentType = new MediaTypeHeaderValue("video/mp4");
+        multipart.Add(file, "file", "test-video.mp4");
+
+        var response = await _client.PostAsync("/api/videos/upload", multipart);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var videoUrl = json.GetProperty("data").GetProperty("videoUrl").GetString()!;
+        Assert.StartsWith("/uploads/videos/", videoUrl, StringComparison.Ordinal);
+        Assert.DoesNotContain(":", videoUrl, StringComparison.Ordinal);
+
+        var environment = _factory.Services.GetRequiredService<IWebHostEnvironment>();
+        var webRoot = environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot");
+        var physicalPath = Path.GetFullPath(Path.Combine(webRoot, videoUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
+        var uploadRoot = Path.GetFullPath(Path.Combine(webRoot, "uploads", "videos")) + Path.DirectorySeparatorChar;
+        Assert.StartsWith(uploadRoot, physicalPath, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        Assert.True(File.Exists(physicalPath));
+        var storage = _factory.Services.GetRequiredService<LmsCms.Application.Interfaces.IVideoStorageService>();
+        Assert.True(storage.Exists(videoUrl));
+        Assert.Equal(videoUrl, storage.GetUrl(videoUrl));
+
+        try
+        {
+            var staticResponse = await _client.GetAsync(videoUrl);
+            staticResponse.EnsureSuccessStatusCode();
+            Assert.Equal("video/mp4", staticResponse.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(bytes, await staticResponse.Content.ReadAsByteArrayAsync());
+        }
+        finally { Assert.True(await storage.DeleteAsync(videoUrl)); }
+    }
+
+    [Fact]
+    public async Task VideoSave_RejectsAbsoluteTraversalAndMissingFiles()
+    {
+        await AuthorizeAs("admin");
+        var invalidUrls = new[]
+        {
+            string.Concat("G:", Path.DirectorySeparatorChar, "Videos", Path.DirectorySeparatorChar, "lecture.mp4"),
+            "/uploads/videos/../../lecture.mp4",
+            "/uploads/videos/2099/01/missing.mp4"
+        };
+        foreach (var videoUrl in invalidUrls)
+        {
+            var response = await _client.PutAsJsonAsync("/api/videos/1", new { lessonId = 1, title = "Video validation", videoUrl, durationSeconds = 60, allowSeek = false, allowSpeed = true, requiredWatchPercent = 80, status = "ACTIVE" });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
     }
 
     private async Task AuthorizeAs(string username)

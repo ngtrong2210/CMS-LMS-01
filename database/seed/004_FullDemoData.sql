@@ -63,7 +63,7 @@ FROM dbo.Courses c JOIN dbo.Chapters ch ON ch.CourseId=c.Id AND ch.SortOrder=1
 WHERE c.Code<>'VUE3-001' AND NOT EXISTS(SELECT 1 FROM dbo.Lessons l WHERE l.CourseId=c.Id);
 
 INSERT dbo.Videos(LessonId,Title,VideoUrl,PosterUrl,DurationSeconds,AllowSeek,AllowSpeed,RequiredWatchPercent,Status)
-SELECT l.Id,l.Title,CONCAT('https://cdn.learnhub.local/videos/',LOWER(c.Code),'-intro.mp4'),CONCAT('https://cdn.learnhub.local/posters/',LOWER(c.Code),'.jpg'),l.DurationSeconds,0,1,80,'ACTIVE'
+SELECT l.Id,l.Title,NULL,CONCAT('https://cdn.learnhub.local/posters/',LOWER(c.Code),'.jpg'),l.DurationSeconds,0,1,80,'ACTIVE'
 FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId
 WHERE NOT EXISTS(SELECT 1 FROM dbo.Videos v WHERE v.LessonId=l.Id)
   AND l.LessonType IN('VIDEO','INTERACTIVE_VIDEO');

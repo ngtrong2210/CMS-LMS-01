@@ -11,3 +11,7 @@ appsettings.Local.json
 # Local source prompts; backend prompt contains development credentials.
 PROMPT_BACKEND_LMS_API.md
 PROMPT_FRONTEND_LMS_CMS.md
+
+# Keep the project upload directory, but never commit uploaded videos.
+src/LmsCms.Api/wwwroot/uploads/videos/*
+!src/LmsCms.Api/wwwroot/uploads/videos/.gitkeep

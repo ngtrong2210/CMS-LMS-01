@@ -2,13 +2,18 @@ using System.Text;
 using LmsCms.Api.Middleware;
 using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure;
+using LmsCms.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+builder.Services.Configure<VideoUploadOptions>(builder.Configuration.GetSection(VideoUploadOptions.SectionName));
+var maxVideoFileSize = builder.Configuration.GetValue<long>($"{VideoUploadOptions.SectionName}:MaxFileSizeMB", 500) * 1024L * 1024L;
+builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxVideoFileSize);
 builder.Services.AddControllers();
 builder.Services.AddInfrastructure();
 builder.Services.AddEndpointsApiExplorer();
@@ -38,6 +43,7 @@ var app = builder.Build();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();

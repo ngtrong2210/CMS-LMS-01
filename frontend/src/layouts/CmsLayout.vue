@@ -27,7 +27,7 @@ const initials=computed(()=>auth.user?.fullName?.split(/\s+/).slice(-2).map(x=>x
 const roleName=computed(()=>({ADMIN:'Quản trị viên',TEACHER:'Giảng viên'})[auth.user?.role] || auth.user?.role)
 const menu=[
  {label:'Tổng quan',items:[{to:'/cms/dashboard',text:'Bảng điều khiển',icon:'bi-grid'}]},
- {label:'Đào tạo',items:[{to:'/cms/courses',text:'Khóa học',icon:'bi-journal-bookmark'},{to:'/cms/lessons',text:'Chương / Bài học',icon:'bi-list-task'},{to:'/cms/videos/101/editor',text:'Video tương tác',icon:'bi-play-btn'},{to:'/cms/questions',text:'Ngân hàng câu hỏi',icon:'bi-patch-question'}]},
+ {label:'Đào tạo',items:[{to:'/cms/courses',text:'Khóa học',icon:'bi-journal-bookmark'},{to:'/cms/lessons',text:'Chương / Bài học',icon:'bi-list-task'},{to:'/cms/videos/1/editor',text:'Video tương tác',icon:'bi-play-btn'},{to:'/cms/questions',text:'Ngân hàng câu hỏi',icon:'bi-patch-question'}]},
  {label:'Học viên',items:[{to:'/cms/students',text:'Danh sách học viên',icon:'bi-people'},{to:'/cms/enrollments',text:'Ghi danh khóa học',icon:'bi-person-plus'}]},
  {label:'Phân tích',items:[{to:'/cms/reports',text:'Báo cáo',icon:'bi-bar-chart'}]},
  {label:'Hệ thống',items:[{to:'/cms/users',text:'Người dùng',icon:'bi-person-gear'},{to:'/cms/roles',text:'Phân quyền',icon:'bi-shield-check'},{to:'/cms/settings',text:'Cài đặt',icon:'bi-gear'}]},

@@ -3,3 +3,10 @@ export const apiConfig = {
   dataMode: import.meta.env.VITE_DATA_MODE || 'mock',
   timeout: 15000,
 }
+
+export function resolveApiAssetUrl(relativeUrl) {
+  if (!relativeUrl) return ''
+  if (/^https?:\/\//i.test(relativeUrl)) return relativeUrl
+  const apiOrigin = apiConfig.baseURL.replace(/\/api\/?$/i, '')
+  return `${apiOrigin}${relativeUrl.startsWith('/') ? '' : '/'}${relativeUrl}`
+}
