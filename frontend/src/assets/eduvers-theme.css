@@ -1,0 +1,207 @@
+/* Visual system adapted from the local Eduvers reference template.
+   This file intentionally contains presentation rules only. */
+:root {
+  --eduvers-ink: #0d2944;
+  --eduvers-copy: #4d5756;
+  --eduvers-warm: #f8f4f2;
+  --eduvers-line: #ede8e6;
+  --eduvers-white: #fff;
+  --eduvers-accent: #07875a;
+  --eduvers-accent-dark: #056b48;
+  --eduvers-blue: #005099;
+  --page: #f7f7f5;
+  --surface: var(--eduvers-white);
+  --ink: var(--eduvers-ink);
+  --ink-soft: #30465a;
+  --muted: #687572;
+  --neutral-line: var(--eduvers-line);
+  --neutral-line-strong: #ded9d6;
+  --card-radius: 12px;
+  --control-radius: 7px;
+  --font-body: "DM Sans", Inter, "Segoe UI", Arial, sans-serif;
+  --font-heading: "Montserrat Alternates", Inter, "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  color: var(--eduvers-copy);
+  background: var(--page);
+  font-size: .9rem;
+  line-height: 1.62;
+}
+
+h1,h2,h3,h4,h5,h6 { color: var(--eduvers-ink); font-weight: 700; letter-spacing: -.025em; }
+
+.app-card {
+  border: 1px solid rgba(13,41,68,.07);
+  border-radius: var(--card-radius);
+  box-shadow: 0 12px 34px rgba(13,41,68,.055);
+}
+.app-card:hover { border-color: rgba(13,41,68,.1); }
+
+.card-header { padding: 1.15rem 1.35rem; border-bottom-color: var(--eduvers-line); }
+.card-title { color: var(--eduvers-ink); font-size: 1rem; font-weight: 700; }
+
+.btn {
+  min-height: 42px;
+  padding: .58rem 1rem;
+  border-radius: 7px;
+  font-size: .83rem;
+  font-weight: 700;
+  letter-spacing: -.005em;
+}
+.btn-sm { min-height: 34px; padding: .38rem .72rem; font-size: .75rem; }
+.btn-brand { background: var(--eduvers-accent); border-color: var(--eduvers-accent); }
+.btn-brand:hover,.btn-brand:focus { background: var(--eduvers-ink); border-color: var(--eduvers-ink); transform: translateY(-1px); }
+.btn-blue { background: var(--eduvers-blue); border-color: var(--eduvers-blue); }
+.btn-blue:hover,.btn-blue:focus { background: var(--eduvers-ink); border-color: var(--eduvers-ink); transform: translateY(-1px); }
+.btn-light { color: var(--eduvers-ink); background: var(--eduvers-warm); border-color: var(--eduvers-warm); }
+.btn-light:hover { color: #fff; background: var(--eduvers-ink); border-color: var(--eduvers-ink); }
+
+.form-label { margin-bottom: .48rem; color: var(--eduvers-ink); font-size: .78rem; font-weight: 700; }
+.form-control,.form-select {
+  min-height: 44px;
+  border-color: rgba(13,41,68,.12);
+  border-radius: 7px;
+  color: var(--eduvers-ink);
+  background-color: #fbfaf9;
+  font-size: .83rem;
+}
+.form-control:hover,.form-select:hover { border-color: rgba(13,41,68,.24); }
+.form-control:focus,.form-select:focus { border-color: var(--eduvers-accent); background:#fff; box-shadow:0 0 0 3px rgba(7,135,90,.1); }
+.input-group-text { border-color: rgba(13,41,68,.12); background: var(--eduvers-warm); }
+
+.page-title { color: var(--eduvers-ink); font-size: 1.45rem; font-weight: 750; letter-spacing: -.035em; }
+.page-subtitle { color: #74807d; font-size: .8rem; }
+.cms-theme .page-content>section>header:first-child,
+.lms-content>section>header:first-child { min-height: 60px; margin-bottom: 1.35rem !important; }
+
+.table { color: #334650; font-size: .79rem; }
+.table > :not(caption) > * > * { padding: .92rem 1rem; border-bottom-color: #f0ece9; }
+.table thead th {
+  color: #677470;
+  background: var(--eduvers-warm);
+  font-size: .67rem;
+  font-weight: 750;
+  letter-spacing: .07em;
+}
+.table tbody tr:hover>* { background: #fcfaf8; }
+
+.badge { border-radius: 5px; padding: .4rem .56rem; font-weight: 700; }
+.badge-soft-success { color:#06724d; background:#e5f4ee; }
+.badge-soft-primary { color:#064c88; background:#e8f1f8; }
+.badge-soft-warning { color:#765f00; background:#fff8ce; }
+.badge-soft-danger { color:#a91919; background:#fbe9e9; }
+
+.progress { height: 7px; background: #e9e6e3; border-radius: 10px; }
+.progress-bar { border-radius: 10px; }
+.avatar { width: 40px; height: 40px; }
+.alert { border-radius: 8px; padding: .8rem 1rem; }
+.modal-content { border: 0; border-radius: 12px; box-shadow: 0 24px 70px rgba(13,41,68,.16); }
+.dropdown-menu { border: 0; border-radius: 9px; box-shadow: 0 18px 45px rgba(13,41,68,.13); }
+
+.cms-theme .page-content,
+.lms-shell .lms-content { position: relative; }
+.cms-theme .app-card h2.h5,.lms-shell .app-card h2.h5 { color:var(--eduvers-ink); font-size:1rem; font-weight:700!important; }
+
+@media (max-width: 767px) {
+  .page-title { font-size: 1.25rem; }
+  .app-card { border-radius: 9px; }
+  .btn { min-height: 39px; }
+}
+
+/* Student dashboard and course cards */
+.lms-shell .welcome {
+  position: relative;
+  min-height: 270px;
+  padding: 2.4rem 2.6rem;
+  overflow: hidden;
+  border: 0;
+  background: linear-gradient(90deg,rgba(13,41,68,.96) 0%,rgba(13,41,68,.88) 54%,rgba(13,41,68,.42) 100%),url('/images/eduvers/learning-header.jpg') center/cover no-repeat !important;
+  box-shadow: 0 18px 42px rgba(13,41,68,.13);
+}
+.lms-shell .welcome h1 { max-width:650px; color:#fff; font-size:clamp(2rem,3.2vw,3.15rem); font-weight:750; line-height:1.15; }
+.lms-shell .welcome p { color:rgba(255,255,255,.76); }
+.lms-shell .welcome .welcome-label { color:#bfe5d7; }
+.lms-shell .welcome .btn-brand:hover { color:#0d2944; background:#fff; border-color:#fff; }
+.lms-shell .welcome .goal { margin-right:1rem; padding:1rem 1.15rem; border-radius:10px; background:rgba(255,255,255,.12); backdrop-filter:blur(5px); }
+.lms-shell .welcome .goal-ring { width:94px; height:94px; color:#07875a; background:#fff; font-size:1.65rem; }
+.lms-shell .welcome .goal>div strong { color:#fff; }
+.lms-shell .welcome .goal>div small { color:rgba(255,255,255,.68); }
+.lms-shell .stat { min-height:94px; padding:1.15rem 1.25rem; }
+.lms-shell .stat-icon { width:46px; height:46px; border-radius:8px; }
+.lms-shell .stat strong { color:#0d2944; font-size:1.5rem; }
+.lms-shell .course { min-height:224px; border:0; box-shadow:0 12px 34px rgba(13,41,68,.07); transition:transform .25s ease,box-shadow .25s ease; }
+.lms-shell .course:hover { transform:translateY(-4px); box-shadow:0 18px 42px rgba(13,41,68,.11); }
+.lms-shell .course-cover { position:relative; width:190px; overflow:hidden; background-image:linear-gradient(rgba(13,41,68,.25),rgba(13,41,68,.58)),url('/images/eduvers/course-tech.jpg')!important; background-position:center!important; background-size:cover!important; }
+.lms-shell .row.g-4>.col-lg-6:nth-child(2) .course-cover { background-image:linear-gradient(rgba(13,41,68,.25),rgba(13,41,68,.58)),url('/images/eduvers/course-security.jpg')!important; }
+.lms-shell .course-cover i { width:54px; height:54px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,.9); color:#07875a; font-size:1.5rem; }
+.lms-shell .course h3 { color:#0d2944; font-size:1.08rem; font-weight:750; }
+.lms-shell .course .btn-light { color:#07875a; background:#e9f5f0; }
+
+.lms-shell .course-card { overflow:hidden; border:0; border-radius:12px; box-shadow:0 12px 34px rgba(13,41,68,.07); transition:transform .25s ease,box-shadow .25s ease; }
+.lms-shell .course-card:hover { transform:translateY(-5px); box-shadow:0 20px 44px rgba(13,41,68,.12); }
+.lms-shell .course-art { position:relative; height:180px; overflow:hidden; background-position:center!important; background-size:cover!important; background-image:linear-gradient(rgba(13,41,68,.18),rgba(13,41,68,.62)),url('/images/eduvers/course-tech.jpg')!important; }
+.lms-shell .row.g-4>div:nth-child(2) .course-art { background-image:linear-gradient(rgba(13,41,68,.18),rgba(13,41,68,.62)),url('/images/eduvers/course-security.jpg')!important; }
+.lms-shell .row.g-4>div:nth-child(3) .course-art { background-image:linear-gradient(rgba(13,41,68,.18),rgba(13,41,68,.62)),url('/images/eduvers/course-media.jpg')!important; }
+.lms-shell .row.g-4>div:nth-child(4) .course-art { background-image:linear-gradient(rgba(13,41,68,.18),rgba(13,41,68,.62)),url('/images/eduvers/course-business.jpg')!important; }
+.lms-shell .row.g-4>div:nth-child(5) .course-art { background-image:linear-gradient(rgba(13,41,68,.18),rgba(13,41,68,.62)),url('/images/eduvers/course-data.jpg')!important; }
+.lms-shell .row.g-4>div:nth-child(6n) .course-art { background-image:linear-gradient(rgba(13,41,68,.18),rgba(13,41,68,.62)),url('/images/eduvers/course-design.jpg')!important; }
+.lms-shell .course-art i { width:54px; height:54px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,.92); color:#07875a; font-size:1.45rem; }
+.lms-shell .course-art span { padding:.28rem .55rem; border-radius:5px; background:rgba(13,41,68,.78); font-size:.72rem; letter-spacing:.06em; }
+.lms-shell .course-card>div:last-child { padding:1.2rem!important; }
+.lms-shell .course-card h2 { min-height:2.8em; color:#0d2944; font-size:1.05rem; font-weight:750; line-height:1.4; }
+
+/* Administration dashboard */
+.cms-theme .stat { min-height:102px; padding:1.25rem 1.35rem; border:0; }
+.cms-theme .stat strong { color:#0d2944; font-size:1.75rem; }
+.cms-theme .stat>i { width:48px; height:48px; border-radius:9px; }
+.cms-theme .metric { padding:.9rem 0; }
+.cms-theme .content-counts span { padding:1rem .65rem; background:#f8f4f2; border-radius:8px; }
+.cms-theme .content-counts i { font-size:1.1rem; }
+
+/* Course detail and lesson player */
+.lms-shell .hero { min-height:250px; overflow:hidden; border:0; box-shadow:0 15px 38px rgba(13,41,68,.08); }
+.lms-shell .hero-art { position:relative; overflow:hidden; background:linear-gradient(rgba(13,41,68,.2),rgba(13,41,68,.68)),url('/images/eduvers/course-tech.jpg') center/cover no-repeat!important; }
+.lms-shell .hero-art i { width:68px; height:68px; display:grid; place-items:center; border-radius:50%; color:#07875a; background:rgba(255,255,255,.92); font-size:2rem!important; }
+.lms-shell .hero-art span { margin-top:.65rem; padding:.3rem .6rem; border-radius:5px; background:rgba(13,41,68,.78); font-size:.72rem; letter-spacing:.07em; }
+.lms-shell .hero h1 { color:#0d2944; font-size:clamp(1.8rem,3vw,2.65rem); font-weight:750; line-height:1.22; }
+.lms-shell .accordion-item { border-color:#eee9e6; }
+.lms-shell .accordion-button { min-height:64px; color:#0d2944!important; }
+.lms-shell .chapter-number { border-radius:7px; background:#e9f5f0; }
+.lms-shell .lesson-row { border-radius:7px; }
+.lms-shell .lesson-row:hover,.lms-shell .lesson-row.current { background:#f8f4f2; color:#07875a; }
+.lms-shell .player-grid { overflow:hidden; border:0; border-radius:12px; box-shadow:0 16px 42px rgba(13,41,68,.09); }
+.lms-shell .video-stage { background:#071922; }
+.lms-shell .lesson-meta { padding:1.6rem 1.75rem; background:#fff; }
+.lms-shell .lesson-meta h1 { color:#0d2944; font-size:1.4rem; }
+.lms-shell .content-panel { border-left-color:#eee9e6; background:#fcfaf8; }
+.lms-shell .chapter a { border-radius:7px; }
+.lms-shell .chapter a:hover { background:#f3efec; }
+.lms-shell .chapter a.active { background:#e5f3ed; }
+.lms-shell .interaction-list button { border:1px solid #eee9e6; border-radius:8px; background:#fcfaf8; }
+.lms-shell .interaction-list button:hover { background:#f8f4f2; }
+
+/* Admin content tables, filters and dialogs */
+.cms-theme .page-content>section>header:first-child .btn-brand { padding-inline:1.15rem; }
+.cms-theme .page-content>section>.app-card.p-3.mb-3 { padding:1rem!important; background:#fff; }
+.cms-theme .course-thumb,.cms-theme .video-name>span { border-radius:7px; background:#0d2944!important; box-shadow:0 5px 15px rgba(13,41,68,.12); }
+.cms-theme .search-box input { background:#fbfaf9; }
+.cms-theme .drop-zone { border-color:#cfc8c3; border-radius:10px; background:#fcfaf8; }
+.cms-theme .drop-zone:hover { border-color:#07875a; background:#f3f9f6; }
+.cms-theme .upload-modal,.cms-theme .form-modal,.cms-theme .editor-dialog,.cms-theme .quick-question-dialog { border:0; border-radius:12px; box-shadow:0 25px 70px rgba(13,41,68,.18); }
+.cms-theme .modal-mask,.cms-theme .editor-backdrop,.cms-theme .preview-backdrop { background:rgba(13,41,68,.7); backdrop-filter:blur(3px); }
+.cms-theme .modal-heading small,.cms-theme .editor-kicker { color:#07875a; letter-spacing:.1em; }
+.cms-theme .option-row,.cms-theme .quick-option { border-radius:7px; }
+
+/* Login follows the same warm Eduvers surfaces without changing its behavior. */
+.login-page .form-panel { background:#f8f4f2; }
+.login-page .login-card { border:0; box-shadow:0 24px 70px rgba(13,41,68,.12); }
+.login-page .system-panel { background:linear-gradient(145deg,#0d2944 0%,#005099 100%); }
+
+@media (max-width: 767px) {
+  .lms-shell .welcome { min-height:235px; padding:1.6rem; }
+  .lms-shell .welcome h1 { font-size:1.8rem; }
+  .lms-shell .course-cover { width:100%; min-height:145px; }
+  .lms-shell .hero { grid-template-columns:1fr; }
+  .lms-shell .hero-art { min-height:150px; }
+}
