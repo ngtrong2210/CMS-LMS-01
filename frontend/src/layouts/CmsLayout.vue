@@ -8,7 +8,6 @@
           <RouterLink v-for="item in group.items" :key="item.to" class="side-link" :to="item.to"><i :class="['bi',item.icon]"></i><span>{{ item.text }}</span></RouterLink>
         </template>
       </nav>
-      <div class="mt-auto p-3"><div class="support-card"><i class="bi bi-headset"></i><div><strong>Trung tâm hỗ trợ</strong><span>Hướng dẫn dành cho quản trị viên</span></div></div></div>
     </aside>
     <div class="cms-main">
       <header class="topbar bg-white d-flex align-items-center justify-content-between px-3 px-lg-4">
