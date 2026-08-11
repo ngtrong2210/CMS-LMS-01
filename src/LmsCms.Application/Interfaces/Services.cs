@@ -70,4 +70,15 @@ public interface IVideoStorageService
     bool Exists(string videoUrl);
     string GetUrl(string videoUrl);
 }
+public enum ProjectStorageArea { Cache, Temp, Exports, Processing }
+public sealed record ProjectStoredFile(string RelativePath, long FileSize, DateTime CreatedAtUtc);
+public interface IProjectStorageService
+{
+    string GetDirectory(ProjectStorageArea area);
+    Task<ProjectStoredFile> SaveAsync(ProjectStorageArea area, Stream content, string extension = ".tmp", CancellationToken ct = default);
+    Task<ProjectStoredFile> WriteTextAsync(ProjectStorageArea area, string content, string extension = ".txt", CancellationToken ct = default);
+    bool Exists(string relativePath);
+    Task<bool> DeleteAsync(string relativePath, CancellationToken ct = default);
+    Task<int> CleanupExpiredAsync(ProjectStorageArea area, TimeSpan maxAge, CancellationToken ct = default);
+}
 public interface ITokenService { (string Token, DateTime ExpiresAt) CreateAccessToken(long userId, string username, string role); string CreateRefreshToken(); }

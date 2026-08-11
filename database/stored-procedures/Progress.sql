@@ -7,7 +7,7 @@ BEGIN
  SELECT v.Id,v.LessonId,v.Title,v.VideoUrl,v.PosterUrl,v.DurationSeconds,v.AllowSeek,v.AllowSpeed,v.RequiredWatchPercent FROM dbo.Videos v WHERE v.LessonId=@LessonId AND v.Status='ACTIVE';
  SELECT p.Id,p.CurrentTimeSeconds,p.MaxWatchedTimeSeconds,p.WatchedSeconds,p.WatchPercent,p.Completed FROM dbo.StudentVideoProgress p JOIN dbo.Videos v ON v.Id=p.VideoId WHERE v.LessonId=@LessonId AND p.StudentId=@StudentId;
  SELECT vi.Id,vi.VideoId,vi.QuestionId,vi.TimeSeconds,vi.EndTimeSeconds,vi.InteractionType,vi.Required,vi.PauseVideo,vi.AllowSkip,vi.Score,vi.AttemptLimit,vi.SortOrder,q.QuestionType,q.QuestionText,q.Description,q.Difficulty,
-  (SELECT o.Id,o.OptionCode,o.OptionText,o.SortOrder FROM dbo.QuestionOptions o WHERE o.QuestionId=q.Id ORDER BY o.SortOrder FOR JSON PATH) Options
+  (SELECT o.Id,o.OptionCode,o.OptionText,o.SortOrder FROM dbo.QuestionOptions o WHERE o.QuestionId=q.Id AND o.IsDeleted=0 ORDER BY o.SortOrder FOR JSON PATH) Options
  FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId JOIN dbo.Questions q ON q.Id=vi.QuestionId
  WHERE v.LessonId=@LessonId AND vi.IsDeleted=0 AND vi.Status='ACTIVE' AND q.IsDeleted=0 ORDER BY vi.TimeSeconds;
  /* Deliberately omit IsCorrect and answer keys from the player payload. */
@@ -103,7 +103,7 @@ BEGIN
  IF @Attempt>@AttemptLimit THROW 50004,N'Bạn đã sử dụng hết số lần trả lời cho câu hỏi này.',1;
  IF @Type IN('SINGLE_CHOICE','TRUE_FALSE','MULTIPLE_CHOICE')
  BEGIN
-   SELECT @Correct=STRING_AGG(UPPER(LTRIM(RTRIM(OptionCode))),'|') WITHIN GROUP(ORDER BY UPPER(LTRIM(RTRIM(OptionCode)))) FROM dbo.QuestionOptions WHERE QuestionId=@QuestionId AND IsCorrect=1;
+   SELECT @Correct=STRING_AGG(UPPER(LTRIM(RTRIM(OptionCode))),'|') WITHIN GROUP(ORDER BY UPPER(LTRIM(RTRIM(OptionCode)))) FROM dbo.QuestionOptions WHERE QuestionId=@QuestionId AND IsCorrect=1 AND IsDeleted=0;
    SET @IsCorrect=IIF(UPPER(ISNULL(@AnswerText,''))=ISNULL(@Correct,''),1,0);
  END
  ELSE IF @Mode='MANUAL_REVIEW' SET @IsCorrect=NULL;
@@ -118,7 +118,7 @@ BEGIN
    DECLARE @AnswerId BIGINT=SCOPE_IDENTITY();
    IF @Type IN('SINGLE_CHOICE','TRUE_FALSE','MULTIPLE_CHOICE')
      INSERT dbo.StudentAnswerOptions(StudentAnswerId,QuestionOptionId)
-     SELECT @AnswerId,o.Id FROM dbo.QuestionOptions o JOIN STRING_SPLIT(@AnswerText,'|') s ON UPPER(LTRIM(RTRIM(s.value)))=UPPER(o.OptionCode) WHERE o.QuestionId=@QuestionId;
+     SELECT @AnswerId,o.Id FROM dbo.QuestionOptions o JOIN STRING_SPLIT(@AnswerText,'|') s ON UPPER(LTRIM(RTRIM(s.value)))=UPPER(o.OptionCode) WHERE o.QuestionId=@QuestionId AND o.IsDeleted=0;
    EXEC dbo.LMS_LessonProgress_Recalculate @StudentId,@LessonId;
    SELECT @AnswerId AnswerId,@IsCorrect IsCorrect,CAST(IIF(@IsCorrect=1,@Score,0) AS DECIMAL(8,2)) ScoreAwarded,
     CAST((SELECT ISNULL(SUM(BestScore),0) FROM (SELECT MAX(ScoreAwarded) BestScore FROM dbo.StudentAnswers WHERE StudentId=@StudentId AND LessonId=@LessonId GROUP BY ISNULL(InteractionId,-QuestionId)) scores) AS DECIMAL(8,2)) CurrentLessonScore,

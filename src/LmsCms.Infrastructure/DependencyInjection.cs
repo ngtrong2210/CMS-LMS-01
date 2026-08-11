@@ -23,6 +23,8 @@ public static class DependencyInjection
         services.AddScoped<IQuestionService, QuestionService>();
         services.AddScoped<IStudentService, StudentService>();
         services.AddSingleton<IVideoStorageService, LocalVideoStorageService>();
+        services.AddSingleton<IProjectStorageService, ProjectStorageService>();
+        services.AddHostedService<StorageCleanupHostedService>();
         services.AddHealthChecks().AddCheck<SqlServerHealthCheck>("sql-server");
         return services;
     }

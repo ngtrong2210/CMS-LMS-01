@@ -15,3 +15,19 @@ PROMPT_FRONTEND_LMS_CMS.md
 # Keep the project upload directory, but never commit uploaded videos.
 src/LmsCms.Api/wwwroot/uploads/videos/*
 !src/LmsCms.Api/wwwroot/uploads/videos/.gitkeep
+src/LmsCms.Api/wwwroot/uploads/images/*
+!src/LmsCms.Api/wwwroot/uploads/images/.gitkeep
+src/LmsCms.Api/wwwroot/uploads/thumbnails/*
+!src/LmsCms.Api/wwwroot/uploads/thumbnails/.gitkeep
+src/LmsCms.Api/wwwroot/uploads/documents/*
+!src/LmsCms.Api/wwwroot/uploads/documents/.gitkeep
+src/LmsCms.Api/storage/cache/*
+!src/LmsCms.Api/storage/cache/.gitkeep
+src/LmsCms.Api/storage/temp/*
+!src/LmsCms.Api/storage/temp/.gitkeep
+src/LmsCms.Api/storage/exports/*
+!src/LmsCms.Api/storage/exports/.gitkeep
+src/LmsCms.Api/storage/processing/*
+!src/LmsCms.Api/storage/processing/.gitkeep
+src/LmsCms.Api/logs/*
+!src/LmsCms.Api/logs/.gitkeep

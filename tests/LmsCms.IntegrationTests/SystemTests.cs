@@ -197,6 +197,160 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         }
     }
 
+    [Fact]
+    public async Task ProjectRuntimeStorage_UsesContentRoot_AndCleansOnlyExpiredRuntimeFiles()
+    {
+        var storage = _factory.Services.GetRequiredService<LmsCms.Application.Interfaces.IProjectStorageService>();
+        var environment = _factory.Services.GetRequiredService<IWebHostEnvironment>();
+        var contentRoot = Path.GetFullPath(environment.ContentRootPath) + Path.DirectorySeparatorChar;
+        var created = new List<string>();
+        try
+        {
+            foreach (var area in Enum.GetValues<LmsCms.Application.Interfaces.ProjectStorageArea>())
+            {
+                var stored = await storage.WriteTextAsync(area, $"qa-{area}", ".tmp");
+                created.Add(stored.RelativePath);
+                var directory = Path.GetFullPath(storage.GetDirectory(area));
+                var physical = Path.GetFullPath(Path.Combine(environment.ContentRootPath, stored.RelativePath.Replace('/', Path.DirectorySeparatorChar)));
+                Assert.StartsWith(contentRoot, directory + Path.DirectorySeparatorChar, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                Assert.DoesNotContain($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", physical, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", physical, StringComparison.OrdinalIgnoreCase);
+                Assert.True(storage.Exists(stored.RelativePath));
+            }
+
+            var oldCachePath = Path.GetFullPath(Path.Combine(environment.ContentRootPath, created[0].Replace('/', Path.DirectorySeparatorChar)));
+            File.SetLastWriteTimeUtc(oldCachePath, DateTime.UtcNow.AddHours(-25));
+            Assert.Equal(1, await storage.CleanupExpiredAsync(LmsCms.Application.Interfaces.ProjectStorageArea.Cache, TimeSpan.FromHours(24)));
+            Assert.False(storage.Exists(created[0]));
+            created.RemoveAt(0);
+
+            var videoStorage = _factory.Services.GetRequiredService<LmsCms.Application.Interfaces.IVideoStorageService>();
+            await using var videoBytes = new MemoryStream("00000018ftypmp42runtime-storage-video"u8.ToArray());
+            var video = await videoStorage.SaveAsync(videoBytes, "runtime-storage.mp4", "video/mp4", videoBytes.Length);
+            try
+            {
+                foreach (var area in Enum.GetValues<LmsCms.Application.Interfaces.ProjectStorageArea>())
+                    await storage.CleanupExpiredAsync(area, TimeSpan.FromHours(24));
+                Assert.True(videoStorage.Exists(video.VideoUrl));
+            }
+            finally { await videoStorage.DeleteAsync(video.VideoUrl); }
+        }
+        finally
+        {
+            foreach (var relativePath in created)
+                if (storage.Exists(relativePath)) await storage.DeleteAsync(relativePath);
+        }
+    }
+
+    [Fact]
+    public async Task QuestionAndInteractionUpdates_AreImmediatelyVisibleToPreviewQueries()
+    {
+        await AuthorizeAs("admin");
+        var questionResponse = await _client.GetAsync("/api/questions/1");
+        questionResponse.EnsureSuccessStatusCode();
+        var questionData = (await questionResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data");
+        var question = Property(questionData, "question", "Question");
+        var options = Property(questionData, "options", "Options").EnumerateArray().ToArray();
+        var answerKeys = Property(questionData, "answerKeys", "AnswerKeys").EnumerateArray().ToArray();
+        var originalQuestionText = String(question, "QuestionText", "questionText")!;
+
+        var interactionsResponse = await _client.GetAsync("/api/videos/1/interactions");
+        interactionsResponse.EnsureSuccessStatusCode();
+        var interactions = (await interactionsResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data").EnumerateArray().ToArray();
+        var interaction = interactions.First(x => Int64(x, "QuestionId", "questionId") == 1);
+        var interactionId = Int64(interaction, "Id", "id");
+        var originalScore = Decimal(interaction, "Score", "score");
+        var marker = $"{originalQuestionText} [QA-{Guid.NewGuid():N}]";
+
+        Dictionary<string, object?> QuestionPayload(string text) => new()
+        {
+            ["questionType"] = String(question, "QuestionType", "questionType"),
+            ["questionText"] = text,
+            ["description"] = NullableString(question, "Description", "description"),
+            ["explanation"] = NullableString(question, "Explanation", "explanation"),
+            ["difficulty"] = String(question, "Difficulty", "difficulty"),
+            ["defaultScore"] = Decimal(question, "DefaultScore", "defaultScore"),
+            ["shortAnswerMode"] = NullableString(question, "ShortAnswerMode", "shortAnswerMode"),
+            ["status"] = String(question, "Status", "status"),
+            ["options"] = options.Select((x, index) => new Dictionary<string, object?>
+            {
+                ["optionCode"] = String(x, "OptionCode", "optionCode"),
+                ["optionText"] = String(x, "OptionText", "optionText"),
+                ["isCorrect"] = Boolean(x, "IsCorrect", "isCorrect"),
+                ["sortOrder"] = Int32(x, "SortOrder", "sortOrder", index + 1)
+            }).ToArray(),
+            ["answerKeys"] = answerKeys.Select((x, index) => new Dictionary<string, object?>
+            {
+                ["answerText"] = String(x, "AnswerText", "answerText"),
+                ["isCaseSensitive"] = Boolean(x, "IsCaseSensitive", "isCaseSensitive"),
+                ["sortOrder"] = Int32(x, "SortOrder", "sortOrder", index + 1)
+            }).ToArray()
+        };
+
+        Dictionary<string, object?> InteractionPayload(decimal score) => new()
+        {
+            ["questionId"] = Int64(interaction, "QuestionId", "questionId"),
+            ["timeSeconds"] = Int32(interaction, "TimeSeconds", "timeSeconds"),
+            ["endTimeSeconds"] = NullableInt32(interaction, "EndTimeSeconds", "endTimeSeconds"),
+            ["interactionType"] = String(interaction, "InteractionType", "interactionType"),
+            ["required"] = Boolean(interaction, "Required", "required"),
+            ["pauseVideo"] = Boolean(interaction, "PauseVideo", "pauseVideo"),
+            ["allowSkip"] = Boolean(interaction, "AllowSkip", "allowSkip"),
+            ["score"] = score,
+            ["attemptLimit"] = Int32(interaction, "AttemptLimit", "attemptLimit", 1),
+            ["sortOrder"] = Int32(interaction, "SortOrder", "sortOrder", 1),
+            ["status"] = String(interaction, "Status", "status")
+        };
+
+        try
+        {
+            (await _client.PutAsJsonAsync("/api/questions/1", QuestionPayload(marker))).EnsureSuccessStatusCode();
+            var freshQuestion = await _client.GetFromJsonAsync<JsonElement>("/api/questions/1?_fresh=1");
+            Assert.Equal(marker, String(Property(freshQuestion.GetProperty("data"), "question", "Question"), "QuestionText", "questionText"));
+
+            var preview = await _client.GetFromJsonAsync<JsonElement>("/api/videos/1/interactions?_fresh=1");
+            var previewInteraction = preview.GetProperty("data").EnumerateArray().First(x => Int64(x, "Id", "id") == interactionId);
+            Assert.Equal(marker, String(previewInteraction, "QuestionText", "questionText"));
+
+            var changedScore = originalScore + 1;
+            (await _client.PutAsJsonAsync($"/api/video-interactions/{interactionId}", InteractionPayload(changedScore))).EnsureSuccessStatusCode();
+            preview = await _client.GetFromJsonAsync<JsonElement>("/api/videos/1/interactions?_fresh=2");
+            previewInteraction = preview.GetProperty("data").EnumerateArray().First(x => Int64(x, "Id", "id") == interactionId);
+            Assert.Equal(changedScore, Decimal(previewInteraction, "Score", "score"));
+        }
+        finally
+        {
+            (await _client.PutAsJsonAsync($"/api/video-interactions/{interactionId}", InteractionPayload(originalScore))).EnsureSuccessStatusCode();
+            (await _client.PutAsJsonAsync("/api/questions/1", QuestionPayload(originalQuestionText))).EnsureSuccessStatusCode();
+        }
+    }
+
+    private static JsonElement Property(JsonElement source, params string[] names)
+    {
+        foreach (var name in names) if (source.TryGetProperty(name, out var value)) return value;
+        throw new KeyNotFoundException($"Missing JSON property: {string.Join('/', names)}");
+    }
+
+    private static string? String(JsonElement source, params string[] names) => Property(source, names).GetString();
+    private static string? NullableString(JsonElement source, params string[] names)
+    {
+        var value = Property(source, names);
+        return value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined ? null : value.GetString();
+    }
+    private static long Int64(JsonElement source, params string[] names) => Property(source, names).GetInt64();
+    private static decimal Decimal(JsonElement source, params string[] names) => Property(source, names).GetDecimal();
+    private static bool Boolean(JsonElement source, params string[] names) => Property(source, names).GetBoolean();
+    private static int Int32(JsonElement source, string first, string second, int fallback = 0)
+    {
+        if (source.TryGetProperty(first, out var value) || source.TryGetProperty(second, out value)) return value.GetInt32();
+        return fallback;
+    }
+    private static int? NullableInt32(JsonElement source, params string[] names)
+    {
+        var value = Property(source, names);
+        return value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined ? null : value.GetInt32();
+    }
+
     private async Task AuthorizeAs(string username)
     {
         _client.DefaultRequestHeaders.Authorization = null;

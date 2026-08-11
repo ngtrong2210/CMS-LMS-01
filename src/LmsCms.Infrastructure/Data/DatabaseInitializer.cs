@@ -4,10 +4,11 @@ using Dapper;
 using LmsCms.Application.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Hosting;
 
 namespace LmsCms.Infrastructure.Data;
 
-public sealed class DatabaseInitializer(IConfiguration configuration) : IDatabaseInitializer
+public sealed class DatabaseInitializer(IConfiguration configuration, IWebHostEnvironment environment) : IDatabaseInitializer
 {
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -15,10 +16,10 @@ public sealed class DatabaseInitializer(IConfiguration configuration) : IDatabas
             ?? throw new InvalidOperationException("ConnectionStrings:BootstrapConnection is not configured.");
         var application = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
-        var root = FindRepositoryRoot();
-        await ExecuteFolderAsync(bootstrap, Path.Combine(root, "database", "bootstrap"), cancellationToken);
+        var databaseRoot = ResolveDatabaseRoot();
+        await ExecuteFolderAsync(bootstrap, Path.Combine(databaseRoot, "bootstrap"), cancellationToken);
         foreach (var folder in new[] { "tables", "indexes", "stored-procedures", "seed" })
-            await ExecuteFolderAsync(application, Path.Combine(root, "database", folder), cancellationToken);
+            await ExecuteFolderAsync(application, Path.Combine(databaseRoot, folder), cancellationToken);
 
         await using var connection = new SqlConnection(application);
         await connection.OpenAsync(cancellationToken);
@@ -48,10 +49,11 @@ public sealed class DatabaseInitializer(IConfiguration configuration) : IDatabas
         }
     }
 
-    private static string FindRepositoryRoot()
+    private string ResolveDatabaseRoot()
     {
-        var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current is not null && !Directory.Exists(Path.Combine(current.FullName, "database"))) current = current.Parent;
-        return current?.FullName ?? throw new DirectoryNotFoundException("Could not locate the database scripts directory.");
+        var configured = configuration.GetValue<string>("Database:ScriptsPath") ?? "../../database";
+        if (Path.IsPathRooted(configured)) throw new InvalidOperationException("Database:ScriptsPath phải là đường dẫn tương đối.");
+        var path = Path.GetFullPath(Path.Combine(environment.ContentRootPath, configured.Replace('/', Path.DirectorySeparatorChar)));
+        return Directory.Exists(path) ? path : throw new DirectoryNotFoundException($"Không tìm thấy thư mục SQL scripts: {path}");
     }
 }
