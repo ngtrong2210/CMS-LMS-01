@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace LmsCms.Api.Controllers;
 
-[ApiController, Route("api/courses"), Authorize]
+[ApiController, Route("api/courses"), Authorize(Roles = "ADMIN,TEACHER")]
 public sealed class CoursesController(ICourseService courses) : ControllerBase
 {
     private long UserId => long.Parse(User.FindFirstValue("userId")!);
@@ -16,16 +16,16 @@ public sealed class CoursesController(ICourseService courses) : ControllerBase
     public async Task<ActionResult<ApiResponse<PagedResult<CourseListItemDto>>>> GetList([FromQuery] string? search, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
-        return Ok(ApiResponse<PagedResult<CourseListItemDto>>.Ok(await courses.GetListAsync(search, status, page, pageSize, cancellationToken)));
+        return Ok(ApiResponse<PagedResult<CourseListItemDto>>.Ok(await courses.GetListAsync(search, status, page, pageSize, UserId, IsAdmin, cancellationToken)));
     }
     [HttpGet("{id:long}")]
     public async Task<ActionResult<ApiResponse<object>>> GetById(long id, CancellationToken cancellationToken)
     {
-        var item = await courses.GetByIdAsync(id, cancellationToken);
+        var item = await courses.GetByIdAsync(id, UserId, IsAdmin, cancellationToken);
         return item is null ? NotFound(ApiResponse<object>.Fail("Không tìm thấy khóa học.")) : Ok(ApiResponse<object>.Ok(item));
     }
     [HttpGet("{id:long}/content")]
-    public async Task<ActionResult<ApiResponse<object>>> GetContent(long id, CancellationToken cancellationToken) => Ok(ApiResponse<object>.Ok((await courses.GetContentAsync(id, cancellationToken))!));
+    public async Task<ActionResult<ApiResponse<object>>> GetContent(long id, CancellationToken cancellationToken) => Ok(ApiResponse<object>.Ok((await courses.GetContentAsync(id, UserId, IsAdmin, cancellationToken))!));
 
     [HttpPost, Authorize(Roles = "ADMIN,TEACHER")]
     public async Task<ActionResult<ApiResponse<object>>> Create(CourseSaveRequest request, CancellationToken cancellationToken)

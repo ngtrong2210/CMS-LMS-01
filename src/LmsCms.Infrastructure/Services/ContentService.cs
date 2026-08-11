@@ -22,7 +22,7 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     public Task<bool> UpdateLessonAsync(long id,LessonSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_Lesson_Update",new{Id=id,r.Title,r.Description,r.LessonType,r.DurationSeconds,r.SortOrder,r.IsRequired,r.PassingScore,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
     public Task<bool> DeleteLessonAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_Lesson_Delete",new{Id=id,ActorId=actorId,IsAdmin=isAdmin},ct);
     public Task ReorderLessonsAsync(ReorderRequest request,long actorId,bool isAdmin,CancellationToken ct=default)=>Reorder("dbo.LMS_Lesson_Reorder",request,actorId,isAdmin,ct);
-    public async Task<object?> GetVideoAsync(long id,CancellationToken ct=default){using var db=connections.CreateConnection();return await db.QuerySingleOrDefaultAsync(new CommandDefinition("dbo.LMS_Video_GetById",new{Id=id},commandType:CommandType.StoredProcedure,cancellationToken:ct));}
+    public async Task<object?> GetVideoAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default){using var db=connections.CreateConnection();return await db.QuerySingleOrDefaultAsync(new CommandDefinition("dbo.LMS_Video_GetById",new{Id=id,ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct));}
     public Task<long> SaveVideoAsync(long? id,long lessonId,VideoSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)
     {
         if (!string.IsNullOrWhiteSpace(r.VideoUrl))
@@ -37,7 +37,7 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
         }
         return ScalarId(id is null?"dbo.LMS_Video_Create":"dbo.LMS_Video_Update",new{Id=id,LessonId=lessonId,r.Title,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.AllowSeek,r.AllowSpeed,r.RequiredWatchPercent,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
     }
-    public async Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoLibrary_GetList",new{Search=search},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
+    public async Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search,long actorId,bool isAdmin,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoLibrary_GetList",new{Search=search,ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
     public Task<long> CreateVideoAssetAsync(VideoAssetSaveRequest r,long actorId,CancellationToken ct=default)
     {
         ValidateStoredVideoUrl(r.VideoUrl);
@@ -45,7 +45,7 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     }
     public Task<bool> DeleteVideoAssetAsync(long id,long actorId,CancellationToken ct=default)=>Affected("dbo.LMS_VideoLibrary_Delete",new{Id=id,ActorId=actorId},ct);
     public Task<long> AttachVideoAssetAsync(long lessonId,long assetId,VideoAttachRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>ScalarId("dbo.LMS_VideoLibrary_Attach",new{LessonId=lessonId,VideoAssetId=assetId,r.AllowSeek,r.AllowSpeed,r.RequiredWatchPercent,ActorId=actorId,IsAdmin=isAdmin},ct);
-    public async Task<IReadOnlyCollection<object>> GetInteractionsAsync(long videoId,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoInteraction_GetByVideo",new{VideoId=videoId},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
+    public async Task<IReadOnlyCollection<object>> GetInteractionsAsync(long videoId,long actorId,bool isAdmin,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoInteraction_GetByVideo",new{VideoId=videoId,ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
     public async Task<PreviewAnswerResultDto> PreviewAnswerAsync(long videoId,PreviewAnswerRequest r,long actorId,bool isAdmin,CancellationToken ct=default)
     {
         using var db=connections.CreateConnection();

@@ -69,6 +69,77 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task Teacher_CanSaveOwnedVideoInteraction_AndCannotOpenAnotherTeachersVideo()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var otherVideoId = await connection.ExecuteScalarAsync<long>("""
+            SELECT TOP(1) v.Id
+            FROM dbo.Videos v
+            JOIN dbo.Lessons l ON l.Id=v.LessonId
+            JOIN dbo.Courses c ON c.Id=l.CourseId
+            WHERE c.TeacherId<>2 AND l.IsDeleted=0 AND c.IsDeleted=0
+            ORDER BY v.Id
+            """);
+
+        await AuthorizeAs("teacher");
+
+        var coursesResponse = await _client.GetAsync("/api/courses?pageSize=100");
+        coursesResponse.EnsureSuccessStatusCode();
+        var courses = (await coursesResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("data").GetProperty("items").EnumerateArray().ToArray();
+        Assert.NotEmpty(courses);
+        var exposedCourseIds = courses.Select(course => Int64(course, "Id", "id")).ToArray();
+        var unauthorizedCourseCount = await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM dbo.Courses WHERE Id IN @Ids AND TeacherId<>2",
+            new { Ids = exposedCourseIds });
+        Assert.Equal(0, unauthorizedCourseCount);
+
+        var libraryResponse = await _client.GetAsync("/api/video-library");
+        libraryResponse.EnsureSuccessStatusCode();
+        var editableVideoIds = (await libraryResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("data").EnumerateArray()
+            .Select(asset => asset.TryGetProperty("FirstVideoId", out var id) ? id : asset.GetProperty("firstVideoId"))
+            .Where(id => id.ValueKind is not JsonValueKind.Null)
+            .Select(id => id.GetInt64()).ToArray();
+        Assert.NotEmpty(editableVideoIds);
+        var unauthorizedLibraryLinkCount = await connection.ExecuteScalarAsync<int>("""
+            SELECT COUNT(*)
+            FROM dbo.Videos v
+            JOIN dbo.Lessons l ON l.Id=v.LessonId
+            JOIN dbo.Courses c ON c.Id=l.CourseId
+            WHERE v.Id IN @Ids AND c.TeacherId<>2
+            """, new { Ids = editableVideoIds });
+        Assert.Equal(0, unauthorizedLibraryLinkCount);
+
+        var interactionsResponse = await _client.GetAsync("/api/videos/1/interactions");
+        interactionsResponse.EnsureSuccessStatusCode();
+        var interaction = (await interactionsResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("data").EnumerateArray().First();
+        var interactionId = Int64(interaction, "Id", "id");
+        var payload = new Dictionary<string, object?>
+        {
+            ["questionId"] = Int64(interaction, "QuestionId", "questionId"),
+            ["timeSeconds"] = Int32(interaction, "TimeSeconds", "timeSeconds"),
+            ["endTimeSeconds"] = NullableInt32(interaction, "EndTimeSeconds", "endTimeSeconds"),
+            ["interactionType"] = String(interaction, "InteractionType", "interactionType"),
+            ["required"] = Boolean(interaction, "Required", "required"),
+            ["pauseVideo"] = Boolean(interaction, "PauseVideo", "pauseVideo"),
+            ["allowSkip"] = Boolean(interaction, "AllowSkip", "allowSkip"),
+            ["score"] = Decimal(interaction, "Score", "score"),
+            ["attemptLimit"] = Int32(interaction, "AttemptLimit", "attemptLimit", 1),
+            ["sortOrder"] = Int32(interaction, "SortOrder", "sortOrder", 1),
+            ["status"] = String(interaction, "Status", "status")
+        };
+        var saveResponse = await _client.PutAsJsonAsync($"/api/video-interactions/{interactionId}", payload);
+        Assert.True(saveResponse.IsSuccessStatusCode, await saveResponse.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.GetAsync($"/api/videos/{otherVideoId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.GetAsync($"/api/videos/{otherVideoId}/interactions")).StatusCode);
+    }
+
+    [Fact]
     public async Task Player_EnrolledStudent_DoesNotExposeCorrectAnswers()
     {
         await AuthorizeAs("student");

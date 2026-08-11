@@ -1,18 +1,18 @@
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetList @Search NVARCHAR(500)=NULL,@Status VARCHAR(30)=NULL,@Page INT=1,@PageSize INT=20 AS
+CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetList @Search NVARCHAR(500)=NULL,@Status VARCHAR(30)=NULL,@Page INT=1,@PageSize INT=20,@ActorId BIGINT,@IsAdmin BIT=0 AS
 BEGIN SET NOCOUNT ON;
- ;WITH Data AS (SELECT c.Id,c.Code,c.Title,c.Slug,c.ThumbnailUrl,c.ShortDescription,u.FullName TeacherName,c.Level,c.Status,c.CreatedAt,
+ ;WITH Data AS (SELECT c.Id,c.Code,c.Title,c.Slug,c.ThumbnailUrl,c.ShortDescription,c.TeacherId,c.CategoryId,u.FullName TeacherName,c.Level,c.PassingScore,c.Status,c.CreatedAt,
   (SELECT COUNT(*) FROM dbo.Lessons l WHERE l.CourseId=c.Id AND l.IsDeleted=0) LessonCount,
   (SELECT COUNT(*) FROM dbo.Enrollments e WHERE e.CourseId=c.Id AND e.Status<>'CANCELLED') StudentCount
- FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId WHERE c.IsDeleted=0 AND (@Status IS NULL OR @Status='' OR c.Status=@Status) AND (@Search IS NULL OR @Search='' OR c.Title LIKE '%'+@Search+'%' OR c.Code LIKE '%'+@Search+'%'))
+ FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId WHERE c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId) AND (@Status IS NULL OR @Status='' OR c.Status=@Status) AND (@Search IS NULL OR @Search='' OR c.Title LIKE '%'+@Search+'%' OR c.Code LIKE '%'+@Search+'%'))
  SELECT * FROM Data ORDER BY CreatedAt DESC OFFSET (@Page-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY;
- SELECT COUNT(*) FROM dbo.Courses c WHERE c.IsDeleted=0 AND (@Status IS NULL OR @Status='' OR c.Status=@Status) AND (@Search IS NULL OR @Search='' OR c.Title LIKE '%'+@Search+'%' OR c.Code LIKE '%'+@Search+'%');
+ SELECT COUNT(*) FROM dbo.Courses c WHERE c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId) AND (@Status IS NULL OR @Status='' OR c.Status=@Status) AND (@Search IS NULL OR @Search='' OR c.Title LIKE '%'+@Search+'%' OR c.Code LIKE '%'+@Search+'%');
 END
 GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetById @Id BIGINT AS
-BEGIN SET NOCOUNT ON; SELECT c.*,u.FullName TeacherName,cc.Name CategoryName FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId LEFT JOIN dbo.CourseCategories cc ON cc.Id=c.CategoryId WHERE c.Id=@Id AND c.IsDeleted=0; END
+CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetById @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
+BEGIN SET NOCOUNT ON; IF EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0) AND NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT c.*,u.FullName TeacherName,cc.Name CategoryName FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId LEFT JOIN dbo.CourseCategories cc ON cc.Id=c.CategoryId WHERE c.Id=@Id AND c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); END
 GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetContent @CourseId BIGINT AS
-BEGIN SET NOCOUNT ON; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder; SELECT l.Id,l.CourseId,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.SortOrder,l.IsRequired,l.PassingScore,l.Status,v.Id VideoId,v.VideoAssetId,v.Title VideoTitle,v.VideoUrl FROM dbo.Lessons l LEFT JOIN dbo.Videos v ON v.LessonId=l.Id WHERE l.CourseId=@CourseId AND l.IsDeleted=0 ORDER BY l.ChapterId,l.SortOrder; END
+CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetContent @CourseId BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
+BEGIN SET NOCOUNT ON; IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder; SELECT l.Id,l.CourseId,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.SortOrder,l.IsRequired,l.PassingScore,l.Status,v.Id VideoId,v.VideoAssetId,v.Title VideoTitle,v.VideoUrl FROM dbo.Lessons l LEFT JOIN dbo.Videos v ON v.LessonId=l.Id WHERE l.CourseId=@CourseId AND l.IsDeleted=0 ORDER BY l.ChapterId,l.SortOrder; END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Course_Create
  @Code NVARCHAR(100),@Title NVARCHAR(500),@Slug NVARCHAR(500)=NULL,@ThumbnailUrl NVARCHAR(1000)=NULL,@ShortDescription NVARCHAR(1000)=NULL,@Description NVARCHAR(MAX)=NULL,
