@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">LearnHub</title>
+  <defs>
+    <linearGradient id="brand" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07875a"/>
+      <stop offset="1" stop-color="#005099"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#brand)"/>
+  <path d="M13 18.5c7.6-1.9 13.8-.5 19 4.1v27c-5.2-4.6-11.4-6-19-4.1v-27Zm38 0c-7.6-1.9-13.8-.5-19 4.1v27c5.2-4.6 11.4-6 19-4.1v-27Z" fill="#fff" opacity=".96"/>
+  <circle cx="32" cy="34" r="9" fill="#ffff1a"/>
+  <path d="m29.5 29.5 7.2 4.5-7.2 4.5v-9Z" fill="#005099"/>
+</svg>
