@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Dapper;
+using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -76,6 +77,22 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         var body = await response.Content.ReadAsStringAsync();
         foreach (var forbidden in new[] { "isCorrect", "correctAnswer", "correctAnswers", "answerKey", "QuestionAnswerKeys" })
             Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CmsPreviewAnswer_ScoresWithoutCreatingStudentAnswer()
+    {
+        await AuthorizeAs("admin");
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var row = await connection.QuerySingleAsync<(long InteractionId, long QuestionId)>("SELECT TOP(1) vi.Id InteractionId,vi.QuestionId FROM dbo.VideoInteractions vi WHERE vi.VideoId=1 AND vi.IsDeleted=0 ORDER BY vi.TimeSeconds");
+        var before = await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.StudentAnswers");
+        var response = await _client.PostAsJsonAsync("/api/videos/1/preview-answer", new { row.InteractionId, row.QuestionId, answers = new[] { "A" } });
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.GetProperty("success").GetBoolean());
+        Assert.Equal(before, await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.StudentAnswers"));
     }
 
     [Fact]

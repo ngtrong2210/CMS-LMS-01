@@ -49,6 +49,7 @@ public interface IContentService
     Task<bool> DeleteVideoAssetAsync(long id, long actorId, CancellationToken ct = default);
     Task<long> AttachVideoAssetAsync(long lessonId, long assetId, VideoAttachRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<IReadOnlyCollection<object>> GetInteractionsAsync(long videoId, CancellationToken ct = default);
+    Task<PreviewAnswerResultDto> PreviewAnswerAsync(long videoId, PreviewAnswerRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<long> CreateInteractionAsync(long videoId, InteractionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<bool> UpdateInteractionAsync(long id, InteractionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<bool> DeleteInteractionAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);

@@ -40,6 +40,8 @@ public sealed class CourseSaveRequest
 public sealed record VideoProgressRequest(long LessonId, long VideoId, decimal CurrentTime, decimal MaxWatchedTime, decimal WatchPercent);
 public sealed record SubmitAnswerRequest(long LessonId, long? VideoId, long? InteractionId, long QuestionId, IReadOnlyCollection<string> Answers, decimal? TimeInVideo, int? TimeSpent);
 public sealed record AnswerResultDto(long AnswerId, bool? IsCorrect, decimal ScoreAwarded, decimal CurrentLessonScore, int AttemptNumber, string ReviewStatus, string? Explanation);
+public sealed record PreviewAnswerRequest(long InteractionId, long QuestionId, IReadOnlyCollection<string> Answers);
+public sealed record PreviewAnswerResultDto(bool? IsCorrect, decimal ScoreAwarded, string ReviewStatus, string? Explanation);
 public sealed record PlayerDataDto(object? Lesson, object? Course, object? Video, object? Progress, IReadOnlyCollection<object> Interactions, IReadOnlyCollection<object> AnsweredInteractions);
 public sealed class ChapterSaveRequest
 {
