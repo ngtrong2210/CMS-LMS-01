@@ -2,6 +2,7 @@
 **/obj/
 frontend/node_modules/
 frontend/dist/
+docs/.vite/
 .env.local
 .env.*.local
 appsettings.Local.json

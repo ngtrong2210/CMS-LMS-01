@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tài liệu luồng dữ liệu video, câu hỏi tương tác, tiến độ và điểm số của hệ thống Elearning LMS/CMS.">
+  <title>Elearning — Luồng dữ liệu LMS/CMS</title>
+  <style>
+    :root {
+      --primary: #005099;
+      --primary-dark: #073356;
+      --primary-soft: #e9f3fb;
+      --navy: #102f4d;
+      --green: #07875a;
+      --green-soft: #e8f6f1;
+      --red: #cd1b1b;
+      --red-soft: #fff0ef;
+      --yellow: #ffff1a;
+      --ink: #172636;
+      --muted: #637588;
+      --surface: #ffffff;
+      --canvas: #f3f6f8;
+      --line: #dfe6eb;
+      --shadow: 0 12px 36px rgba(15, 46, 73, .08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.62;
+    }
+    button, input { font: inherit; }
+    a { color: inherit; }
+    code {
+      padding: 2px 6px;
+      color: #06477f;
+      background: #eef5fa;
+      border-radius: 5px;
+      font: 600 .88em Consolas, "Courier New", monospace;
+    }
+
+    .app { min-height: 100vh; }
+    .topbar {
+      position: sticky;
+      z-index: 50;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 68px;
+      padding: 10px clamp(18px, 4vw, 64px);
+      color: #fff;
+      background: var(--primary);
+      box-shadow: 0 6px 24px rgba(0, 80, 153, .2);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; }
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      color: var(--primary);
+      background: #fff;
+      border-radius: 12px;
+      font-size: 21px;
+      box-shadow: 0 7px 18px rgba(4, 41, 73, .22);
+    }
+    .brand small { display: block; opacity: .78; font-size: 11px; font-weight: 600; letter-spacing: .08em; }
+    .top-actions { display: flex; gap: 9px; }
+    .top-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 13px;
+      color: #fff;
+      background: rgba(255, 255, 255, .14);
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .top-btn:hover { background: rgba(255, 255, 255, .23); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: calc(100vh - 68px);
+    }
+    .sidebar {
+      position: sticky;
+      top: 68px;
+      align-self: start;
+      height: calc(100vh - 68px);
+      padding: 26px 18px;
+      overflow-y: auto;
+      color: #d8e8f4;
+      background: var(--navy);
+    }
+    .sidebar-title {
+      margin: 0 10px 14px;
+      color: #87b7d9;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      text-decoration: none;
+      transition: .18s ease;
+    }
+    .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255, 255, 255, .1); }
+    .nav-no {
+      display: grid;
+      width: 26px;
+      height: 26px;
+      place-items: center;
+      flex: 0 0 26px;
+      color: #cae6f8;
+      background: rgba(255, 255, 255, .09);
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .side-note {
+      margin: 24px 10px 0;
+      padding: 14px;
+      color: #c8dce9;
+      background: rgba(255, 255, 255, .07);
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    main { min-width: 0; padding: 0 clamp(18px, 3.2vw, 54px) 70px; }
+    .hero {
+      position: relative;
+      margin: 0 calc(clamp(18px, 3.2vw, 54px) * -1) 34px;
+      padding: 58px clamp(18px, 5.2vw, 78px) 60px;
+      overflow: hidden;
+      color: #fff;
+      background: linear-gradient(118deg, #073356 0%, #005099 67%, #086db7 100%);
+    }
+    .hero::before, .hero::after {
+      position: absolute;
+      content: "";
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+    }
+    .hero::before { width: 280px; height: 280px; top: -170px; right: 9%; }
+    .hero::after { width: 170px; height: 170px; bottom: -105px; right: 28%; }
+    .eyebrow {
+      position: relative;
+      margin: 0 0 9px;
+      color: #bfe0f7;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 {
+      position: relative;
+      max-width: 860px;
+      margin: 0;
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1.12;
+      letter-spacing: -.035em;
+    }
+    .hero-copy { position: relative; max-width: 820px; margin: 18px 0 0; color: #e0eef7; font-size: 16px; }
+    .hero-meta { position: relative; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .pill { padding: 6px 10px; color: #eaf5fc; background: rgba(255,255,255,.12); border-radius: 999px; font-size: 12px; font-weight: 700; }
+
+    section { scroll-margin-top: 88px; margin-top: 34px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
+    .section-kicker { margin: 0 0 3px; color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h2 { margin: 0; color: #102d49; font-size: clamp(23px, 2.7vw, 34px); line-height: 1.2; letter-spacing: -.025em; }
+    h3 { margin: 0; color: #15344f; font-size: 18px; line-height: 1.35; }
+    .section-desc { max-width: 780px; margin: 6px 0 0; color: var(--muted); }
+
+    .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .overview { padding: clamp(20px, 3vw, 34px); }
+    .overview-grid { display: grid; grid-template-columns: repeat(7, minmax(130px, 1fr)); gap: 10px; }
+    .step { position: relative; min-height: 144px; padding: 17px 14px; background: #f6f9fb; border-radius: 12px; }
+    .step:not(:last-child)::after { position: absolute; top: 30px; right: -9px; z-index: 2; content: "›"; color: var(--primary); font-size: 27px; font-weight: 900; }
+    .step-no { display: grid; width: 31px; height: 31px; margin-bottom: 12px; place-items: center; color: #fff; background: var(--primary); border-radius: 9px; font-size: 12px; font-weight: 800; }
+    .step strong { display: block; font-size: 14px; line-height: 1.35; }
+    .step span { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .tabbar { display: inline-flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; padding: 5px; background: #e7edf1; border-radius: 11px; }
+    .tab-btn { padding: 9px 14px; color: #4d6274; background: transparent; border: 0; border-radius: 8px; cursor: pointer; font-weight: 750; }
+    .tab-btn.active { color: #fff; background: var(--primary); box-shadow: 0 7px 16px rgba(0,80,153,.2); }
+    .flow-panel { display: none; }
+    .flow-panel.active { display: block; animation: reveal .22s ease; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .flow-card { padding: clamp(20px, 3vw, 34px); }
+    .flow-line { display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; align-items: stretch; }
+    .node { position: relative; min-height: 150px; padding: 19px; background: #f6f9fb; border-radius: 12px; }
+    .node:not(:last-child)::after { position: absolute; top: 50%; right: -24px; width: 19px; content: "→"; color: var(--primary); font-size: 21px; font-weight: 900; transform: translateY(-50%); }
+    .node-icon { display: grid; width: 38px; height: 38px; margin-bottom: 12px; place-items: center; color: var(--primary); background: var(--primary-soft); border-radius: 10px; font-size: 18px; }
+    .node p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+    .node .table-name { display: inline-block; margin-top: 9px; color: var(--primary); font-family: Consolas, monospace; font-size: 12px; font-weight: 800; }
+    .callout { display: flex; gap: 12px; margin-top: 18px; padding: 15px 17px; background: var(--primary-soft); border-radius: 11px; }
+    .callout.warning { color: #742224; background: var(--red-soft); }
+    .callout.success { color: #075e42; background: var(--green-soft); }
+    .callout-icon { flex: 0 0 auto; font-size: 19px; }
+    .callout strong { display: block; margin-bottom: 2px; }
+    .callout p { margin: 0; color: inherit; }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .detail-card { padding: 24px; }
+    .detail-card h3 { display: flex; align-items: center; gap: 10px; }
+    .number-badge { display: grid; width: 30px; height: 30px; place-items: center; flex: 0 0 auto; color: #fff; background: var(--primary); border-radius: 9px; font-size: 12px; }
+    .clean-list { margin: 17px 0 0; padding: 0; list-style: none; }
+    .clean-list li { position: relative; padding: 9px 0 9px 22px; color: #4f6375; }
+    .clean-list li::before { position: absolute; left: 0; top: 14px; width: 8px; height: 8px; content: ""; background: #86b8d9; border-radius: 3px; }
+    .clean-list li + li { border-top: 1px solid #edf1f4; }
+
+    .er-wrap { padding: clamp(20px, 3vw, 34px); overflow-x: auto; }
+    .er-canvas { min-width: 1000px; }
+    .er-row { display: flex; align-items: center; justify-content: center; gap: 25px; }
+    .er-row + .er-row { margin-top: 26px; }
+    .entity { position: relative; width: 170px; min-height: 86px; padding: 14px; background: #f5f8fa; border-radius: 11px; text-align: center; }
+    .entity.primary { color: #fff; background: var(--primary); }
+    .entity.green { color: #fff; background: var(--green); }
+    .entity.red { color: #fff; background: var(--red); }
+    .entity strong { display: block; font: 800 14px Consolas, monospace; }
+    .entity span { display: block; margin-top: 5px; color: inherit; opacity: .76; font-size: 11px; line-height: 1.35; }
+    .arrow { flex: 0 0 auto; color: #6e879a; font-weight: 900; text-align: center; }
+    .arrow small { display: block; color: #91a2ae; font-size: 9px; font-weight: 700; }
+    .er-branch { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 26px; margin-top: 26px; }
+    .branch-col { display: flex; flex-direction: column; align-items: center; gap: 11px; }
+    .down { color: #6e879a; font-size: 20px; font-weight: 900; }
+
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+    table { width: 100%; min-width: 920px; border-collapse: collapse; background: #fff; }
+    th { padding: 13px 15px; color: #fff; background: var(--primary); font-size: 12px; letter-spacing: .035em; text-align: left; }
+    td { padding: 13px 15px; color: #465d70; border-bottom: 1px solid #e8edf1; vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #f6f9fb; }
+    td:first-child { color: #163b5a; font-family: Consolas, monospace; font-weight: 800; }
+    .key { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 6px; color: #084978; background: #e8f2f9; border-radius: 5px; font: 700 11px Consolas, monospace; }
+    .key.fk { color: #096245; background: #e7f5ef; }
+    .key.logic { color: #8a4b0b; background: #fff3dc; }
+
+    .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .score-card { padding: 22px; }
+    .score-card .label { margin: 0 0 8px; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .score-card h3 { font-size: 17px; }
+    .score-card p { margin: 8px 0 0; color: #597083; font-size: 13px; }
+    .score-value { margin-top: 15px; color: var(--primary); font: 800 15px Consolas, monospace; }
+
+    .api-table td:nth-child(2), .api-table td:nth-child(3) { font-family: Consolas, monospace; font-size: 12px; }
+    footer { margin-top: 42px; padding: 24px; color: #788997; text-align: center; }
+
+    @media (max-width: 1400px) {
+      .overview-grid { grid-template-columns: repeat(4, 1fr); }
+      .step:not(:last-child)::after { display: none; }
+      .flow-line { grid-template-columns: repeat(3, 1fr); }
+      .node:not(:last-child)::after { display: none; }
+    }
+    @media (max-width: 900px) {
+      .layout { display: block; }
+      .sidebar { display: none; }
+      .detail-grid, .score-grid { grid-template-columns: 1fr; }
+      .flow-line { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 620px) {
+      .topbar { min-height: 60px; }
+      .brand small, .top-btn span { display: none; }
+      main { padding-left: 12px; padding-right: 12px; }
+      .hero { margin-left: -12px; margin-right: -12px; padding-top: 42px; }
+      .overview-grid, .flow-line { grid-template-columns: 1fr; }
+      .section-head { align-items: start; flex-direction: column; }
+      .tabbar { display: flex; }
+      .tab-btn { flex: 1; font-size: 12px; }
+    }
+    @media print {
+      .topbar, .sidebar, .top-actions, .tabbar { display: none !important; }
+      .layout { display: block; }
+      main { padding: 0; }
+      .hero { margin: 0; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .flow-panel { display: block !important; margin-bottom: 18px; }
+      .card, .table-wrap { box-shadow: none; }
+      section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">E</span>
+        <span>Elearning <small>TÀI LIỆU KIẾN TRÚC DỮ LIỆU</small></span>
+      </div>
+      <div class="top-actions">
+        <button class="top-btn" type="button" onclick="window.print()" title="In hoặc lưu PDF">⌁ <span>In / Lưu PDF</span></button>
+        <button class="top-btn" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Về đầu trang">↑ <span>Đầu trang</span></button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" aria-label="Mục lục">
+        <p class="sidebar-title">Mục lục tài liệu</p>
+        <a class="nav-link active" href="#tong-quan"><span class="nav-no">01</span>Tổng quan</a>
+        <a class="nav-link" href="#luong-nghiep-vu"><span class="nav-no">02</span>Luồng nghiệp vụ</a>
+        <a class="nav-link" href="#video"><span class="nav-no">03</span>Video &amp; bài học</a>
+        <a class="nav-link" href="#cau-hoi"><span class="nav-no">04</span>Câu hỏi tương tác</a>
+        <a class="nav-link" href="#sinh-vien"><span class="nav-no">05</span>Sinh viên &amp; điểm</a>
+        <a class="nav-link" href="#quan-he"><span class="nav-no">06</span>Sơ đồ quan hệ</a>
+        <a class="nav-link" href="#bang-du-lieu"><span class="nav-no">07</span>Danh mục bảng</a>
+        <a class="nav-link" href="#api-sp"><span class="nav-no">08</span>API &amp; Stored Procedure</a>
+        <div class="side-note">Tài liệu phản ánh đúng code và schema hiện tại của dự án LMS/CMS.</div>
+      </aside>
+
+      <main>
+        <div class="hero" id="tong-quan">
+          <p class="eyebrow">LMS / CMS • DATA FLOW</p>
+          <h1>Luồng dữ liệu video, câu hỏi tương tác và điểm sinh viên</h1>
+          <p class="hero-copy">Giải thích rõ dữ liệu được lưu ở đâu, liên kết bằng khóa nào và được tổng hợp ra sao — từ lúc quản trị viên tải video đến khi học viên trả lời câu hỏi và hoàn thành bài học.</p>
+          <div class="hero-meta">
+            <span class="pill">SQL Server: LMSCMS_DB</span>
+            <span class="pill">ASP.NET Core API</span>
+            <span class="pill">Vue.js CMS/LMS</span>
+            <span class="pill">Cập nhật: 11/08/2026</span>
+          </div>
+        </div>
+
+        <section aria-labelledby="overview-title">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Toàn cảnh</p>
+              <h2 id="overview-title">Một vòng đời dữ liệu hoàn chỉnh</h2>
+              <p class="section-desc">Bảy bước chính từ nội dung do giáo viên tạo đến kết quả học tập của học viên.</p>
+            </div>
+          </div>
+          <div class="card overview">
+            <div class="overview-grid">
+              <div class="step"><span class="step-no">01</span><strong>Tải tệp video</strong><span>Lưu tệp vật lý trong thư mục upload.</span></div>
+              <div class="step"><span class="step-no">02</span><strong>Tạo thư viện video</strong><span>Ghi metadata vào <code>VideoAssets</code>.</span></div>
+              <div class="step"><span class="step-no">03</span><strong>Gắn vào bài học</strong><span>Tạo cấu hình sử dụng tại <code>Videos</code>.</span></div>
+              <div class="step"><span class="step-no">04</span><strong>Tạo câu hỏi</strong><span>Lưu ngân hàng <code>Questions</code> và đáp án.</span></div>
+              <div class="step"><span class="step-no">05</span><strong>Gắn mốc tương tác</strong><span>Nối video–câu hỏi qua <code>VideoInteractions</code>.</span></div>
+              <div class="step"><span class="step-no">06</span><strong>Học viên trả lời</strong><span>Lưu câu trả lời tại <code>StudentAnswers</code>.</span></div>
+              <div class="step"><span class="step-no">07</span><strong>Tổng hợp kết quả</strong><span>Cập nhật tiến độ và điểm bài học.</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="luong-nghiep-vu" aria-labelledby="flow-title">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Luồng nghiệp vụ</p>
+              <h2 id="flow-title">Xem nhanh từng luồng dữ liệu</h2>
+              <p class="section-desc">Chọn nhóm nghiệp vụ để theo dõi các bước ghi dữ liệu chính.</p>
+            </div>
+          </div>
+          <div class="tabbar" role="tablist" aria-label="Nhóm luồng dữ liệu">
+            <button class="tab-btn active" data-tab="flow-video" type="button" role="tab">Video</button>
+            <button class="tab-btn" data-tab="flow-question" type="button" role="tab">Câu hỏi</button>
+            <button class="tab-btn" data-tab="flow-score" type="button" role="tab">Tiến độ &amp; điểm</button>
+          </div>
+
+          <div class="flow-panel active" id="flow-video" role="tabpanel">
+            <div class="card flow-card">
+              <div class="flow-line">
+                <div class="node"><span class="node-icon">⇧</span><h3>Upload tệp</h3><p>API kiểm tra đuôi, MIME và kích thước.</p><span class="table-name">wwwroot/uploads/videos</span></div>
+                <div class="node"><span class="node-icon">▣</span><h3>Video dùng chung</h3><p>Tiêu đề, URL, thời lượng và thông tin tệp.</p><span class="table-name">VideoAssets</span></div>
+                <div class="node"><span class="node-icon">↗</span><h3>Gắn vào bài học</h3><p>Tạo cấu hình seek, speed, % xem bắt buộc.</p><span class="table-name">Videos</span></div>
+                <div class="node"><span class="node-icon">≡</span><h3>Bài học</h3><p>Mỗi bài có tối đa một cấu hình video.</p><span class="table-name">Lessons</span></div>
+                <div class="node"><span class="node-icon">⌂</span><h3>Môn học</h3><p>Bài học thuộc chương và khóa học.</p><span class="table-name">Chapters / Courses</span></div>
+              </div>
+              <div class="callout success"><span class="callout-icon">✓</span><div><strong>Một video dùng được cho nhiều môn</strong><p>Một dòng <code>VideoAssets</code> có thể được nhiều dòng <code>Videos</code> tham chiếu. Vì vậy cùng một tệp có thể gắn vào nhiều bài học, chương và khóa học khác nhau mà không cần upload lại.</p></div></div>
+            </div>
+          </div>
+
+          <div class="flow-panel" id="flow-question" role="tabpanel">
+            <div class="card flow-card">
+              <div class="flow-line">
+                <div class="node"><span class="node-icon">＋</span><h3>Tạo câu hỏi</h3><p>Tạo trong ngân hàng hoặc tạo nhanh tại editor.</p><span class="table-name">Questions</span></div>
+                <div class="node"><span class="node-icon">A</span><h3>Lưu đáp án</h3><p>Đáp án chọn hoặc bộ từ khóa trả lời ngắn.</p><span class="table-name">QuestionOptions / Keys</span></div>
+                <div class="node"><span class="node-icon">?</span><h3>Chọn từ ngân hàng</h3><p>Lọc, tìm kiếm và tái sử dụng câu hỏi.</p><span class="table-name">QuestionId</span></div>
+                <div class="node"><span class="node-icon">◷</span><h3>Đặt thời điểm</h3><p>Điểm, số lần làm, bắt buộc, dừng video.</p><span class="table-name">VideoInteractions</span></div>
+                <div class="node"><span class="node-icon">▶</span><h3>Hiển thị trên player</h3><p>Câu hỏi bật đúng mốc thời gian đã cấu hình.</p><span class="table-name">Videos</span></div>
+              </div>
+              <div class="callout"><span class="callout-icon">i</span><div><strong>Câu hỏi và mốc tương tác là hai dữ liệu khác nhau</strong><p><code>Questions</code> giữ nội dung dùng chung. <code>VideoInteractions</code> giữ cách câu hỏi đó được dùng trong một video cụ thể: thời điểm, điểm, giới hạn lần làm và hành vi player.</p></div></div>
+            </div>
+          </div>
+
+          <div class="flow-panel" id="flow-score" role="tabpanel">
+            <div class="card flow-card">
+              <div class="flow-line">
+                <div class="node"><span class="node-icon">▶</span><h3>Xem video</h3><p>Lưu vị trí hiện tại, thời gian xem tối đa và % xem.</p><span class="table-name">StudentVideoProgress</span></div>
+                <div class="node"><span class="node-icon">✎</span><h3>Nộp đáp án</h3><p>Kiểm tra enrollment, mốc tương tác và lượt làm.</p><span class="table-name">StudentAnswers</span></div>
+                <div class="node"><span class="node-icon">✓</span><h3>Chấm tự động</h3><p>So đáp án đúng hoặc chuyển trạng thái chờ duyệt.</p><span class="table-name">ScoreAwarded</span></div>
+                <div class="node"><span class="node-icon">Σ</span><h3>Tổng hợp bài học</h3><p>Lấy điểm cao nhất của mỗi mốc qua các lần làm.</p><span class="table-name">StudentLessonProgress</span></div>
+                <div class="node"><span class="node-icon">%</span><h3>Cập nhật khóa học</h3><p>Tính % bài bắt buộc đã hoàn thành.</p><span class="table-name">Enrollments</span></div>
+              </div>
+              <div class="callout warning"><span class="callout-icon">!</span><div><strong>Hiện trạng cần lưu ý về điểm cuối khóa</strong><p>Luồng trả lời hiện cập nhật <code>StudentAnswers.ScoreAwarded</code> và <code>StudentLessonProgress.Score</code>. Stored procedure hiện tại chưa tự tính lại <code>Enrollments.FinalScore</code>.</p></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="video" aria-labelledby="video-title">
+          <div class="section-head"><div><p class="section-kicker">Video &amp; bài học</p><h2 id="video-title">Video được lưu ở đâu và nối với môn học thế nào?</h2></div></div>
+          <div class="detail-grid">
+            <article class="card detail-card">
+              <h3><span class="number-badge">1</span>Upload tệp vật lý</h3>
+              <ul class="clean-list">
+                <li>Gọi <code>POST /api/videos/upload</code>.</li>
+                <li>Tệp hợp lệ được lưu tại <code>wwwroot/uploads/videos/{yyyy}/{MM}/{guid}.{ext}</code>.</li>
+                <li>API trả về URL tương đối <code>/uploads/videos/...</code>.</li>
+                <li><strong>Bước upload chưa tạo dòng trong SQL.</strong></li>
+              </ul>
+            </article>
+            <article class="card detail-card">
+              <h3><span class="number-badge">2</span>Tạo tài nguyên dùng chung</h3>
+              <ul class="clean-list">
+                <li><code>POST /api/video-library</code> gọi <code>LMS_VideoLibrary_Create</code>.</li>
+                <li>Ghi một dòng vào <code>VideoAssets</code>: URL, poster, thời lượng, MIME, kích thước.</li>
+                <li><code>CreatedBy → Users.Id</code> xác định người tạo.</li>
+                <li>Đây là bản ghi thư viện, có thể tái sử dụng.</li>
+              </ul>
+            </article>
+            <article class="card detail-card">
+              <h3><span class="number-badge">3</span>Gắn video vào bài học</h3>
+              <ul class="clean-list">
+                <li><code>POST /api/lessons/{lessonId}/video-library/{assetId}</code>.</li>
+                <li><code>LMS_VideoLibrary_Attach</code> tạo dòng tại <code>Videos</code>.</li>
+                <li><code>Videos.LessonId → Lessons.Id</code>; <code>Videos.VideoAssetId → VideoAssets.Id</code>.</li>
+                <li><code>LessonId</code> là duy nhất trong <code>Videos</code>: một bài có một cấu hình video.</li>
+              </ul>
+            </article>
+            <article class="card detail-card">
+              <h3><span class="number-badge">4</span>Nối lên chương và khóa học</h3>
+              <ul class="clean-list">
+                <li><code>Lessons.ChapterId → Chapters.Id</code>.</li>
+                <li><code>Lessons.CourseId → Courses.Id</code>.</li>
+                <li><code>Chapters.CourseId → Courses.Id</code>.</li>
+                <li>Nhờ <code>VideoAssetId</code>, cùng một tệp video được nhiều bài học ở nhiều khóa học cùng sử dụng.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section id="cau-hoi" aria-labelledby="question-title">
+          <div class="section-head"><div><p class="section-kicker">Câu hỏi tương tác</p><h2 id="question-title">Từ ngân hàng câu hỏi đến mốc trong video</h2></div></div>
+          <div class="detail-grid">
+            <article class="card detail-card">
+              <h3><span class="number-badge">1</span>Nội dung câu hỏi</h3>
+              <ul class="clean-list">
+                <li><code>Questions</code> lưu nội dung, loại câu, hướng dẫn chấm, điểm mặc định.</li>
+                <li>Loại chọn đáp án lưu từng lựa chọn tại <code>QuestionOptions</code>.</li>
+                <li>Trả lời ngắn lưu đáp án mẫu tại <code>QuestionAnswerKeys</code>.</li>
+                <li>Tạo nhanh trong editor vẫn ghi vào ngân hàng này.</li>
+              </ul>
+            </article>
+            <article class="card detail-card">
+              <h3><span class="number-badge">2</span>Thiết lập tương tác</h3>
+              <ul class="clean-list">
+                <li><code>VideoInteractions.VideoId → Videos.Id</code>.</li>
+                <li><code>VideoInteractions.QuestionId → Questions.Id</code>.</li>
+                <li>Lưu <code>TimeSeconds</code>, <code>Required</code>, <code>PauseVideo</code>, <code>AllowSkip</code>.</li>
+                <li><code>Score</code> tại tương tác là số điểm áp dụng cho lần dùng câu hỏi trong video đó.</li>
+              </ul>
+            </article>
+          </div>
+          <div class="callout card success"><span class="callout-icon">↻</span><div><strong>Có thể tái sử dụng câu hỏi</strong><p>Một <code>Questions.Id</code> có thể xuất hiện trong nhiều dòng <code>VideoInteractions</code>, ở nhiều video và thời điểm khác nhau. Nội dung câu hỏi không bị nhân bản.</p></div></div>
+        </section>
+
+        <section id="sinh-vien" aria-labelledby="student-title">
+          <div class="section-head"><div><p class="section-kicker">Sinh viên &amp; điểm</p><h2 id="student-title">Câu trả lời, điểm và tiến độ được lưu ở đâu?</h2><p class="section-desc">Học viên chỉ được học và nộp bài khi có enrollment hợp lệ trong khóa học.</p></div></div>
+          <div class="score-grid">
+            <article class="card score-card"><p class="label">Điều kiện truy cập</p><h3>Ghi danh khóa học</h3><p>Cặp sinh viên–khóa học được lưu duy nhất. Đây là điều kiện kiểm tra trước khi nộp đáp án.</p><div class="score-value">Enrollments</div></article>
+            <article class="card score-card"><p class="label">Theo dõi video</p><h3>Vị trí và phần trăm xem</h3><p>Mỗi sinh viên có một dòng tiến độ cho từng video, lưu vị trí và thời gian xem lớn nhất.</p><div class="score-value">StudentVideoProgress</div></article>
+            <article class="card score-card"><p class="label">Mỗi lần trả lời</p><h3>Đáp án và điểm nhận được</h3><p>Lưu từng attempt, đúng/sai, trạng thái duyệt và điểm được nhận.</p><div class="score-value">StudentAnswers.ScoreAwarded</div></article>
+            <article class="card score-card"><p class="label">Lựa chọn đã tick</p><h3>Chi tiết đáp án chọn</h3><p>Bảng nối câu trả lời với từng option mà học viên đã chọn.</p><div class="score-value">StudentAnswerOptions</div></article>
+            <article class="card score-card"><p class="label">Kết quả bài học</p><h3>Điểm tốt nhất theo mốc</h3><p>Lấy điểm cao nhất qua các lần làm của từng tương tác rồi cộng lại cho bài học.</p><div class="score-value">StudentLessonProgress.Score</div></article>
+            <article class="card score-card"><p class="label">Tiến độ khóa học</p><h3>Tỷ lệ bài bắt buộc hoàn thành</h3><p>Tính lại phần trăm hoàn thành và trạng thái enrollment sau mỗi thay đổi.</p><div class="score-value">Enrollments.ProgressPercent</div></article>
+          </div>
+          <div class="callout card warning"><span class="callout-icon">!</span><div><strong>Không nhầm ba trường điểm</strong><p><code>VideoInteractions.Score</code> là điểm tối đa cấu hình tại mốc; <code>StudentAnswers.ScoreAwarded</code> là điểm của một lần nộp; <code>StudentLessonProgress.Score</code> là tổng điểm tốt nhất của bài. <code>Enrollments.FinalScore</code> hiện chưa được luồng này tự cập nhật.</p></div></div>
+        </section>
+
+        <section id="quan-he" aria-labelledby="er-title">
+          <div class="section-head"><div><p class="section-kicker">Sơ đồ quan hệ</p><h2 id="er-title">Các khóa nối dữ liệu chính</h2><p class="section-desc">PK là khóa chính; FK là khóa ngoại. Một số cột được code sử dụng như liên kết logic dù schema hiện chưa khai báo ràng buộc FK.</p></div></div>
+          <div class="card er-wrap">
+            <div class="er-canvas" aria-label="Sơ đồ quan hệ bảng dữ liệu">
+              <div class="er-row">
+                <div class="entity primary"><strong>Courses</strong><span>PK: Id</span></div><div class="arrow">→<small>CourseId</small></div>
+                <div class="entity"><strong>Chapters</strong><span>PK: Id • FK: CourseId</span></div><div class="arrow">→<small>ChapterId / CourseId</small></div>
+                <div class="entity primary"><strong>Lessons</strong><span>PK: Id • FK: CourseId, ChapterId</span></div><div class="arrow">→<small>LessonId</small></div>
+                <div class="entity"><strong>Videos</strong><span>PK: Id • FK: LessonId, VideoAssetId</span></div><div class="arrow">←<small>VideoAssetId</small></div>
+                <div class="entity green"><strong>VideoAssets</strong><span>PK: Id • FK: CreatedBy</span></div>
+              </div>
+              <div class="er-branch">
+                <div class="branch-col"><div class="down">↓</div><div class="entity"><strong>Enrollments</strong><span>StudentId + CourseId</span></div><div class="down">↓</div><div class="entity"><strong>StudentLessonProgress</strong><span>StudentId + LessonId</span></div></div>
+                <div class="branch-col"><div class="down">↓</div><div class="entity red"><strong>VideoInteractions</strong><span>FK: VideoId, QuestionId</span></div><div class="down">↓</div><div class="entity primary"><strong>StudentAnswers</strong><span>FK: StudentId, CourseId, LessonId, QuestionId</span></div></div>
+                <div class="branch-col"><div class="down">↓</div><div class="entity green"><strong>Questions</strong><span>PK: Id</span></div><div class="er-row"><div class="entity"><strong>QuestionOptions</strong><span>FK: QuestionId</span></div><div class="entity"><strong>QuestionAnswerKeys</strong><span>FK: QuestionId</span></div></div></div>
+              </div>
+              <div class="er-row" style="margin-top:26px">
+                <div class="entity"><strong>Users</strong><span>PK: Id • Student / Teacher</span></div><div class="arrow">→<small>StudentId</small></div>
+                <div class="entity"><strong>StudentVideoProgress</strong><span>FK: StudentId, CourseId, LessonId, VideoId</span></div><div class="arrow">→<small>recalculate</small></div>
+                <div class="entity"><strong>StudentLessonProgress</strong><span>Điểm + hoàn thành bài</span></div><div class="arrow">→<small>aggregate</small></div>
+                <div class="entity primary"><strong>Enrollments</strong><span>% hoàn thành khóa học</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="bang-du-lieu" aria-labelledby="tables-title">
+          <div class="section-head"><div><p class="section-kicker">Danh mục dữ liệu</p><h2 id="tables-title">Bảng, khóa và trách nhiệm</h2></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bảng</th><th>Dữ liệu lưu</th><th>Khóa chính / khóa nối quan trọng</th><th>Vai trò trong luồng</th></tr></thead>
+              <tbody>
+                <tr><td>Users</td><td>Tài khoản quản trị, giảng viên, học viên</td><td><span class="key">PK Id</span></td><td>Nguồn cho CreatedBy, TeacherId, StudentId</td></tr>
+                <tr><td>Courses</td><td>Thông tin khóa học</td><td><span class="key">PK Id</span><span class="key fk">FK TeacherId</span></td><td>Gốc cấu trúc đào tạo</td></tr>
+                <tr><td>Chapters</td><td>Chương trong khóa học</td><td><span class="key">PK Id</span><span class="key fk">FK CourseId</span></td><td>Nhóm các bài học</td></tr>
+                <tr><td>Lessons</td><td>Bài học, điểm đạt, thời lượng</td><td><span class="key">PK Id</span><span class="key fk">FK CourseId</span><span class="key fk">FK ChapterId</span></td><td>Đơn vị học và chấm hoàn thành</td></tr>
+                <tr><td>VideoAssets</td><td>Metadata tệp video dùng chung</td><td><span class="key">PK Id</span><span class="key fk">FK CreatedBy</span></td><td>Một asset dùng cho nhiều bài/môn</td></tr>
+                <tr><td>Videos</td><td>Video gắn cho bài và cấu hình xem</td><td><span class="key">PK Id</span><span class="key fk">FK LessonId</span><span class="key fk">FK VideoAssetId</span></td><td>Cầu nối Lesson ↔ VideoAsset</td></tr>
+                <tr><td>Questions</td><td>Nội dung và quy tắc chấm câu hỏi</td><td><span class="key">PK Id</span></td><td>Ngân hàng câu hỏi dùng chung</td></tr>
+                <tr><td>QuestionOptions</td><td>Lựa chọn và cờ đáp án đúng</td><td><span class="key">PK Id</span><span class="key fk">FK QuestionId</span></td><td>Đáp án cho loại choice / true-false</td></tr>
+                <tr><td>QuestionAnswerKeys</td><td>Từ khóa/đáp án mẫu trả lời ngắn</td><td><span class="key">PK Id</span><span class="key fk">FK QuestionId</span></td><td>Đối chiếu EXACT_MATCH / CONTAINS</td></tr>
+                <tr><td>VideoInteractions</td><td>Mốc thời gian, điểm, hành vi player</td><td><span class="key">PK Id</span><span class="key fk">FK VideoId</span><span class="key fk">FK QuestionId</span></td><td>Cầu nối Video ↔ Question</td></tr>
+                <tr><td>Enrollments</td><td>Ghi danh và tiến độ khóa học</td><td><span class="key">PK Id</span><span class="key fk">FK StudentId</span><span class="key fk">FK CourseId</span></td><td>Điều kiện học và kết quả cấp khóa</td></tr>
+                <tr><td>StudentVideoProgress</td><td>Vị trí, % xem, hoàn thành video</td><td><span class="key">PK Id</span><span class="key fk">FK Student/Course/Lesson/Video</span></td><td>Mỗi sinh viên + video là duy nhất</td></tr>
+                <tr><td>StudentAnswers</td><td>Từng lần trả lời và điểm nhận được</td><td><span class="key">PK Id</span><span class="key fk">FK Student/Course/Lesson/Question</span><span class="key logic">Logic VideoId/InteractionId</span></td><td>Lịch sử attempt, đúng/sai, review</td></tr>
+                <tr><td>StudentAnswerOptions</td><td>Các lựa chọn học viên đã chọn</td><td><span class="key">PK StudentAnswerId + QuestionOptionId</span></td><td>Chi tiết đáp án của câu choice</td></tr>
+                <tr><td>StudentLessonProgress</td><td>Điểm và hoàn thành bài học</td><td><span class="key">PK Id</span><span class="key fk">FK StudentId</span><span class="key fk">FK LessonId</span></td><td>Tổng hợp xem video + trả lời bắt buộc</td></tr>
+                <tr><td>AuditLogs</td><td>Nhật ký thao tác quản trị</td><td><span class="key">PK Id</span></td><td>Ghi nhận tạo/sửa nội dung quản trị</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="api-sp" aria-labelledby="api-title">
+          <div class="section-head"><div><p class="section-kicker">Triển khai kỹ thuật</p><h2 id="api-title">API → Stored Procedure → Bảng đích</h2></div></div>
+          <div class="table-wrap">
+            <table class="api-table">
+              <thead><tr><th>Nghiệp vụ</th><th>API</th><th>Stored procedure / service</th><th>Bảng hoặc nơi ghi</th></tr></thead>
+              <tbody>
+                <tr><td>Upload tệp video</td><td>POST /api/videos/upload</td><td>IVideoStorageService.SaveAsync</td><td>wwwroot/uploads/videos/... (không ghi SQL)</td></tr>
+                <tr><td>Tạo video thư viện</td><td>POST /api/video-library</td><td>LMS_VideoLibrary_Create</td><td>VideoAssets</td></tr>
+                <tr><td>Gắn asset vào bài</td><td>POST /api/lessons/{lessonId}/video-library/{assetId}</td><td>LMS_VideoLibrary_Attach</td><td>Videos + cập nhật Lessons.DurationSeconds</td></tr>
+                <tr><td>Tạo video trực tiếp</td><td>POST /api/lessons/{lessonId}/video</td><td>LMS_Video_Create</td><td>VideoAssets + Videos trong một transaction</td></tr>
+                <tr><td>Tạo/cập nhật câu hỏi</td><td>POST/PUT /api/questions</td><td>LMS_Question_Create/Update</td><td>Questions + QuestionOptions hoặc QuestionAnswerKeys</td></tr>
+                <tr><td>Thêm mốc tương tác</td><td>POST /api/videos/{videoId}/interactions</td><td>LMS_VideoInteraction_Create</td><td>VideoInteractions</td></tr>
+                <tr><td>Lưu tiến độ xem</td><td>POST /api/lms/progress/video</td><td>LMS_StudentVideoProgress_Save</td><td>StudentVideoProgress → StudentLessonProgress</td></tr>
+                <tr><td>Nộp câu trả lời</td><td>POST /api/lms/answers</td><td>LMS_StudentAnswer_Submit</td><td>StudentAnswers + StudentAnswerOptions</td></tr>
+                <tr><td>Tính lại bài học</td><td>Tự gọi sau lưu tiến độ/đáp án</td><td>LMS_LessonProgress_Recalculate</td><td>StudentLessonProgress</td></tr>
+                <tr><td>Tính lại khóa học</td><td>Tự gọi sau tính bài học</td><td>LMS_Enrollment_RecalculateProgress</td><td>Enrollments.ProgressPercent / Status</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <footer>Elearning LMS/CMS · Tài liệu luồng dữ liệu được đối chiếu từ API, stored procedure và schema SQL hiện tại.</footer>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.flow-panel');
+    tabButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        tabButtons.forEach((item) => item.classList.remove('active'));
+        tabPanels.forEach((panel) => panel.classList.remove('active'));
+        button.classList.add('active');
+        document.getElementById(button.dataset.tab).classList.add('active');
+      });
+    });
+
+    const navLinks = document.querySelectorAll('.nav-link');
+    const targets = [...navLinks].map((link) => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`));
+      });
+    }, { rootMargin: '-20% 0px -68% 0px', threshold: 0 });
+    targets.forEach((target) => observer.observe(target));
+  </script>
+</body>
+</html>
