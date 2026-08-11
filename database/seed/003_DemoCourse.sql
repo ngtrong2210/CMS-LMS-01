@@ -10,10 +10,10 @@ DECLARE @C1 BIGINT=(SELECT Id FROM dbo.Chapters WHERE CourseId=@CourseId AND Sor
 IF NOT EXISTS(SELECT 1 FROM dbo.Lessons WHERE CourseId=@CourseId)
 BEGIN
  INSERT dbo.Lessons(CourseId,ChapterId,Title,LessonType,DurationSeconds,SortOrder,PassingScore) VALUES
- (@CourseId,@C1,N'Vue.js là gì?','INTERACTIVE_VIDEO',600,1,60),(@CourseId,@C1,N'Cài đặt môi trường','INTERACTIVE_VIDEO',720,2,60),(@CourseId,@C1,N'Template Syntax','INTERACTIVE_VIDEO',820,3,60),(@CourseId,@C1,N'Computed và Watch','INTERACTIVE_VIDEO',1110,4,60),
- (@CourseId,@C2,N'Component cơ bản','INTERACTIVE_VIDEO',840,1,60),(@CourseId,@C2,N'Props và Emits','INTERACTIVE_VIDEO',1215,2,60),(@CourseId,@C2,N'Slots','INTERACTIVE_VIDEO',820,3,60),(@CourseId,@C2,N'Lifecycle Hooks','INTERACTIVE_VIDEO',1045,4,60),
- (@CourseId,@C3,N'Routing cơ bản','VIDEO',1140,1,60),(@CourseId,@C3,N'Navigation Guards','VIDEO',980,2,60),(@CourseId,@C3,N'Lazy Loading','VIDEO',700,3,60),
- (@CourseId,@C4,N'Khởi tạo Store','VIDEO',1090,1,60),(@CourseId,@C4,N'Actions và Getters','VIDEO',1265,2,60),(@CourseId,@C4,N'Persist State','VIDEO',930,3,60),(@CourseId,@C4,N'Dự án tổng kết','QUIZ',1680,4,70);
+ (@CourseId,@C1,N'Vue.js là gì?','INTERACTIVE_VIDEO',600,1,30),(@CourseId,@C1,N'Cài đặt môi trường','INTERACTIVE_VIDEO',720,2,10),(@CourseId,@C1,N'Template Syntax','INTERACTIVE_VIDEO',820,3,10),(@CourseId,@C1,N'Computed và Watch','INTERACTIVE_VIDEO',1110,4,10),
+ (@CourseId,@C2,N'Component cơ bản','INTERACTIVE_VIDEO',840,1,10),(@CourseId,@C2,N'Props và Emits','INTERACTIVE_VIDEO',1215,2,10),(@CourseId,@C2,N'Slots','INTERACTIVE_VIDEO',820,3,10),(@CourseId,@C2,N'Lifecycle Hooks','INTERACTIVE_VIDEO',1045,4,10),
+ (@CourseId,@C3,N'Routing cơ bản','VIDEO',1140,1,0),(@CourseId,@C3,N'Navigation Guards','VIDEO',980,2,0),(@CourseId,@C3,N'Lazy Loading','VIDEO',700,3,0),
+ (@CourseId,@C4,N'Khởi tạo Store','VIDEO',1090,1,0),(@CourseId,@C4,N'Actions và Getters','VIDEO',1265,2,0),(@CourseId,@C4,N'Persist State','VIDEO',930,3,0),(@CourseId,@C4,N'Dự án tổng kết','QUIZ',1680,4,70);
 END
 INSERT dbo.Videos(LessonId,Title,DurationSeconds,AllowSeek,AllowSpeed,RequiredWatchPercent)
 SELECT l.Id,l.Title,l.DurationSeconds,0,1,80 FROM dbo.Lessons l WHERE l.CourseId=@CourseId AND l.LessonType='INTERACTIVE_VIDEO' AND NOT EXISTS(SELECT 1 FROM dbo.Videos v WHERE v.LessonId=l.Id);

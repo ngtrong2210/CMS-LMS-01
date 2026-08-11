@@ -27,7 +27,11 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
     public async Task<AnswerResultDto> SubmitAnswerAsync(long studentId, SubmitAnswerRequest request, CancellationToken cancellationToken = default)
     {
         using var connection = connections.CreateConnection();
-        var answerText = string.Join("|", request.Answers);
+        var answerText = string.Join("|", request.Answers
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
         return await connection.QuerySingleAsync<AnswerResultDto>(new CommandDefinition("dbo.LMS_StudentAnswer_Submit", new { StudentId = studentId, request.LessonId, request.VideoId, request.InteractionId, request.QuestionId, AnswerText = answerText, TimeInVideoSeconds = request.TimeInVideo, TimeSpentSeconds = request.TimeSpent }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
     }
 }

@@ -3,6 +3,7 @@ using LmsCms.Api.Middleware;
 using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -42,6 +43,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            status = report.Status.ToString(),
+            api = "Healthy",
+            sqlServer = report.Entries.TryGetValue("sql-server", out var sql) ? sql.Status.ToString() : "Unknown",
+            durationMs = Math.Round(report.TotalDuration.TotalMilliseconds, 2)
+        });
+    }
+});
 
 if (args.Contains("--init-db") || builder.Configuration.GetValue<bool>("Database:AutoInitialize"))
 {
