@@ -11,7 +11,7 @@
     </aside>
     <div class="cms-main">
       <header class="topbar bg-white d-flex align-items-center justify-content-between px-3 px-lg-4">
-        <div class="topbar-heading d-flex align-items-center gap-3"><button class="btn btn-light d-lg-none menu-toggle" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Mở trình đơn"><i class="bi bi-list"></i></button><div><small>KHÔNG GIAN QUẢN TRỊ</small><div>{{ route.meta.title || sectionTitle }}</div></div></div>
+        <div class="topbar-heading d-flex align-items-center gap-3"><button class="btn btn-light d-lg-none menu-toggle" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Mở trình đơn"><i class="bi bi-list"></i></button><div><small>ELEARNING</small><div>{{ route.meta.title || sectionTitle }}</div></div></div>
         <div class="topbar-actions d-flex align-items-center gap-2 gap-lg-3"><div class="top-search d-none d-xl-flex"><i class="bi bi-search"></i><input aria-label="Tìm kiếm" placeholder="Tìm kiếm trong hệ thống..."></div><button class="icon-button" aria-label="Thông báo"><i class="bi bi-bell"></i><span></span></button><div class="d-none d-sm-flex align-items-center gap-2 user-summary"><img class="avatar user-avatar" :src="avatarUrl" :alt="`Ảnh đại diện ${auth.user?.fullName || ''}`"><div><div class="small fw-bold">{{ auth.user?.fullName }}</div><div class="tiny">{{ roleName }}</div></div></div><button class="btn btn-light btn-sm logout-button" title="Đăng xuất" @click="signOut"><i class="bi bi-box-arrow-right"></i></button></div>
       </header>
       <main class="p-3 p-lg-4 page-content"><RouterView /></main>
