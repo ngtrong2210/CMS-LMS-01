@@ -1,0 +1,1 @@
+[{"id":1,"studentId":3,"courseId":1,"lessonId":101,"progressPercent":100,"score":30,"completed":true},{"id":2,"studentId":3,"courseId":1,"lessonId":104,"progressPercent":42,"score":10,"completed":false}]

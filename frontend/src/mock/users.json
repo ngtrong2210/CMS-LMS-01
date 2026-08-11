@@ -1,0 +1,1 @@
+[{"id":1,"username":"admin","fullName":"Quản trị hệ thống","email":"admin@learnhub.vn","role":"ADMIN"},{"id":2,"username":"teacher","fullName":"Nguyễn Văn Giảng","email":"teacher@learnhub.vn","role":"TEACHER"},{"id":3,"username":"student","fullName":"Nguyễn Văn Học","email":"student@learnhub.vn","studentCode":"HV0001","role":"STUDENT"}]

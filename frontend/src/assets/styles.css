@@ -1,0 +1,42 @@
+:root {
+  --brand-green: #07875a;
+  --brand-blue: #005099;
+  --brand-red: #cd1b1b;
+  --brand-yellow: #ffff1a;
+  --ink: #18332b;
+  --muted: #687a74;
+  --surface: #fff;
+  --page: #f5f8f7;
+  --soft-green: #e9f6f1;
+  --soft-blue: #eaf2fa;
+  --neutral-line: #e6ece9;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; color: var(--ink); background: var(--page); font-family: Inter, "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+.text-brand { color: var(--brand-green) !important; }
+.text-blue { color: var(--brand-blue) !important; }
+.bg-soft-green { background: var(--soft-green); }
+.bg-soft-blue { background: var(--soft-blue); }
+.app-card { background: var(--surface); border: 1px solid var(--neutral-line); border-radius: 14px; box-shadow: 0 8px 26px rgba(15,49,38,.055); }
+.btn { border-radius: 9px; font-weight: 650; padding: .62rem 1rem; }
+.btn-brand { background: var(--brand-green); color: #fff; border-color: var(--brand-green); }
+.btn-brand:hover,.btn-brand:focus { background: #056e49; color: #fff; border-color: #056e49; }
+.btn-blue { background: var(--brand-blue); color: #fff; border-color: var(--brand-blue); }
+.btn-blue:hover { background: #003f79; color: #fff; border-color: #003f79; }
+.btn-light { background: #f3f6f5; border-color: #f3f6f5; color: var(--ink); }
+.form-control,.form-select { min-height: 44px; border-radius: 9px; border-color: #dfe7e3; }
+.form-control:focus,.form-select:focus { border-color: #9dcdbd; box-shadow: 0 0 0 .2rem rgba(7,135,90,.11); }
+.progress { background: #e7eeeb; border-radius: 99px; }
+.progress-bar { background: var(--brand-green); border-radius: 99px; }
+.badge-soft-success { color: #056c48; background: #ddf3eb; }
+.badge-soft-primary { color: #00447f; background: #e4f0fb; }
+.badge-soft-warning { color: #6b5700; background: #fffbd1; }
+.badge-soft-danger { color: #a41515; background: #fde9e9; }
+.page-title { font-weight: 800; letter-spacing: -.03em; }
+.page-subtitle { color: var(--muted); }
+.table > :not(caption) > * > * { border-bottom-color: var(--neutral-line); padding: .9rem .75rem; }
+.table thead th { color: #6a7b75; font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; background: #f8faf9; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--soft-green); color: var(--brand-green); font-weight: 800; }
+.clickable { cursor: pointer; }
+@media (max-width: 767px) { .page-title { font-size: 1.55rem; } .app-card { border-radius: 12px; } }

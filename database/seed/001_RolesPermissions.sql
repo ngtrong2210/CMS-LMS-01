@@ -1,0 +1,12 @@
+MERGE dbo.Roles AS t USING (VALUES('ADMIN',N'Quản trị viên'),('TEACHER',N'Giảng viên'),('STUDENT',N'Học viên')) AS s(Code,Name) ON t.Code=s.Code WHEN NOT MATCHED THEN INSERT(Code,Name,Status) VALUES(s.Code,s.Name,'ACTIVE');
+GO
+DECLARE @Permissions TABLE(Code VARCHAR(100),Name NVARCHAR(200),Module VARCHAR(100));
+INSERT @Permissions VALUES
+('DASHBOARD_VIEW',N'Xem dashboard','DASHBOARD'),('COURSE_VIEW',N'Xem khóa học','COURSE'),('COURSE_CREATE',N'Tạo khóa học','COURSE'),('COURSE_EDIT',N'Sửa khóa học','COURSE'),('COURSE_DELETE',N'Xóa khóa học','COURSE'),('COURSE_PUBLISH',N'Xuất bản khóa học','COURSE'),
+('CHAPTER_CREATE',N'Tạo chương','CHAPTER'),('CHAPTER_EDIT',N'Sửa chương','CHAPTER'),('CHAPTER_DELETE',N'Xóa chương','CHAPTER'),('LESSON_CREATE',N'Tạo bài học','LESSON'),('LESSON_EDIT',N'Sửa bài học','LESSON'),('LESSON_DELETE',N'Xóa bài học','LESSON'),
+('VIDEO_VIEW',N'Xem video','VIDEO'),('VIDEO_EDIT',N'Sửa video','VIDEO'),('VIDEO_INTERACTION_EDIT',N'Sửa tương tác video','VIDEO'),('QUESTION_VIEW',N'Xem câu hỏi','QUESTION'),('QUESTION_CREATE',N'Tạo câu hỏi','QUESTION'),('QUESTION_EDIT',N'Sửa câu hỏi','QUESTION'),('QUESTION_DELETE',N'Xóa câu hỏi','QUESTION'),
+('STUDENT_VIEW',N'Xem học viên','STUDENT'),('STUDENT_EDIT',N'Sửa học viên','STUDENT'),('ENROLLMENT_VIEW',N'Xem ghi danh','ENROLLMENT'),('ENROLLMENT_EDIT',N'Sửa ghi danh','ENROLLMENT'),('REPORT_VIEW',N'Xem báo cáo','REPORT'),('USER_MANAGE',N'Quản lý người dùng','SYSTEM'),('ROLE_MANAGE',N'Quản lý vai trò','SYSTEM'),('SYSTEM_SETTINGS',N'Cài đặt hệ thống','SYSTEM');
+MERGE dbo.Permissions t USING @Permissions s ON t.Code=s.Code WHEN NOT MATCHED THEN INSERT(Code,Name,Module) VALUES(s.Code,s.Name,s.Module);
+INSERT dbo.RolePermissions(RoleId,PermissionId) SELECT r.Id,p.Id FROM dbo.Roles r CROSS JOIN dbo.Permissions p WHERE r.Code='ADMIN' AND NOT EXISTS(SELECT 1 FROM dbo.RolePermissions x WHERE x.RoleId=r.Id AND x.PermissionId=p.Id);
+INSERT dbo.RolePermissions(RoleId,PermissionId) SELECT r.Id,p.Id FROM dbo.Roles r JOIN dbo.Permissions p ON p.Code IN('DASHBOARD_VIEW','COURSE_VIEW','COURSE_CREATE','COURSE_EDIT','COURSE_PUBLISH','CHAPTER_CREATE','CHAPTER_EDIT','LESSON_CREATE','LESSON_EDIT','VIDEO_VIEW','VIDEO_EDIT','VIDEO_INTERACTION_EDIT','QUESTION_VIEW','QUESTION_CREATE','QUESTION_EDIT','STUDENT_VIEW','ENROLLMENT_VIEW','ENROLLMENT_EDIT','REPORT_VIEW') WHERE r.Code='TEACHER' AND NOT EXISTS(SELECT 1 FROM dbo.RolePermissions x WHERE x.RoleId=r.Id AND x.PermissionId=p.Id);
+GO

@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+frontend/node_modules/
+frontend/dist/
+.env.local
+.env.*.local
+appsettings.Local.json
+*.user
+*.suo
+.vs/
+# Local source prompts; backend prompt contains development credentials.
+PROMPT_BACKEND_LMS_API.md
+PROMPT_FRONTEND_LMS_CMS.md

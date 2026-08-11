@@ -1,0 +1,33 @@
+using System.Data;
+using Dapper;
+using LmsCms.Application.DTOs;
+using LmsCms.Application.Interfaces;
+using LmsCms.Infrastructure.Data;
+
+namespace LmsCms.Infrastructure.Services;
+
+public sealed class LearningService(ISqlConnectionFactory connections) : ILearningService
+{
+    public async Task<PlayerDataDto?> GetPlayerAsync(long lessonId, long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        using var result = await connection.QueryMultipleAsync(new CommandDefinition("dbo.LMS_LessonPlayer_GetData", new { LessonId = lessonId, StudentId = studentId }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
+        var lesson = await result.ReadSingleOrDefaultAsync(); if (lesson is null) return null;
+        var course = await result.ReadSingleOrDefaultAsync(); var video = await result.ReadSingleOrDefaultAsync(); var progress = await result.ReadSingleOrDefaultAsync();
+        var interactions = (await result.ReadAsync()).Cast<object>().ToArray(); var answered = (await result.ReadAsync()).Cast<object>().ToArray();
+        return new(lesson, course, video, progress, interactions, answered);
+    }
+
+    public async Task SaveVideoProgressAsync(long studentId, VideoProgressRequest request, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        await connection.ExecuteAsync(new CommandDefinition("dbo.LMS_StudentVideoProgress_Save", new { StudentId = studentId, request.LessonId, request.VideoId, CurrentTimeSeconds = request.CurrentTime, MaxWatchedTimeSeconds = request.MaxWatchedTime, request.WatchPercent }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
+    }
+
+    public async Task<AnswerResultDto> SubmitAnswerAsync(long studentId, SubmitAnswerRequest request, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        var answerText = string.Join("|", request.Answers);
+        return await connection.QuerySingleAsync<AnswerResultDto>(new CommandDefinition("dbo.LMS_StudentAnswer_Submit", new { StudentId = studentId, request.LessonId, request.VideoId, request.InteractionId, request.QuestionId, AnswerText = answerText, TimeInVideoSeconds = request.TimeInVideo, TimeSpentSeconds = request.TimeSpent }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
+    }
+}
