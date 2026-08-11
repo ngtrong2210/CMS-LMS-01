@@ -1,7 +1,7 @@
 :root {
-  --brand-green: #ff5544;
-  --brand-green-dark: #0d2944;
-  --brand-blue: #0d2944;
+  --brand-green: #005099;
+  --brand-green-dark: #003f79;
+  --brand-blue: #005099;
   --brand-red: #ff5544;
   --brand-yellow: #ffc224;
   --ink: #0d2944;
@@ -9,8 +9,8 @@
   --muted: #4d5756;
   --surface: #fff;
   --page: #f8f4f2;
-  --soft-green: rgba(255,85,68,.10);
-  --soft-blue: rgba(13,41,68,.08);
+  --soft-green: rgba(0,80,153,.10);
+  --soft-blue: rgba(0,80,153,.08);
   --soft-yellow: rgba(255,194,36,.16);
   --neutral-line: #ede8e6;
   --neutral-line-strong: #ede8e6;
