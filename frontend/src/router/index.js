@@ -22,6 +22,7 @@ const routes = [
     { path: 'videos/:id/editor', component: () => import('../views/cms/VideoEditorView.vue'), meta: { title: 'Biên tập video' } },
     { path: 'questions', component: () => import('../views/cms/QuestionBankView.vue'), meta: { title: 'Ngân hàng câu hỏi' } },
     { path: 'students', component: () => import('../views/cms/StudentsView.vue'), meta: { title: 'Học viên' } },
+    { path: 'enrollments', component: () => import('../views/cms/EnrollmentManagementView.vue'), meta: { title: 'Ghi danh khóa học' } },
     { path: 'reports', component: () => import('../views/cms/ReportsView.vue'), meta: { title: 'Báo cáo' } },
     { path: ':section', component: () => import('../views/cms/GenericCmsView.vue') },
   ]},

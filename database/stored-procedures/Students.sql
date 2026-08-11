@@ -8,7 +8,27 @@ CREATE OR ALTER PROCEDURE dbo.LMS_Enrollment_GetList @Page INT=1,@PageSize INT=2
 BEGIN SET NOCOUNT ON; SELECT e.Id,e.CourseId,c.Code CourseCode,c.Title CourseTitle,e.StudentId,u.StudentCode,u.FullName StudentName,e.EnrolledAt,e.Status,e.ProgressPercent,e.FinalScore,e.LastAccessAt FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId JOIN dbo.Users u ON u.Id=e.StudentId ORDER BY e.EnrolledAt DESC OFFSET (@Page-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY; SELECT COUNT(*) FROM dbo.Enrollments; END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Enrollment_Create @CourseId BIGINT,@StudentId BIGINT,@ActorId BIGINT AS
-BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0) OR NOT EXISTS(SELECT 1 FROM dbo.Users WHERE Id=@StudentId AND StudentCode IS NOT NULL AND IsDeleted=0) THROW 50002,N'Khóa học hoặc học viên không tồn tại.',1; IF EXISTS(SELECT 1 FROM dbo.Enrollments WHERE CourseId=@CourseId AND StudentId=@StudentId) THROW 50006,N'Học viên đã được ghi danh vào khóa học.',1; BEGIN TRANSACTION; INSERT dbo.Enrollments(CourseId,StudentId,Status,ProgressPercent,CreatedBy) VALUES(@CourseId,@StudentId,'ENROLLED',0,@ActorId); DECLARE @Id BIGINT=SCOPE_IDENTITY(); INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CREATE','ENROLLMENT','Enrollment',CONVERT(NVARCHAR(100),@Id)); COMMIT; SELECT @Id; END
+BEGIN
+ SET NOCOUNT ON; SET XACT_ABORT ON;
+ IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0)
+    OR NOT EXISTS(SELECT 1 FROM dbo.Users WHERE Id=@StudentId AND StudentCode IS NOT NULL AND IsDeleted=0)
+  THROW 50002,N'Khóa học hoặc học viên không tồn tại.',1;
+ IF EXISTS(SELECT 1 FROM dbo.Enrollments WHERE CourseId=@CourseId AND StudentId=@StudentId AND Status<>'CANCELLED')
+  THROW 50006,N'Học viên đã được ghi danh vào khóa học.',1;
+ BEGIN TRANSACTION;
+ DECLARE @Id BIGINT;
+ SELECT @Id=Id FROM dbo.Enrollments WITH(UPDLOCK,HOLDLOCK) WHERE CourseId=@CourseId AND StudentId=@StudentId AND Status='CANCELLED';
+ IF @Id IS NOT NULL
+  UPDATE dbo.Enrollments SET Status='ENROLLED',ProgressPercent=0,FinalScore=NULL,EnrolledAt=SYSUTCDATETIME(),StartedAt=NULL,CompletedAt=NULL,LastAccessAt=NULL,CreatedBy=@ActorId WHERE Id=@Id;
+ ELSE
+ BEGIN
+  INSERT dbo.Enrollments(CourseId,StudentId,Status,ProgressPercent,CreatedBy) VALUES(@CourseId,@StudentId,'ENROLLED',0,@ActorId);
+  SET @Id=SCOPE_IDENTITY();
+ END
+ INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CREATE','ENROLLMENT','Enrollment',CONVERT(NVARCHAR(100),@Id));
+ COMMIT;
+ SELECT @Id;
+END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Enrollment_Cancel @Id BIGINT,@ActorId BIGINT AS
 BEGIN SET NOCOUNT ON; UPDATE dbo.Enrollments SET Status='CANCELLED',LastAccessAt=SYSUTCDATETIME() WHERE Id=@Id AND Status<>'CANCELLED'; DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CANCEL','ENROLLMENT','Enrollment',CONVERT(NVARCHAR(100),@Id)); SELECT @Rows; END

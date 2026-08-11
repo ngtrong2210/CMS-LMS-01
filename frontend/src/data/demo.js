@@ -5,7 +5,7 @@ export const demoUsers = [
 ]
 export const courses = [
   { id: 1, code: 'VUE3-001', title: 'Vue.js 3 từ cơ bản đến nâng cao', teacher: 'Nguyễn Văn Giảng', category: 'Lập trình Frontend', level: 'Cơ bản đến nâng cao', lessons: 15, students: 128, progress: 42, score: 8.4, status: 'PUBLISHED', lastLesson: 'Computed và Watch', color: '#07875a' },
-  { id: 2, code: 'UIUX-002', title: 'Nền tảng thiết kế giao diện số', teacher: 'Trần Minh Anh', category: 'Thiết kế', level: 'Cơ bản', lessons: 12, students: 76, progress: 68, score: 8.8, status: 'PUBLISHED', lastLesson: 'Hệ thống màu sắc', color: '#005099' },
+  { id: 2, code: 'UIUX-002', title: 'Nền tảng thiết kế giao diện số', teacher: 'Trần Minh Anh', category: 'Thiết kế', level: 'Cơ bản', lessons: 12, students: 76, progress: 68, score: 8.8, status: 'PUBLISHED', lastLesson: 'Hệ thống màu sắc', color: '#ff5543' },
   { id: 3, code: 'API-003', title: 'Thiết kế REST API thực chiến', teacher: 'Lê Quốc Bảo', category: 'Backend', level: 'Trung cấp', lessons: 18, students: 95, progress: 18, score: 7.5, status: 'DRAFT', lastLesson: 'HTTP Methods', color: '#cd1b1b' },
 ]
 export const chapters = [

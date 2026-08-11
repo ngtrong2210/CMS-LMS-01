@@ -131,6 +131,7 @@ function formatBytes(bytes){if(!bytes)return '0 B';const units=['B','KB','MB','G
 .video-card>.video{height:auto;min-height:0;overflow:hidden;border-radius:9px 9px 0 0}
 .video-card>.video video{display:block;min-height:0}
 .video-card>.video-toolbar{position:relative;z-index:5;display:flex!important;visibility:visible;opacity:1;border-radius:0 0 9px 9px}
+.editor-timeline:focus-visible{box-shadow:0 0 0 4px rgba(var(--eduvers-blue-rgb),.16)}.timeline-playhead{background:var(--eduvers-blue);box-shadow:0 2px 6px rgba(var(--eduvers-blue-rgb),.3)}.timeline-point{color:var(--eduvers-blue)}.timeline-legend .has-question,.question-zone{background:rgba(var(--eduvers-blue-rgb),.32)}
 @media(max-width:1000px){.video-card{grid-template-rows:minmax(300px,48vw) minmax(78px,auto)}}
 @media(max-width:600px){.video-card{grid-template-rows:250px auto}}
 </style>
