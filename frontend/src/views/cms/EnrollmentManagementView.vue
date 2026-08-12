@@ -50,7 +50,7 @@
     <div v-if="formOpen" class="modal-mask" @click.self="formOpen = false">
       <form class="app-card enrollment-modal" @submit.prevent="saveEnrollment">
         <div class="modal-heading">
-          <div><small>GHI DANH KHÓA HỌC</small><h2>Phân học viên vào khóa học</h2><p>Chọn một khóa học và học viên cần cấp quyền học.</p></div>
+          <div><small>GHI DANH KHÓA HỌC</small><h2>Phân học viên vào khóa học</h2><p>Chọn một khóa học và tích chọn một hoặc nhiều học viên.</p></div>
           <button type="button" class="btn-close" aria-label="Đóng" @click="formOpen = false"></button>
         </div>
 
@@ -60,11 +60,14 @@
           <option v-for="course in courses" :key="course.id" :value="course.id">{{ course.code }} — {{ course.title }}</option>
         </select>
 
-        <label class="form-label"><i class="bi bi-person me-1 text-brand"></i>Học viên</label>
+        <div class="picker-heading">
+          <label class="form-label mb-0"><i class="bi bi-people me-1 text-brand"></i>Học viên <span v-if="form.studentIds.length" class="selected-count">Đã chọn {{ form.studentIds.length }}</span></label>
+          <button v-if="availableStudents.length" type="button" class="btn btn-link btn-sm" @click="toggleAllVisible">{{ allVisibleSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả đang hiển thị' }}</button>
+        </div>
         <div class="search-box mb-2"><i class="bi bi-search"></i><input v-model.trim="studentSearch" class="form-control" placeholder="Tìm nhanh theo tên, mã hoặc email..."></div>
         <div class="student-picker">
-          <label v-for="student in availableStudents" :key="student.id" :class="['student-option', { selected: form.studentId === student.id }]">
-            <input v-model.number="form.studentId" type="radio" name="student" :value="student.id" required>
+          <label v-for="student in availableStudents" :key="student.id" :class="['student-option', { selected: form.studentIds.includes(student.id) }]">
+            <input v-model="form.studentIds" type="checkbox" :value="student.id">
             <span class="avatar">{{ initials(student.name) }}</span>
             <span><strong>{{ student.name }}</strong><small>{{ student.code }} · {{ student.email }}</small></span>
             <i class="bi bi-check-circle-fill"></i>
@@ -74,7 +77,7 @@
 
         <div class="modal-actions">
           <button type="button" class="btn btn-light" @click="formOpen = false">Hủy</button>
-          <button class="btn btn-brand" :disabled="saving || !form.courseId || !form.studentId"><span v-if="saving" class="spinner-border spinner-border-sm me-1"></span><i v-else class="bi bi-check-lg me-1"></i>Xác nhận ghi danh</button>
+          <button class="btn btn-brand" :disabled="saving || !form.courseId || !form.studentIds.length"><span v-if="saving" class="spinner-border spinner-border-sm me-1"></span><i v-else class="bi bi-check-lg me-1"></i>Ghi danh {{ form.studentIds.length || '' }} học viên</button>
         </div>
       </form>
     </div>
@@ -82,7 +85,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import axiosClient from '../../api/axiosClient'
 
 const items = ref([])
@@ -97,7 +100,7 @@ const courseFilter = ref('')
 const statusFilter = ref('')
 const message = ref('')
 const messageType = ref('success')
-const form = reactive({ courseId: 0, studentId: 0 })
+const form = reactive({ courseId: 0, studentIds: [] })
 const pick = (source, ...names) => names.map(name => source?.[name]).find(value => value !== undefined && value !== null)
 
 const activeItems = computed(() => items.value.filter(item => item.status !== 'CANCELLED'))
@@ -115,6 +118,11 @@ const availableStudents = computed(() => {
   const term = studentSearch.value.toLowerCase()
   const enrolled = new Set(items.value.filter(item => item.courseId === form.courseId && item.status !== 'CANCELLED').map(item => item.studentId))
   return students.value.filter(student => !enrolled.has(student.id) && (!term || `${student.name} ${student.code} ${student.email}`.toLowerCase().includes(term)))
+})
+const allVisibleSelected = computed(() => availableStudents.value.length > 0 && availableStudents.value.every(student => form.studentIds.includes(student.id)))
+
+watch(() => form.courseId, () => {
+  form.studentIds = []
 })
 
 onMounted(async () => {
@@ -161,20 +169,42 @@ async function loadOptions() {
 
 function openForm() {
   form.courseId = courses.value[0]?.id || 0
-  form.studentId = 0
+  form.studentIds = []
   studentSearch.value = ''
   formOpen.value = true
 }
 
+function toggleAllVisible() {
+  const visibleIds = availableStudents.value.map(student => student.id)
+  if (allVisibleSelected.value) form.studentIds = form.studentIds.filter(id => !visibleIds.includes(id))
+  else form.studentIds = [...new Set([...form.studentIds, ...visibleIds])]
+}
+
 async function saveEnrollment() {
   saving.value = true
+  const selectedIds = [...form.studentIds]
+  let succeeded = 0
+  const failed = []
+  const failedIds = []
   try {
-    await axiosClient.post('/cms/enrollments', { courseId: Number(form.courseId), studentId: Number(form.studentId) })
-    formOpen.value = false
+    for (const studentId of selectedIds) {
+      try {
+        await axiosClient.post('/cms/enrollments', { courseId: Number(form.courseId), studentId: Number(studentId) })
+        succeeded++
+      } catch (error) {
+        const student = students.value.find(item => item.id === studentId)
+        failedIds.push(studentId)
+        failed.push(`${student?.name || `ID ${studentId}`}: ${error.message}`)
+      }
+    }
     await loadEnrollments()
-    show('Đã phân học viên vào khóa học. Học viên có thể đăng nhập và học ngay khi khóa học được xuất bản.')
-  } catch (error) {
-    show(error.message, 'danger')
+    if (!failed.length) {
+      formOpen.value = false
+      show(`Đã ghi danh thành công ${succeeded} học viên. Học viên có thể học khi khóa học được xuất bản.`)
+    } else {
+      form.studentIds = failedIds
+      show(`Đã ghi danh ${succeeded}/${selectedIds.length} học viên. Chưa thành công: ${failed.join('; ')}`, 'danger')
+    }
   } finally {
     saving.value = false
   }
@@ -199,5 +229,5 @@ function show(text, type = 'success') { message.value = text; messageType.value 
 </script>
 
 <style scoped>
-.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}.summary-card{display:flex;align-items:center;gap:.9rem;padding:1rem}.summary-card>div{display:grid}.summary-card small,.student-cell small,.course-cell small{color:#75857f}.summary-card strong{font-size:1.55rem}.summary-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:9px;color:#fff;background:var(--eduvers-base);font-size:1.1rem}.summary-icon.secondary{background:var(--eduvers-secondary)}.summary-icon.soft{color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.1)}.search-box{position:relative}.search-box>i{position:absolute;left:.85rem;top:50%;z-index:2;color:#788984;transform:translateY(-50%)}.search-box input{padding-left:2.35rem}.student-cell{display:flex;align-items:center;gap:.7rem;min-width:190px}.student-cell>div,.course-cell{display:grid}.avatar{width:36px;height:36px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.1);font-size:.72rem;font-weight:800}.progress-cell{display:flex;align-items:center;gap:.55rem;min-width:130px}.progress-cell .progress{width:82px;height:6px}.modal-mask{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:1rem;background:rgba(13,41,68,.68)}.enrollment-modal{width:min(720px,96vw);max-height:92vh;overflow:auto;padding:1.5rem}.modal-heading{display:flex;justify-content:space-between;gap:1rem;margin-bottom:1.25rem}.modal-heading small{color:var(--eduvers-base);font-weight:800;letter-spacing:.08em}.modal-heading h2{margin:.2rem 0;font-size:1.35rem}.modal-heading p{margin:0;color:#75857f}.student-picker{display:grid;gap:.55rem;max-height:310px;overflow-y:auto;padding:.15rem}.student-option{display:grid;grid-template-columns:20px 38px minmax(0,1fr) 20px;align-items:center;gap:.65rem;padding:.7rem;border-radius:8px;background:#f7f9f8;cursor:pointer}.student-option:hover,.student-option.selected{background:rgba(var(--eduvers-base-rgb),.1)}.student-option>span:nth-of-type(2){display:grid;min-width:0}.student-option small{overflow:hidden;color:#75857f;text-overflow:ellipsis;white-space:nowrap}.student-option>i{color:var(--eduvers-base);opacity:0}.student-option.selected>i{opacity:1}.empty-picker{padding:2rem;color:#75857f;text-align:center;background:#f7f9f8;border-radius:8px}.modal-actions{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1.25rem}@media(max-width:760px){.summary-grid{grid-template-columns:1fr}.summary-card{padding:.8rem}.enrollment-modal{padding:1rem}.student-option{grid-template-columns:18px 34px minmax(0,1fr) 18px}}
+.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}.summary-card{display:flex;align-items:center;gap:.9rem;padding:1rem}.summary-card>div{display:grid}.summary-card small,.student-cell small,.course-cell small{color:#75857f}.summary-card strong{font-size:1.55rem}.summary-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:9px;color:#fff;background:var(--eduvers-base);font-size:1.1rem}.summary-icon.secondary{background:var(--eduvers-secondary)}.summary-icon.soft{color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.1)}.search-box{position:relative}.search-box>i{position:absolute;left:.85rem;top:50%;z-index:2;color:#788984;transform:translateY(-50%)}.search-box input{padding-left:2.35rem}.student-cell{display:flex;align-items:center;gap:.7rem;min-width:190px}.student-cell>div,.course-cell{display:grid}.avatar{width:36px;height:36px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.1);font-size:.72rem;font-weight:800}.progress-cell{display:flex;align-items:center;gap:.55rem;min-width:130px}.progress-cell .progress{width:82px;height:6px}.modal-mask{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:1rem;background:rgba(13,41,68,.68)}.enrollment-modal{width:min(720px,96vw);max-height:92vh;overflow:auto;padding:1.5rem}.modal-heading{display:flex;justify-content:space-between;gap:1rem;margin-bottom:1.25rem}.modal-heading small{color:var(--eduvers-base);font-weight:800;letter-spacing:.08em}.modal-heading h2{margin:.2rem 0;font-size:1.35rem}.modal-heading p{margin:0;color:#75857f}.picker-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.4rem}.picker-heading .btn-link{padding:0;color:var(--eduvers-base);text-decoration:none}.selected-count{display:inline-block;margin-left:.35rem;padding:.18rem .45rem;border-radius:999px;color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.1);font-size:.68rem}.student-picker{display:grid;gap:.55rem;max-height:310px;overflow-y:auto;padding:.15rem}.student-option{display:grid;grid-template-columns:20px 38px minmax(0,1fr) 20px;align-items:center;gap:.65rem;padding:.7rem;border-radius:8px;background:#f7f9f8;cursor:pointer}.student-option:hover,.student-option.selected{background:rgba(var(--eduvers-base-rgb),.1)}.student-option input{accent-color:var(--eduvers-base)}.student-option>span:nth-of-type(2){display:grid;min-width:0}.student-option small{overflow:hidden;color:#75857f;text-overflow:ellipsis;white-space:nowrap}.student-option>i{color:var(--eduvers-base);opacity:0}.student-option.selected>i{opacity:1}.empty-picker{padding:2rem;color:#75857f;text-align:center;background:#f7f9f8;border-radius:8px}.modal-actions{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1.25rem}@media(max-width:760px){.summary-grid{grid-template-columns:1fr}.summary-card{padding:.8rem}.enrollment-modal{padding:1rem}.picker-heading{align-items:flex-start;flex-direction:column}.student-option{grid-template-columns:18px 34px minmax(0,1fr) 18px}}
 </style>
