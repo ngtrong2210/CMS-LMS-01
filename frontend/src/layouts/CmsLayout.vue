@@ -43,6 +43,7 @@ function toggleSidebar(){sidebarCollapsed.value=!sidebarCollapsed.value;localSto
 .brand:hover{color:var(--eduvers-black)}.brand>span{display:grid;line-height:1.1}.brand strong{font-size:1.08rem}.brand small{margin-top:.3rem;color:var(--eduvers-base);font-size:.58rem;font-weight:750;letter-spacing:.08em}
 .eduvers-logo{display:block;width:150px;height:auto}
 .sidebar nav{padding-top:.4rem;padding-bottom:1rem}.menu-label{margin:1.35rem .85rem .5rem;color:#9a9f9d;font-size:.62rem;font-weight:750;letter-spacing:.11em}
+.sidebar nav{scrollbar-width:thin;scrollbar-color:var(--eduvers-base) transparent}.sidebar nav::-webkit-scrollbar{width:7px}.sidebar nav::-webkit-scrollbar-track{background:transparent}.sidebar nav::-webkit-scrollbar-thumb{border-radius:8px;background:var(--eduvers-base)}.sidebar nav::-webkit-scrollbar-thumb:hover{background:var(--eduvers-secondary)}
 .side-link{min-height:44px;margin:.18rem 0;padding:.65rem .75rem;color:#56635f;border-radius:8px;font-weight:650}
 .side-link:hover{color:var(--eduvers-black);background:var(--eduvers-primary)}.side-link.router-link-active{color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.10);box-shadow:none}
 .side-link i{width:30px;height:30px;display:grid;place-items:center;border-radius:var(--eduvers-bdr-radius);background:var(--eduvers-primary);color:var(--eduvers-gray);font-size:.96rem}.side-link.router-link-active i{background:var(--eduvers-white);color:var(--eduvers-base)}
