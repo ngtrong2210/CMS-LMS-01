@@ -2,7 +2,7 @@
   <div :class="['cms-shell','cms-theme',{'sidebar-collapsed':sidebarCollapsed}]">
     <aside class="sidebar d-none d-lg-flex flex-column">
       <RouterLink class="brand px-4" to="/cms/dashboard"><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"></RouterLink>
-      <nav class="px-3 overflow-auto">
+      <nav :class="['px-3','overflow-auto',{scrolling:sidebarScrolling}]" @scroll="showSidebarScrollbar">
         <template v-for="group in menu" :key="group.label">
           <div class="menu-label">{{ group.label }}</div>
           <RouterLink v-for="item in group.items" :key="item.to" class="side-link" :to="item.to" :title="sidebarCollapsed ? item.text : undefined" :aria-label="sidebarCollapsed ? item.text : undefined"><i :class="['bi',item.icon]"></i><span>{{ item.text }}</span></RouterLink>
@@ -20,9 +20,10 @@
   </div>
 </template>
 <script setup>
-import { computed,ref } from 'vue'; import { useRoute,useRouter } from 'vue-router'; import { useAuthStore } from '../stores/authStore'
+import { computed,onBeforeUnmount,ref } from 'vue'; import { useRoute,useRouter } from 'vue-router'; import { useAuthStore } from '../stores/authStore'
 const route=useRoute(), router=useRouter(), auth=useAuthStore(); const sectionTitle=computed(()=>route.params.section || 'Quản trị')
 const sidebarCollapsed=ref(localStorage.getItem('cms_sidebar_collapsed')==='1')
+const sidebarScrolling=ref(false)
 const avatarUrl=computed(()=>({ADMIN:'/images/avatar-admin.jpg',TEACHER:'/images/avatar-teacher.jpg',STUDENT:'/images/avatar-student.jpg'})[auth.user?.role] || '/images/avatar-admin.jpg')
 const roleName=computed(()=>({ADMIN:'Quản trị viên',TEACHER:'Giảng viên'})[auth.user?.role] || auth.user?.role)
 const menu=[
@@ -34,6 +35,9 @@ const menu=[
 ]
 function signOut(){auth.logout();router.push('/login')}
 function toggleSidebar(){sidebarCollapsed.value=!sidebarCollapsed.value;localStorage.setItem('cms_sidebar_collapsed',sidebarCollapsed.value?'1':'0')}
+let sidebarScrollTimer
+function showSidebarScrollbar(){sidebarScrolling.value=true;clearTimeout(sidebarScrollTimer);sidebarScrollTimer=setTimeout(()=>sidebarScrolling.value=false,650)}
+onBeforeUnmount(()=>clearTimeout(sidebarScrollTimer))
 </script>
 <style scoped>
 .cms-shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:268px;background:var(--eduvers-black);z-index:1020;color:#fff;box-shadow:6px 0 24px rgba(0,45,86,.08)}.cms-main{margin-left:268px;min-height:100vh}.topbar{height:72px;position:sticky;top:0;z-index:1010;box-shadow:0 3px 16px rgba(21,47,39,.055)}.brand{height:72px;display:flex;align-items:center;gap:.7rem;font-size:1.15rem;font-weight:850;color:#fff}.brand small{display:block;font-size:.62rem;color:#ffc224;letter-spacing:.12em}.brand-mark{width:39px;height:39px;border-radius:10px;display:block;object-fit:contain;box-shadow:0 5px 16px rgba(0,0,0,.15)}.sidebar nav{padding-bottom:1rem}.menu-label{font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.58);font-weight:800;margin:1.25rem .75rem .45rem}.side-link{display:flex;align-items:center;gap:.8rem;min-height:43px;padding:.68rem .8rem;border-radius:7px;color:rgba(255,255,255,.82);font-weight:600;margin:.16rem 0;transition:background .15s,color .15s}.side-link:hover{background:rgba(255,255,255,.11);color:#fff}.side-link.router-link-active{background:#fff;color:var(--eduvers-black);box-shadow:0 5px 14px rgba(0,31,59,.13)}.side-link i{font-size:1.08rem;width:20px;text-align:center}.support-card{display:flex;gap:.75rem;align-items:center;background:rgba(255,255,255,.12);color:#fff;border-radius:9px;padding:.85rem}.support-card>i{color:#ffc224;font-size:1.2rem}.support-card div{display:grid}.support-card span{font-size:.72rem;color:rgba(255,255,255,.68)}.icon-button{position:relative;border:0;background:#f2f6f4;border-radius:8px;width:38px;height:38px;color:#315048}.icon-button span{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--eduvers-base);right:8px;top:7px}.tiny{font-size:.68rem;color:#798a84}.top-search{height:40px;width:240px;align-items:center;gap:.65rem;background:#f3f6f5;border-radius:8px;padding:0 .85rem;color:#7c8c86}.top-search input{width:100%;border:0;outline:0;background:transparent;font-size:.84rem}.user-summary{padding-left:.25rem}.user-avatar{display:block;object-fit:cover;border:2px solid #fff;box-shadow:0 2px 9px rgba(18,54,43,.14)}.logout-button,.menu-toggle{width:38px;height:38px;padding:0}.mobile-sidebar{background:var(--eduvers-black);color:#fff;width:280px}.mobile-sidebar .offcanvas-header{height:72px}.mobile-sidebar .brand{height:auto}.page-content{max-width:1800px;margin:0 auto}@media(max-width:991px){.cms-main{margin-left:0}}
@@ -43,7 +47,7 @@ function toggleSidebar(){sidebarCollapsed.value=!sidebarCollapsed.value;localSto
 .brand:hover{color:var(--eduvers-black)}.brand>span{display:grid;line-height:1.1}.brand strong{font-size:1.08rem}.brand small{margin-top:.3rem;color:var(--eduvers-base);font-size:.58rem;font-weight:750;letter-spacing:.08em}
 .eduvers-logo{display:block;width:150px;height:auto}
 .sidebar nav{padding-top:.4rem;padding-bottom:1rem}.menu-label{margin:1.35rem .85rem .5rem;color:#9a9f9d;font-size:.62rem;font-weight:750;letter-spacing:.11em}
-.sidebar nav{scrollbar-width:thin;scrollbar-color:var(--eduvers-base) transparent}.sidebar nav::-webkit-scrollbar{width:7px}.sidebar nav::-webkit-scrollbar-track{background:transparent}.sidebar nav::-webkit-scrollbar-thumb{border-radius:8px;background:var(--eduvers-base)}.sidebar nav::-webkit-scrollbar-thumb:hover{background:var(--eduvers-secondary)}
+.sidebar nav{scrollbar-width:thin;scrollbar-color:transparent transparent}.sidebar nav.scrolling{scrollbar-color:rgba(var(--eduvers-base-rgb),.48) transparent}.sidebar nav::-webkit-scrollbar{width:7px}.sidebar nav::-webkit-scrollbar-track{background:transparent}.sidebar nav::-webkit-scrollbar-thumb{border-radius:8px;background:transparent;transition:background .18s ease}.sidebar nav.scrolling::-webkit-scrollbar-thumb{background:rgba(var(--eduvers-base-rgb),.48)}
 .side-link{min-height:44px;margin:.18rem 0;padding:.65rem .75rem;color:#56635f;border-radius:8px;font-weight:650}
 .side-link:hover{color:var(--eduvers-black);background:var(--eduvers-primary)}.side-link.router-link-active{color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.10);box-shadow:none}
 .side-link i{width:30px;height:30px;display:grid;place-items:center;border-radius:var(--eduvers-bdr-radius);background:var(--eduvers-primary);color:var(--eduvers-gray);font-size:.96rem}.side-link.router-link-active i{background:var(--eduvers-white);color:var(--eduvers-base)}
