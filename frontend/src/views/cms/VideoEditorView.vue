@@ -676,7 +676,7 @@ async function saveInteraction() {
     if (selected.value.id) await axiosClient.put(`/video-interactions/${selected.value.id}`, body)
     else await axiosClient.post(`/videos/${form.id}/interactions`, body)
     await loadInteractions()
-    showMessage('Đã lưu tương tác vào SQL. Preview sẽ hiển thị nội dung mới nhất.')
+    showMessage('Đã lưu tương tác.')
     return true
   } catch (error) {
     showMessage(error.message, 'danger')
