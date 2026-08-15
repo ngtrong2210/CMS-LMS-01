@@ -48,7 +48,10 @@
 
           <div v-if="loading" class="text-center py-5"><span class="spinner-border"></span></div>
           <div v-else-if="error" class="alert alert-danger">
-            {{ error }} <button class="btn btn-sm btn-light ms-2" @click="loadCourses">Thử lại</button>
+            {{ error }}
+            <button class="btn btn-sm btn-action-view ms-2" @click="loadCourses">
+              <i class="bi bi-arrow-clockwise"></i> Thử lại
+            </button>
           </div>
           <div v-else-if="!filtered.length" class="text-center py-5">
             <i class="bi bi-journal-x fs-1"></i>

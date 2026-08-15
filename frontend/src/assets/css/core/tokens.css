@@ -1,15 +1,20 @@
 :root {
   --brand-green: #d3224d;
   --brand-green-dark: #aa1b3e;
+  --brand-green-rgb: 211, 34, 77;
   --brand-blue: #005099;
+  --brand-blue-dark: #003d75;
+  --brand-blue-rgb: 0, 80, 153;
   --brand-secondary: #ff5543;
-  --brand-red: #ff5543;
+  --brand-secondary-dark: #df3c2c;
+  --brand-red: #c62828;
+  --brand-red-dark: #a71d1d;
   --brand-yellow: #ffc224;
-  --ink: #0d2944;
+  --ink: #081933;
   --ink-soft: #243d55;
   --muted: #4d5756;
   --surface: #fff;
-  --page: #f4f6f8;
+  --page: #f8f4f2;
   --soft-green: rgba(0,80,153,.08);
   --soft-blue: rgba(0,80,153,.10);
   --soft-yellow: rgba(255,194,36,.16);

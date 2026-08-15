@@ -58,11 +58,14 @@
                 }}</span>
               </td>
               <td class="text-end text-nowrap">
-                <RouterLink class="btn btn-light btn-sm me-1" :to="`/cms/courses/${course.id}/content`" title="Nội dung"
+                <RouterLink
+                  class="btn btn-action-view btn-sm me-1"
+                  :to="`/cms/courses/${course.id}/content`"
+                  title="Nội dung"
                   ><i class="bi bi-list-task"></i></RouterLink
-                ><button class="btn btn-light btn-sm me-1" title="Sửa" @click="openForm(course)">
+                ><button class="btn btn-action-edit btn-sm me-1" title="Sửa" @click="openForm(course)">
                   <i class="bi bi-pencil"></i></button
-                ><button class="btn btn-light btn-sm text-danger" title="Xóa" @click="remove(course)">
+                ><button class="btn btn-action-delete btn-sm" title="Xóa" @click="remove(course)">
                   <i class="bi bi-trash"></i>
                 </button>
               </td>
@@ -127,9 +130,10 @@
           </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-light" @click="showForm = false">Hủy</button
+          <button type="button" class="btn btn-light" @click="showForm = false"><i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-brand" :disabled="saving">
-            <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>Lưu khóa học
+            <span v-if="saving" class="spinner-border spinner-border-sm"></span
+            ><i v-else class="bi bi-check-lg"></i> Lưu khóa học
           </button>
         </div>
       </form>

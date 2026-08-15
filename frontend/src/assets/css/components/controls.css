@@ -1,11 +1,18 @@
 .btn {
   min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .42rem;
   border-radius: var(--control-radius);
   font-size: .88rem;
   font-weight: 600;
   padding: .5rem .85rem;
   box-shadow: none !important;
+  transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s ease;
 }
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
 .btn-sm { min-height: 32px; padding: .34rem .65rem; font-size: .82rem; }
 .btn-brand { color: #fff; background: var(--brand-green); border-color: var(--brand-green); }
 .btn-brand:hover,.btn-brand:focus { color: #fff; background: var(--brand-green-dark); border-color: var(--brand-green-dark); }
@@ -13,4 +20,5 @@
 .btn-blue:hover,.btn-blue:focus { color: #fff; background: #003f79; border-color: #003f79; }
 .btn-light { color: #34413c; background: #f1f4f3; border-color: #f1f4f3; }
 .btn-light:hover { color: #1f2c27; background: #e8edeb; border-color: #e8edeb; }
-.btn-danger { background: var(--brand-red); border-color: var(--brand-red); }
+.btn-danger { color: #fff; background: var(--brand-red); border-color: var(--brand-red); }
+.btn-danger:hover,.btn-danger:focus { color: #fff; background: var(--brand-red-dark); border-color: var(--brand-red-dark); }

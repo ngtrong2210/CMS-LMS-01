@@ -112,7 +112,7 @@
               <td class="text-end action-cell">
                 <button
                   v-if="item.canEdit"
-                  class="btn btn-light btn-sm edit-button"
+                  class="btn btn-action-edit btn-sm edit-button"
                   title="Sửa thông tin video"
                   @click="openEdit(item)"
                 >
@@ -120,14 +120,14 @@
                 </button>
                 <RouterLink
                   v-if="item.firstVideoId"
-                  class="btn btn-light btn-sm"
+                  class="btn btn-action-view btn-sm"
                   :to="`/cms/videos/${item.firstVideoId}/editor`"
                   title="Mở một bản đang dùng"
                   ><i class="bi bi-sliders"></i
                 ></RouterLink>
                 <button
                   v-if="item.canShare"
-                  class="btn btn-light btn-sm share-button"
+                  class="btn btn-action-share btn-sm share-button"
                   title="Quản lý chia sẻ"
                   @click="openShare(item)"
                 >
@@ -135,7 +135,7 @@
                 </button>
                 <button
                   v-if="item.isOwner || item.canDelete"
-                  class="btn btn-light btn-sm text-danger"
+                  class="btn btn-action-delete btn-sm"
                   :disabled="!item.canDelete"
                   :title="item.canDelete ? 'Xóa video' : 'Video đang được sử dụng nên chưa thể xóa'"
                   @click="remove(item)"
@@ -222,10 +222,11 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="uploadModal = false">Hủy</button
+          <button type="button" class="btn btn-light" @click="uploadModal = false">
+            <i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-brand" :disabled="saving || uploading || !form.videoUrl">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
-            >{{ form.id ? 'Lưu thay đổi' : 'Lưu vào thư viện' }}
+            ><i v-else class="bi bi-check-lg"></i> {{ form.id ? 'Lưu thay đổi' : 'Lưu vào thư viện' }}
           </button>
         </div>
       </form>
@@ -290,7 +291,7 @@
           </div>
         </template>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="closeShare">Hủy</button
+          <button type="button" class="btn btn-light" @click="closeShare"><i class="bi bi-x-lg"></i> Hủy</button
           ><button
             class="btn btn-brand"
             :disabled="

@@ -55,7 +55,9 @@
                 >
               </td>
               <td>
-                <button class="btn btn-light btn-sm"><i class="bi bi-chevron-right"></i></button>
+                <button class="btn btn-action-view btn-sm" title="Xem hồ sơ">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
               </td>
             </tr>
           </tbody>

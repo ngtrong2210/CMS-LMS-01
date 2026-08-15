@@ -112,7 +112,7 @@
               <td class="text-end">
                 <button
                   v-if="item.status !== 'CANCELLED'"
-                  class="btn btn-light btn-sm text-danger"
+                  class="btn btn-action-delete btn-sm"
                   title="Hủy ghi danh"
                   @click="cancelEnrollment(item)"
                 >
@@ -187,7 +187,7 @@
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="formOpen = false">Hủy</button>
+          <button type="button" class="btn btn-light" @click="formOpen = false"><i class="bi bi-x-lg"></i> Hủy</button>
           <button class="btn btn-brand" :disabled="saving || !form.courseId || !form.studentIds.length">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
             ><i v-else class="bi bi-check-lg me-1"></i>Ghi danh {{ form.studentIds.length || '' }} học viên

@@ -9,7 +9,7 @@
         <p class="page-subtitle mb-0">Thêm, sửa, xóa chương/bài học và chọn video dùng chung từ thư viện.</p>
       </div>
       <div class="d-flex gap-2">
-        <RouterLink class="btn btn-light" to="/cms/videos"
+        <RouterLink class="btn btn-action-view" to="/cms/videos"
           ><i class="bi bi-collection-play"></i> Thư viện video</RouterLink
         ><button class="btn btn-brand" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
       </div>
@@ -29,9 +29,9 @@
             >
           </div>
           <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-light btn-sm" title="Sửa chương" @click="openChapter(chapter)">
+            <button class="btn btn-action-edit btn-sm" title="Sửa chương" @click="openChapter(chapter)">
               <i class="bi bi-pencil"></i></button
-            ><button class="btn btn-light btn-sm text-danger" title="Xóa chương" @click="askDelete('chapter', chapter)">
+            ><button class="btn btn-action-delete btn-sm" title="Xóa chương" @click="askDelete('chapter', chapter)">
               <i class="bi bi-trash"></i>
             </button>
           </div>
@@ -53,7 +53,7 @@
           <div class="lesson-actions">
             <RouterLink
               v-if="lesson.videoId && lesson.canEditVideo"
-              class="btn btn-light btn-sm"
+              class="btn btn-action-view btn-sm"
               :to="`/cms/videos/${lesson.videoId}/editor`"
               title="Biên tập video mẫu"
               ><i class="bi bi-sliders"></i></RouterLink
@@ -64,9 +64,9 @@
               @click="openVideoPicker(lesson)"
             >
               <i class="bi bi-collection-play"></i></button
-            ><button class="btn btn-light btn-sm" title="Sửa bài học" @click="openLesson(chapter, lesson)">
+            ><button class="btn btn-action-edit btn-sm" title="Sửa bài học" @click="openLesson(chapter, lesson)">
               <i class="bi bi-pencil"></i></button
-            ><button class="btn btn-light btn-sm text-danger" title="Xóa bài học" @click="askDelete('lesson', lesson)">
+            ><button class="btn btn-action-delete btn-sm" title="Xóa bài học" @click="askDelete('lesson', lesson)">
               <i class="bi bi-trash"></i>
             </button>
           </div>
@@ -78,7 +78,7 @@
         <i class="bi bi-journal-plus"></i>
         <h2>Chưa có chương</h2>
         <p>Tạo chương đầu tiên để bắt đầu xây dựng nội dung khóa học.</p>
-        <button class="btn btn-brand" @click="openChapter()">Thêm chương</button>
+        <button class="btn btn-brand" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
       </div>
     </div>
 
@@ -113,9 +113,11 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="chapterModal = false">Hủy</button
+          <button type="button" class="btn btn-light" @click="chapterModal = false">
+            <i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-brand" :disabled="saving">
-            <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>Lưu chương
+            <span v-if="saving" class="spinner-border spinner-border-sm"></span
+            ><i v-else class="bi bi-check-lg"></i> Lưu chương
           </button>
         </div>
       </form>
@@ -171,9 +173,11 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="lessonModal = false">Hủy</button
+          <button type="button" class="btn btn-light" @click="lessonModal = false">
+            <i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-brand" :disabled="saving">
-            <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>Lưu bài học
+            <span v-if="saving" class="spinner-border spinner-border-sm"></span
+            ><i v-else class="bi bi-check-lg"></i> Lưu bài học
           </button>
         </div>
       </form>
@@ -194,7 +198,7 @@
             v-model.trim="videoSearch"
             class="form-control"
             placeholder="Tìm theo tên video hoặc tên file..."
-          /><RouterLink class="btn btn-light text-nowrap" to="/cms/videos"
+          /><RouterLink class="btn btn-brand text-nowrap" to="/cms/videos"
             ><i class="bi bi-plus-lg"></i> Thêm video mới</RouterLink
           >
         </div>
@@ -230,8 +234,10 @@
           }}
         </p>
         <div class="modal-actions">
-          <button class="btn btn-light" @click="deleteTarget = null">Hủy</button
-          ><button class="btn btn-danger" :disabled="saving" @click="removeTarget">Xóa</button>
+          <button class="btn btn-light" @click="deleteTarget = null"><i class="bi bi-x-lg"></i> Hủy</button
+          ><button class="btn btn-danger" :disabled="saving" @click="removeTarget">
+            <i class="bi bi-trash"></i> Xóa
+          </button>
         </div>
       </div>
     </div>

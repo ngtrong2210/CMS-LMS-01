@@ -1,0 +1,104 @@
+/* Màu thao tác theo hệ Eduvers: chính, xem, sửa/chia sẻ và xóa. */
+.btn.btn-action-view,
+.btn[title^='Nội dung'],
+.btn[title^='Mở'],
+.btn[title^='Xem'],
+.btn[title^='Biên tập'] {
+  color: #fff;
+  background: var(--brand-blue);
+  border-color: var(--brand-blue);
+}
+
+.btn.btn-action-view:hover,
+.btn.btn-action-view:focus,
+.btn[title^='Nội dung']:hover,
+.btn[title^='Mở']:hover,
+.btn[title^='Xem']:hover,
+.btn[title^='Biên tập']:hover {
+  color: #fff;
+  background: var(--brand-blue-dark);
+  border-color: var(--brand-blue-dark);
+}
+
+.btn.btn-action-edit,
+.btn[title^='Sửa'],
+.btn[title^='Chỉnh sửa'] {
+  color: #fff;
+  background: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+
+.btn.btn-action-edit:hover,
+.btn.btn-action-edit:focus,
+.btn[title^='Sửa']:hover,
+.btn[title^='Chỉnh sửa']:hover {
+  color: #fff;
+  background: var(--brand-secondary-dark);
+  border-color: var(--brand-secondary-dark);
+}
+
+.btn.btn-action-share,
+.btn[title*='chia sẻ'],
+.btn[title*='Chia sẻ'] {
+  color: #fff;
+  background: var(--brand-green);
+  border-color: var(--brand-green);
+}
+
+.btn.btn-action-share:hover,
+.btn.btn-action-share:focus,
+.btn[title*='chia sẻ']:hover,
+.btn[title*='Chia sẻ']:hover {
+  color: #fff;
+  background: var(--brand-green-dark);
+  border-color: var(--brand-green-dark);
+}
+
+.btn.btn-action-delete,
+.btn[title^='Xóa'] {
+  color: #fff !important;
+  background: var(--brand-red);
+  border-color: var(--brand-red);
+}
+
+.btn.btn-action-delete:hover,
+.btn.btn-action-delete:focus,
+.btn[title^='Xóa']:hover {
+  color: #fff !important;
+  background: var(--brand-red-dark);
+  border-color: var(--brand-red-dark);
+}
+
+.btn.btn-action-filter {
+  color: #fff;
+  background: var(--brand-blue);
+  border-color: var(--brand-blue);
+}
+
+.btn.btn-action-filter:hover,
+.btn.btn-action-filter:focus {
+  color: #fff;
+  background: var(--brand-blue-dark);
+  border-color: var(--brand-blue-dark);
+}
+
+.btn-icon,
+.table .btn-sm:has(> i:only-child) {
+  width: 34px;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.btn i,
+.thm-btn i {
+  line-height: 1;
+}
+
+.action-cell {
+  white-space: nowrap;
+}
+
+.action-cell .btn + .btn,
+.table td.text-end .btn + .btn {
+  margin-left: .28rem;
+}

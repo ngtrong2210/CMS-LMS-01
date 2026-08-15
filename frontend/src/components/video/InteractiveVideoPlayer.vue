@@ -87,7 +87,8 @@
           ></textarea>
           <div v-if="answerError" class="alert alert-danger mt-3 mb-0">{{ answerError }}</div>
           <button class="btn btn-brand w-100 mt-3" :disabled="submitting || !hasAnswer" @click="submit">
-            <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>Gửi câu trả lời
+            <span v-if="submitting" class="spinner-border spinner-border-sm"></span
+            ><i v-else class="bi bi-send"></i> Gửi câu trả lời
           </button>
         </template>
         <div
@@ -116,7 +117,9 @@
           </h3>
           <strong>+{{ answerResult.score }} điểm</strong>
           <p v-if="answerResult.explanation">{{ answerResult.explanation }}</p>
-          <button class="btn btn-brand w-100 mt-2" @click="continuePlayback">Tiếp tục bài học</button>
+          <button class="btn btn-brand w-100 mt-2" @click="continuePlayback">
+            Tiếp tục bài học <i class="bi bi-arrow-right"></i>
+          </button>
         </div>
       </div>
     </div>

@@ -25,7 +25,7 @@
           </select>
         </div>
         <div class="col-md-2">
-          <button class="btn btn-light w-100" :disabled="loading">
+          <button class="btn btn-action-filter w-100" :disabled="loading">
             <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span
             ><i v-else class="bi bi-search"></i> Tìm kiếm
           </button>
@@ -64,7 +64,7 @@
                 }}</span>
               </td>
               <td class="text-end">
-                <button class="btn btn-light btn-sm" title="Chỉnh sửa" @click="editQuestion(q.id)">
+                <button class="btn btn-action-edit btn-sm" title="Chỉnh sửa" @click="editQuestion(q.id)">
                   <i class="bi bi-pencil"></i>
                 </button>
               </td>
@@ -181,7 +181,7 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-light" @click="editorOpen = false">Hủy</button
+          <button type="button" class="btn btn-light" @click="editorOpen = false"><i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-brand" :disabled="saving">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
             ><i v-else class="bi bi-check-lg"></i> Lưu câu hỏi

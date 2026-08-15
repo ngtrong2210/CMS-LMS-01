@@ -2,7 +2,10 @@
   <section>
     <div v-if="loading" class="app-card p-5 text-center"><span class="spinner-border text-success"></span></div>
     <div v-else-if="error" class="alert alert-danger">
-      {{ error }} <button class="btn btn-light btn-sm ms-2" @click="loadDashboard">Thử lại</button>
+      {{ error }}
+      <button class="btn btn-action-view btn-sm ms-2" @click="loadDashboard">
+        <i class="bi bi-arrow-clockwise"></i> Thử lại
+      </button>
     </div>
     <template v-else
       ><div class="welcome app-card mb-4">
@@ -60,7 +63,9 @@
               <div class="progress course-progress mb-3">
                 <div class="progress-bar" :style="{ width: course.progress + '%' }"></div>
               </div>
-              <RouterLink class="btn btn-light btn-sm" :to="`/lms/courses/${course.id}`">Mở khóa học</RouterLink>
+              <RouterLink class="btn btn-action-view btn-sm" :to="`/lms/courses/${course.id}`"
+                ><i class="bi bi-arrow-right-circle"></i> Mở khóa học</RouterLink
+              >
             </div>
           </article>
         </div>

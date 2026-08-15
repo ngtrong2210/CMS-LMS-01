@@ -4,7 +4,7 @@
       <strong>{{ code }}</strong>
       <h1>{{ title }}</h1>
       <p>Nội dung bạn tìm kiếm không tồn tại hoặc tài khoản hiện tại chưa được cấp quyền.</p>
-      <RouterLink to="/login" class="btn btn-brand">Về trang đăng nhập</RouterLink>
+      <RouterLink to="/login" class="btn btn-brand"><i class="bi bi-arrow-left"></i> Về trang đăng nhập</RouterLink>
     </div>
   </main>
 </template>
