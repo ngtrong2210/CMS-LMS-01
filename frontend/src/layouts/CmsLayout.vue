@@ -43,7 +43,6 @@
               <path v-else d="m16 8-4 4 4 4"></path>
             </svg>
           </button>
-          <PageBackButton v-if="!route.meta.hideBack" />
           <div>
             <small>ELEARNING</small>
             <div>{{ route.meta.title || sectionTitle }}</div>
@@ -76,6 +75,7 @@
         </div>
       </header>
       <main class="p-3 p-lg-4 page-content">
+        <div v-if="!route.meta.hideBack" class="cms-back-row"><PageBackButton /></div>
         <RouterView v-slot="{ Component }">
           <KeepAlive :include="cachedPages" :max="12">
             <component :is="Component" />
