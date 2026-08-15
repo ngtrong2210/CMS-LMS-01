@@ -1,0 +1,33 @@
+.progress { overflow: hidden; background: #e8edeb; border-radius: 3px; }
+.progress-bar { background: var(--brand-green); border-radius: 3px; }
+.badge { border-radius: 4px; padding: .38rem .5rem; font-size: .74rem; font-weight: 650; letter-spacing: .015em; }
+.badge-soft-success { color: #056c48; background: #dff2eb; }
+.badge-soft-primary { color: #00447f; background: #e4eff9; }
+.badge-soft-warning { color: #755f00; background: #fff7c7; }
+.badge-soft-danger { color: #a41515; background: #fbe7e7; }
+
+.table { --bs-table-bg: transparent; color: #34403b; font-size: .86rem; }
+.table > :not(caption) > * > * { padding: .78rem .8rem; border-bottom-color: #edf0f2; vertical-align: middle; }
+.table thead th {
+  color: #65736d;
+  background: #f7f8f9;
+  font-size: .75rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+  white-space: nowrap;
+}
+.table tbody tr:last-child>* { border-bottom: 0; }
+.table tbody tr:hover>* { background: #fafbfb; }
+.table-responsive { scrollbar-width: thin; scrollbar-color: #c9d1ce transparent; }
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--brand-green);
+  background: var(--soft-green);
+  font-weight: 700;
+}

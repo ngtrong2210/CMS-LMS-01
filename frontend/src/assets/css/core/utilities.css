@@ -1,0 +1,5 @@
+.text-brand { color: var(--brand-green) !important; }
+.text-blue { color: var(--brand-blue) !important; }
+.bg-soft-green { background: var(--soft-green); }
+.bg-soft-blue { background: var(--soft-blue); }
+.clickable { cursor: pointer; }

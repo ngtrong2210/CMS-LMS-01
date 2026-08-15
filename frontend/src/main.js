@@ -5,7 +5,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import 'bootstrap'
 import './assets/eduvers/css/style.css'
 import './assets/eduvers/css/responsive.css'
-import './assets/styles.css'
+import './assets/css/index.css'
 import App from './App.vue'
 import router from './router'
 

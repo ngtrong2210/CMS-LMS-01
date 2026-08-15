@@ -1,0 +1,24 @@
+:root {
+  --brand-green: #d3224d;
+  --brand-green-dark: #aa1b3e;
+  --brand-blue: #005099;
+  --brand-secondary: #ff5543;
+  --brand-red: #ff5543;
+  --brand-yellow: #ffc224;
+  --ink: #0d2944;
+  --ink-soft: #243d55;
+  --muted: #4d5756;
+  --surface: #fff;
+  --page: #f4f6f8;
+  --soft-green: rgba(0,80,153,.08);
+  --soft-blue: rgba(0,80,153,.10);
+  --soft-yellow: rgba(255,194,36,.16);
+  --neutral-line: #ede8e6;
+  --neutral-line-strong: #ede8e6;
+  --sidebar-width: 252px;
+  --topbar-height: 68px;
+  --card-radius: 5px;
+  --control-radius: 5px;
+  --font-body: "DM Sans", "Segoe UI", Arial, sans-serif;
+  --font-heading: "DM Sans", "Segoe UI", Arial, sans-serif;
+}
