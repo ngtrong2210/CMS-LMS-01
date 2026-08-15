@@ -1,8 +1,7 @@
 <template>
   <section>
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <RouterLink :to="`/lms/courses/${course.id}`"><i class="bi bi-arrow-left me-1"></i>Quay lại khóa học</RouterLink
-      ><span class="badge badge-soft-success">Đã xem {{ Math.round(progress.watchPercent) }}%</span>
+    <div class="d-flex justify-content-end align-items-center mb-3">
+      <span class="badge badge-soft-success">Đã xem {{ Math.round(progress.watchPercent) }}%</span>
     </div>
     <div v-if="loading" class="app-card p-5 text-center">
       <span class="spinner-border text-success"></span>

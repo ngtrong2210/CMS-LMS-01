@@ -126,6 +126,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import axiosClient from '../../api/axiosClient'
+import { useListViewState } from '../../composables/useListViewState'
 import courseList1 from '../../assets/eduvers/images/courses/course-list-img-1.jpg'
 import courseList2 from '../../assets/eduvers/images/courses/course-list-img-2.jpg'
 import courseList3 from '../../assets/eduvers/images/courses/course-list-img-3.jpg'
@@ -145,6 +146,7 @@ const search = ref(''),
   error = ref(''),
   pick = (source, ...names) =>
     names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
+useListViewState('lms-courses', { search, status })
 const colors = ['var(--eduvers-base)', 'var(--eduvers-black)', '#465f55', '#8a7000']
 const filtered = computed(() =>
   courses.value.filter(

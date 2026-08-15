@@ -196,6 +196,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
+import { useListViewState } from '../../composables/useListViewState'
 
 const route = useRoute()
 const search = ref(''),
@@ -208,6 +209,7 @@ const search = ref(''),
   message = ref(''),
   messageType = ref('success'),
   shortAnswer = ref('')
+useListViewState('cms-questions', { search, type })
 const pick = (source, ...names) =>
   names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
 const form = reactive(blankQuestion())

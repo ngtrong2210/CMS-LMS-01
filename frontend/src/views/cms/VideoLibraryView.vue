@@ -310,6 +310,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import axiosClient from '../../api/axiosClient'
 import { resolveApiAssetUrl } from '../../api/apiConfig'
+import { useListViewState } from '../../composables/useListViewState'
 import { formatInteractionTime } from '../../utils/learningRules'
 
 const items = ref([]),
@@ -333,6 +334,7 @@ const message = ref(''),
   messageType = ref('success'),
   form = reactive(blank()),
   shareForm = reactive({ assetId: 0, title: '', shareScope: 'PRIVATE', teacherIds: [] })
+useListViewState('cms-videos', { search, accessFilter, sourceFilter, usageFilter, statusFilter })
 const playbackUrl = computed(() => resolveApiAssetUrl(form.videoUrl)),
   pick = (source, ...names) =>
     names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null),

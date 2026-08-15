@@ -67,7 +67,9 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { students } from '../../data/demo'
+import { useListViewState } from '../../composables/useListViewState'
 const search = ref('')
+useListViewState('cms-students', { search })
 const filtered = computed(() =>
   students.filter((s) => `${s.name} ${s.code} ${s.email}`.toLowerCase().includes(search.value.toLowerCase()))
 )

@@ -38,7 +38,14 @@
         </div>
       </div>
     </nav>
-    <main class="container py-4 py-lg-5 lms-content"><RouterView /></main>
+    <main class="container py-4 py-lg-5 lms-content">
+      <div v-if="!route.meta.hideBack" class="lms-back-row"><PageBackButton /></div>
+      <RouterView v-slot="{ Component }">
+        <KeepAlive :include="cachedPages" :max="6">
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
+    </main>
     <footer class="lms-footer">
       <div class="container">
         <span>© 2026 LearnHub · Hệ thống quản lý học tập</span><span>Hỗ trợ · Quy định học tập · Bảo mật</span>
@@ -48,10 +55,13 @@
 </template>
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import PageBackButton from '../components/navigation/PageBackButton.vue'
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+const cachedPages = ['CourseListView', 'CourseDetailView', 'ResultsView', 'SimpleLmsView']
 const avatarUrl = computed(
   () =>
     ({

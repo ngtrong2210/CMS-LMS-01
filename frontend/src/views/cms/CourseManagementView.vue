@@ -139,6 +139,7 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue'
 import axiosClient from '../../api/axiosClient'
+import { useListViewState } from '../../composables/useListViewState'
 const items = ref([]),
   search = ref(''),
   status = ref(''),
@@ -148,6 +149,7 @@ const items = ref([]),
   message = ref(''),
   messageType = ref('success'),
   form = reactive(blank())
+useListViewState('cms-courses', { search, status })
 const pick = (source, ...names) =>
   names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
 let timer

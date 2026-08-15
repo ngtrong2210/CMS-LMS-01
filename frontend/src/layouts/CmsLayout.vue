@@ -43,6 +43,7 @@
               <path v-else d="m16 8-4 4 4 4"></path>
             </svg>
           </button>
+          <PageBackButton v-if="!route.meta.hideBack" />
           <div>
             <small>ELEARNING</small>
             <div>{{ route.meta.title || sectionTitle }}</div>
@@ -74,7 +75,13 @@
           </button>
         </div>
       </header>
-      <main class="p-3 p-lg-4 page-content"><RouterView /></main>
+      <main class="p-3 p-lg-4 page-content">
+        <RouterView v-slot="{ Component }">
+          <KeepAlive :include="cachedPages" :max="12">
+            <component :is="Component" />
+          </KeepAlive>
+        </RouterView>
+      </main>
     </div>
     <div id="mobileMenu" class="offcanvas offcanvas-start mobile-sidebar">
       <div class="offcanvas-header">
@@ -102,6 +109,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import PageBackButton from '../components/navigation/PageBackButton.vue'
 const route = useRoute(),
   router = useRouter(),
   auth = useAuthStore()
@@ -109,6 +117,16 @@ const sectionTitle = computed(() => route.params.section || 'Quản trị')
 const sidebarCollapsed = ref(localStorage.getItem('cms_sidebar_collapsed') === '1')
 const sidebarScrolling = ref(false)
 const globalSearch = ref(String(route.query.q || ''))
+const cachedPages = [
+  'CourseManagementView',
+  'VideoLibraryView',
+  'QuestionBankView',
+  'StudentsView',
+  'EnrollmentManagementView',
+  'ReportsView',
+  'GlobalSearchView',
+  'GenericCmsView'
+]
 const avatarUrl = computed(
   () =>
     ({

@@ -202,6 +202,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
+import { useListViewState } from '../../composables/useListViewState'
 
 const route = useRoute()
 const items = ref([])
@@ -217,6 +218,7 @@ const statusFilter = ref('')
 const message = ref('')
 const messageType = ref('success')
 const form = reactive({ courseId: 0, studentIds: [] })
+useListViewState('cms-enrollments', { search, courseFilter, statusFilter })
 const pick = (source, ...names) =>
   names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
 
