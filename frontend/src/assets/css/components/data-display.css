@@ -9,14 +9,16 @@
 .table { --bs-table-bg: transparent; color: var(--ink-soft); font-size: .88rem; }
 .table > :not(caption) > * > * { padding: .82rem .8rem; border-bottom-color: var(--neutral-line); vertical-align: middle; }
 .table thead th {
-  color: var(--ink);
-  background: var(--page);
+  color: #fff;
+  background: var(--brand-blue);
   font-size: .76rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .045em;
   white-space: nowrap;
 }
+.table thead th:first-child { border-top-left-radius: var(--control-radius); }
+.table thead th:last-child { border-top-right-radius: var(--control-radius); }
 .table tbody tr:last-child>* { border-bottom: 0; }
 .table tbody tr { transition: background-color .18s ease; }
 .table tbody tr:hover>* { background: rgba(var(--brand-green-rgb),.035); }
