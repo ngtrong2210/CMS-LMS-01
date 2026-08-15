@@ -5,7 +5,7 @@
       <i :class="['bi', info.icon]"></i>
       <h1 class="page-title">{{ info.title }}</h1>
       <p class="page-subtitle">Phân hệ đã được định tuyến và sẵn sàng kết nối API quản trị.</p>
-      <button class="btn btn-brand"><i class="bi bi-plus-lg"></i> Thêm dữ liệu mới</button>
+      <button class="btn btn-action-create"><i class="bi bi-plus-lg"></i> Thêm dữ liệu mới</button>
     </div>
   </section>
 </template>

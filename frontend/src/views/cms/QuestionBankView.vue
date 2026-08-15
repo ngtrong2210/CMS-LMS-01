@@ -6,7 +6,9 @@
         <p class="page-subtitle mb-0">Quản lý câu hỏi dùng trong video và bài kiểm tra.</p>
       </div>
       <CmsPageActions>
-        <button class="btn btn-brand" @click="createQuestion"><i class="bi bi-plus-lg"></i> Thêm câu hỏi</button>
+        <button class="btn btn-action-create" @click="createQuestion">
+          <i class="bi bi-plus-lg"></i> Thêm câu hỏi
+        </button>
       </CmsPageActions>
     </header>
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
@@ -132,7 +134,7 @@
         <div v-if="form.questionType !== 'SHORT_ANSWER'" class="answer-panel mt-4">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <h3 class="h6 fw-bold mb-0">Các phương án</h3>
-            <button type="button" class="btn btn-light btn-sm" @click="addOption">
+            <button type="button" class="btn btn-action-create btn-sm" @click="addOption">
               <i class="bi bi-plus-lg"></i> Thêm phương án
             </button>
           </div>
@@ -156,7 +158,7 @@
               required
             /><button
               type="button"
-              class="btn btn-light btn-sm"
+              class="btn btn-action-delete btn-sm"
               :disabled="form.options.length <= 2"
               @click="removeOption(index)"
             >
@@ -183,8 +185,9 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-light" @click="editorOpen = false"><i class="bi bi-x-lg"></i> Hủy</button
-          ><button class="btn btn-brand" :disabled="saving">
+          <button type="button" class="btn btn-action-cancel" @click="editorOpen = false">
+            <i class="bi bi-x-lg"></i> Hủy</button
+          ><button class="btn btn-action-save" :disabled="saving">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
             ><i v-else class="bi bi-check-lg"></i> Lưu câu hỏi
           </button>

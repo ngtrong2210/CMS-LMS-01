@@ -69,7 +69,7 @@
               <div class="tiny">{{ roleName }}</div>
             </div>
           </div>
-          <button class="btn btn-light btn-sm logout-button" title="Đăng xuất" @click="signOut">
+          <button class="btn btn-action-delete btn-sm logout-button" title="Đăng xuất" @click="signOut">
             <i class="bi bi-box-arrow-right"></i>
           </button>
         </div>

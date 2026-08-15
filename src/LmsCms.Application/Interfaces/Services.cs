@@ -46,6 +46,7 @@ public interface IContentService
     Task<object?> GetVideoAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<long> SaveVideoAsync(long? id, long lessonId, VideoSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search, string? access, string? source, string? usage, string? status, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<object> GetVideoUsageAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<long> CreateVideoAssetAsync(VideoAssetSaveRequest request, long actorId, CancellationToken ct = default);
     Task<bool> UpdateVideoAssetAsync(long id, VideoAssetSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<bool> DeleteVideoAssetAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);

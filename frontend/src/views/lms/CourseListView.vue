@@ -49,7 +49,7 @@
           <div v-if="loading" class="text-center py-5"><span class="spinner-border"></span></div>
           <div v-else-if="error" class="alert alert-danger">
             {{ error }}
-            <button class="btn btn-sm btn-action-view ms-2" @click="loadCourses">
+            <button class="btn btn-sm btn-action-refresh ms-2" @click="loadCourses">
               <i class="bi bi-arrow-clockwise"></i> Thử lại
             </button>
           </div>

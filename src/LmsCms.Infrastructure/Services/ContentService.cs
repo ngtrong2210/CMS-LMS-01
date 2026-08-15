@@ -39,6 +39,14 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
         return ScalarId(id is null?"dbo.LMS_Video_Create":"dbo.LMS_Video_Update",new{Id=id,LessonId=lessonId,r.Title,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.AllowSeek,r.AllowSpeed,r.RequiredWatchPercent,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
     }
     public async Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search,string? access,string? source,string? usage,string? status,long actorId,bool isAdmin,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoLibrary_GetList",new{Search=search,Access=NormalizeFilter(access),Source=NormalizeFilter(source),Usage=NormalizeFilter(usage),Status=NormalizeFilter(status),ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
+    public async Task<object> GetVideoUsageAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)
+    {
+        using var db=connections.CreateConnection();
+        using var grid=await db.QueryMultipleAsync(new CommandDefinition("dbo.LMS_VideoVersion_GetUsageByVideoAsset",new{Id=id,ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct));
+        var summary=await grid.ReadSingleAsync();
+        var lessons=(await grid.ReadAsync()).Cast<object>().ToArray();
+        return new { Summary=summary, Lessons=lessons };
+    }
     public Task<long> CreateVideoAssetAsync(VideoAssetSaveRequest r,long actorId,CancellationToken ct=default)
     {
         ValidateStoredVideoUrl(r.VideoUrl);
@@ -47,7 +55,8 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     public Task<bool> UpdateVideoAssetAsync(long id,VideoAssetSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)
     {
         ValidateStoredVideoUrl(r.VideoUrl);
-        return Affected("dbo.LMS_VideoLibrary_Update",new{Id=id,r.Title,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.OriginalFileName,r.FileSize,r.MimeType,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
+        var lessonIds=r.LessonIds.Where(x=>x>0).Distinct().ToArray();
+        return Affected("dbo.LMS_VideoLibrary_Update",new{Id=id,r.Title,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.OriginalFileName,r.FileSize,r.MimeType,r.Status,LessonIdsJson=JsonSerializer.Serialize(lessonIds),r.ChangeSummary,ActorId=actorId,IsAdmin=isAdmin},ct);
     }
     public Task<bool> DeleteVideoAssetAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_VideoLibrary_Delete",new{Id=id,ActorId=actorId,IsAdmin=isAdmin},ct);
     public async Task<object> GetVideoSharingAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)

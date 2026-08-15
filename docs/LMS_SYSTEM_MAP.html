@@ -34,9 +34,10 @@
         <a class="nav-link" href="#roles"><span class="nav-no">02</span>Vai trò</a>
         <a class="nav-link" href="#businessFlow"><span class="nav-no">03</span>Luồng toàn hệ thống</a>
         <a class="nav-link" href="#detailFlows"><span class="nav-no">04</span>Luồng chi tiết</a>
-        <a class="nav-link" href="#dataRelation"><span class="nav-no">05</span>Quan hệ dữ liệu</a>
-        <a class="nav-link" href="#tableDictionary"><span class="nav-no">06</span>Danh mục 24 bảng</a>
-        <a class="nav-link" href="#businessRules"><span class="nav-no">07</span>Quy tắc quan trọng</a>
+        <a class="nav-link" href="#videoVersioning"><span class="nav-no">05</span>Phiên bản video</a>
+        <a class="nav-link" href="#dataRelation"><span class="nav-no">06</span>Quan hệ dữ liệu</a>
+        <a class="nav-link" href="#tableDictionary"><span class="nav-no">07</span>Danh mục 25 bảng</a>
+        <a class="nav-link" href="#businessRules"><span class="nav-no">08</span>Quy tắc quan trọng</a>
         <div class="side-legend">
           <strong>Quy ước schema</strong>
           <span><b>SYS_</b> — tài khoản, vai trò, quyền</span>
@@ -57,7 +58,7 @@
             <span class="pill">Vue.js CMS/LMS</span>
             <span class="pill">ASP.NET Core API</span>
             <span class="pill">SQL Server</span>
-            <span class="pill">24 bảng vật lý</span>
+            <span class="pill">25 bảng vật lý</span>
             <span class="pill">Cập nhật 15/08/2026</span>
           </div>
         </div>
@@ -169,9 +170,9 @@
                 <div class="flow-node"><h3>Tạo chương</h3><p>Sắp xếp nội dung theo chủ đề.</p><code>SIM_Chapters</code></div>
                 <div class="flow-node"><h3>Tạo bài học</h3><p>VIDEO, QUIZ, DOCUMENT...</p><code>SIM_Lessons</code></div>
                 <div class="flow-node"><h3>Soạn video riêng</h3><p>Video độc lập, chưa phụ thuộc bài học.</p><code>SIM_Videos</code></div>
-                <div class="flow-node result"><h3>Gắn video</h3><p>Bài học chỉ tham chiếu VideoID.</p><code>SIM_Lessons.VideoID</code></div>
+                <div class="flow-node result"><h3>Gắn video</h3><p>Bài học ghim đúng video và phiên bản.</p><code>VideoID + VideoVersionID</code></div>
               </div>
-              <div class="callout"><strong>Điểm quan trọng:</strong> không tạo bản sao video khi gắn bài học; nhiều bài học có thể cùng tham chiếu một <code>VideoID</code>.</div>
+              <div class="callout"><strong>Điểm quan trọng:</strong> nhiều bài học dùng chung một <code>VideoID</code>, nhưng mỗi bài ghim một <code>VideoVersionID</code> để nội dung cũ không tự thay đổi.</div>
             </article>
 
             <article class="card flow-lane" data-search="upload thư viện video share chia sẻ tương tác câu hỏi question interaction media">
@@ -193,7 +194,7 @@
                 <div class="flow-node"><h3>Chọn nhiều học viên</h3><p>Tích chọn danh sách cùng lúc.</p><code>SYS_Users</code></div>
                 <div class="flow-node"><h3>Tạo ghi danh</h3><p>Mỗi học viên + khóa là duy nhất.</p><code>LMS_Enrollments</code></div>
                 <div class="flow-node"><h3>Mở bài học</h3><p>Kiểm tra ghi danh và LessonID.</p><code>GET /lms/lessons/{id}/player</code></div>
-                <div class="flow-node result"><h3>Tải video & tương tác</h3><p>Đọc VideoID rồi nạp toàn bộ câu hỏi.</p><code>SIM_Lessons → SIM_Videos</code></div>
+                <div class="flow-node result"><h3>Tải video & tương tác</h3><p>Đọc phiên bản đã ghim và đúng bộ câu hỏi.</p><code>SIM_Lessons.VideoVersionID</code></div>
               </div>
             </article>
 
@@ -201,7 +202,7 @@
               <div class="lane-head"><span class="lane-no">05</span><div><h3>Trả lời, chấm điểm và báo cáo</h3><small>Mọi lần trả lời đều được lưu, kể cả trả lời sai.</small></div></div>
               <div class="flow-row" style="--columns: 6">
                 <div class="flow-node"><h3>Dừng tại câu hỏi</h3><p>Player mở tương tác theo TimeSeconds.</p><code>LMS_VideoInteractions</code></div>
-                <div class="flow-node"><h3>Gửi câu trả lời</h3><p>LessonID + VideoID + InteractionID.</p><code>POST /api/lms/answers</code></div>
+                <div class="flow-node"><h3>Gửi câu trả lời</h3><p>LessonID + VideoID + VideoVersionID + InteractionID.</p><code>POST /api/lms/answers</code></div>
                 <div class="flow-node decision"><h3>Chấm đúng/sai</h3><p>So khớp option hoặc answer key.</p><code>IsCorrect / ScoreAwarded</code></div>
                 <div class="flow-node"><h3>Lưu câu trả lời</h3><p>Sai vẫn lưu với điểm 0.</p><code>LMS_StudentAnswers</code></div>
                 <div class="flow-node"><h3>Cập nhật tiến độ</h3><p>Vị trí xem, % xem, điểm bài học.</p><code>LMS_Student*Progress</code></div>
@@ -279,8 +280,8 @@
                     <small>LIÊN KẾT NỘI DUNG</small>
                     <h3>Gắn vào bài học</h3>
                     <p>Bài học tham chiếu video đã soạn, không sao chép file.</p>
-                    <div class="stage-data"><b>SIM_Lessons.VideoID</b><span>Nhiều bài học dùng chung một video</span></div>
-                    <strong class="stage-output">LessonID + VideoID</strong>
+                    <div class="stage-data"><b>SIM_Lessons.VideoID + VideoVersionID</b><span>Nhiều bài học dùng chung video nhưng ghim phiên bản riêng</span></div>
+                    <strong class="stage-output">LessonID + VideoID + VideoVersionID</strong>
                   </article>
 
                   <article class="flow-map-stage enrollment" data-search="sơ đồ ghi danh phân học viên khóa học enrollment">
@@ -313,7 +314,7 @@
               </div>
               <div class="flow-map-note">
                 <strong>Luồng dữ liệu chấm điểm:</strong>
-                <span>StudentUserID + CourseID + LessonID + VideoID + VideoInteractionID → LMS_StudentAnswers → LMS_StudentLessonProgress → Báo cáo.</span>
+                <span>StudentUserID + CourseID + LessonID + VideoID + VideoVersionID + VideoInteractionID → LMS_StudentAnswers → LMS_StudentLessonProgress → Báo cáo.</span>
               </div>
             </div>
           </div>
@@ -329,13 +330,15 @@
               <tr data-search="course khóa học"><td>Tạo khóa học</td><td class="mono">POST /api/courses</td><td class="mono">LMS_Course_Create</td><td>SIM_Courses</td></tr>
               <tr data-search="chapter chương"><td>Tạo chương</td><td class="mono">POST /api/courses/{id}/chapters</td><td class="mono">LMS_Chapter_Create</td><td>SIM_Chapters</td></tr>
               <tr data-search="lesson bài học"><td>Tạo bài học</td><td class="mono">POST /api/chapters/{id}/lessons</td><td class="mono">LMS_Lesson_Create</td><td>SIM_Lessons</td></tr>
-              <tr data-search="attach video gắn"><td>Gắn video có sẵn</td><td class="mono">PUT /api/lessons/{lessonId}/video/{videoId}</td><td class="mono">LMS_Video_AttachToLesson</td><td>SIM_Lessons.VideoID</td></tr>
+              <tr data-search="attach video gắn"><td>Gắn video có sẵn</td><td class="mono">PUT /api/lessons/{lessonId}/video/{videoId}</td><td class="mono">LMS_Video_AttachToLesson</td><td>SIM_Lessons.VideoID + VideoVersionID</td></tr>
             </tbody></table></div>
           </div>
           <div id="tabVideo" class="tab-panel">
             <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng / File</th></tr></thead><tbody>
               <tr data-search="upload file media"><td>Upload</td><td class="mono">POST /api/videos/upload</td><td>Project storage service</td><td>/Media/Video/YYYY/MM</td></tr>
               <tr data-search="library asset"><td>Tạo tài nguyên</td><td class="mono">POST /api/video-library</td><td class="mono">LMS_VideoLibrary_Create</td><td>SIM_VideoAssets, SIM_Videos</td></tr>
+              <tr data-search="usage version lessons phiên bản"><td>Xem bài đang sử dụng</td><td class="mono">GET /api/video-library/{id}/usage</td><td class="mono">LMS_VideoVersion_GetUsageByVideoAsset</td><td>SIM_Lessons, SIM_VideoVersions</td></tr>
+              <tr data-search="create version phiên bản chọn bài"><td>Tạo phiên bản mới</td><td class="mono">PUT /api/video-library/{id}</td><td class="mono">LMS_VideoLibrary_Update</td><td>SIM_VideoVersions, LMS_VideoInteractions</td></tr>
               <tr data-search="share sharing"><td>Chia sẻ</td><td class="mono">PUT /api/video-library/{id}/sharing</td><td class="mono">LMS_VideoLibrary_Sharing_Save</td><td>SIM_VideoAssetShares</td></tr>
               <tr data-search="interaction tương tác"><td>Gắn câu hỏi</td><td class="mono">POST /api/videos/{id}/interactions</td><td class="mono">LMS_VideoInteraction_Create</td><td>LMS_VideoInteractions</td></tr>
             </tbody></table></div>
@@ -343,11 +346,50 @@
           <div id="tabLearning" class="tab-panel">
             <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng chính</th></tr></thead><tbody>
               <tr data-search="enrollment ghi danh"><td>Ghi danh</td><td class="mono">POST /api/cms/enrollments</td><td class="mono">LMS_Enrollment_Create</td><td>LMS_Enrollments</td></tr>
-              <tr data-search="player bài học"><td>Mở player</td><td class="mono">GET /api/lms/lessons/{id}/player</td><td class="mono">LMS_LessonPlayer_GetData</td><td>SIM_Lessons, SIM_Videos, LMS_VideoInteractions</td></tr>
+              <tr data-search="player bài học"><td>Mở player</td><td class="mono">GET /api/lms/lessons/{id}/player</td><td class="mono">LMS_LessonPlayer_GetData</td><td>SIM_Lessons, SIM_VideoVersions, LMS_VideoInteractions</td></tr>
               <tr data-search="progress tiến độ"><td>Lưu tiến độ</td><td class="mono">POST /api/lms/progress/video</td><td class="mono">LMS_StudentVideoProgress_Save</td><td>LMS_StudentVideoProgress</td></tr>
               <tr data-search="answer trả lời điểm"><td>Nộp đáp án</td><td class="mono">POST /api/lms/answers</td><td class="mono">LMS_StudentAnswer_Submit</td><td>LMS_StudentAnswers, LMS_StudentAnswerOptions</td></tr>
             </tbody></table></div>
           </div>
+        </section>
+
+        <section id="videoVersioning" aria-labelledby="videoVersioningTitle">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Luồng phiên bản video</p>
+              <h2 id="videoVersioningTitle">Bài học cũ giữ nguyên, chỉ bài được chọn dùng bản mới</h2>
+              <p class="section-desc">Phiên bản là ảnh chụp file, cấu hình và bộ tương tác tại thời điểm xuất bản.</p>
+            </div>
+          </div>
+          <article class="card flow-lane" data-search="video version phiên bản bài học cũ chọn bài mới">
+            <div class="lane-head"><span class="lane-no">V</span><div><h3>Tạo và chuyển phiên bản có kiểm soát</h3><small>Không cập nhật hàng loạt ngoài ý muốn.</small></div></div>
+            <div class="flow-row" style="--columns: 6">
+              <div class="flow-node"><h3>Mở sửa video</h3><p>Hệ thống đọc bản hiện tại và các bài đang dùng.</p><code>GET /usage</code></div>
+              <div class="flow-node"><h3>Chọn bài học</h3><p>Giáo viên tích một hoặc nhiều bài cần chuyển.</p><code>LessonIDs</code></div>
+              <div class="flow-node"><h3>Tạo bản N + 1</h3><p>Chụp file, tiêu đề, thời lượng và cấu hình mới.</p><code>SIM_VideoVersions</code></div>
+              <div class="flow-node"><h3>Nhân bộ tương tác</h3><p>Câu hỏi timeline được sao chép sang bản mới.</p><code>LMS_VideoInteractions</code></div>
+              <div class="flow-node"><h3>Chuyển bài đã chọn</h3><p>Chỉ cập nhật VideoVersionID của danh sách chọn.</p><code>SIM_Lessons</code></div>
+              <div class="flow-node result"><h3>Giữ nguyên bài còn lại</h3><p>Bài cũ tiếp tục phát file và câu hỏi phiên bản cũ.</p><code>Không Update</code></div>
+            </div>
+          </article>
+          <div class="role-grid">
+            <article class="card role-card" data-search="current version latest attach">
+              <span class="role-tag">BẢN MỚI NHẤT</span>
+              <h3>Gắn bài học mới</h3>
+              <p><code>SIM_Videos.CurrentVideoVersionID</code> xác định phiên bản mặc định cho lần gắn tiếp theo.</p>
+            </article>
+            <article class="card role-card" data-search="pinned lesson version">
+              <span class="role-tag teacher">BẢN ĐÃ GHIM</span>
+              <h3>Mở bài học hiện có</h3>
+              <p><code>SIM_Lessons.VideoVersionID</code> quyết định chính xác file và bộ tương tác được phát.</p>
+            </article>
+            <article class="card role-card" data-search="answer progress version audit">
+              <span class="role-tag student">LỊCH SỬ HỌC</span>
+              <h3>Tiến độ và điểm</h3>
+              <p>Tiến độ, câu trả lời đúng/sai và phiên học đều lưu <code>VideoVersionID</code> để truy vết.</p>
+            </article>
+          </div>
+          <div class="callout"><strong>Khi chuyển bài sang bản mới:</strong> tiến độ tổng của bài được đặt lại để học viên học đúng nội dung mới; dữ liệu chi tiết của phiên bản cũ không bị xóa và vẫn tra cứu được.</div>
         </section>
 
         <section id="dataRelation" aria-labelledby="dataRelationTitle">
@@ -383,10 +425,11 @@
                     <button class="entity" data-table="SIM_CourseCategories"><strong>SIM_CourseCategories</strong><small>CourseCategoryID</small></button>
                     <button class="entity" data-table="SIM_Courses"><strong>SIM_Courses</strong><small>CourseID • TeacherUserID</small></button>
                     <button class="entity" data-table="SIM_Chapters"><strong>SIM_Chapters</strong><small>ChapterID • CourseID</small></button>
-                    <button class="entity" data-table="SIM_Lessons"><strong>SIM_Lessons</strong><small>LessonID • ChapterID • VideoID</small></button>
+                    <button class="entity" data-table="SIM_Lessons"><strong>SIM_Lessons</strong><small>LessonID • VideoID • VideoVersionID</small></button>
                     <button class="entity" data-table="SIM_VideoAssets"><strong>SIM_VideoAssets</strong><small>VideoAssetID • file thư viện</small></button>
                     <button class="entity" data-table="SIM_VideoAssetShares"><strong>SIM_VideoAssetShares</strong><small>VideoAssetID • TeacherUserID</small></button>
-                    <button class="entity" data-table="SIM_Videos"><strong>SIM_Videos</strong><small>VideoID • video tương tác độc lập</small></button>
+                    <button class="entity" data-table="SIM_Videos"><strong>SIM_Videos</strong><small>VideoID • CurrentVideoVersionID</small></button>
+                    <button class="entity" data-table="SIM_VideoVersions"><strong>SIM_VideoVersions</strong><small>VideoVersionID • VideoID • VersionNumber</small></button>
                   </div>
                 </div>
                 <div class="module lms">
@@ -396,10 +439,10 @@
                     <button class="entity" data-table="LMS_Questions"><strong>LMS_Questions</strong><small>QuestionID • ngân hàng câu hỏi</small></button>
                     <button class="entity" data-table="LMS_QuestionOptions"><strong>LMS_QuestionOptions</strong><small>QuestionOptionID • QuestionID</small></button>
                     <button class="entity" data-table="LMS_QuestionAnswerKeys"><strong>LMS_QuestionAnswerKeys</strong><small>QuestionAnswerKeyID • QuestionID</small></button>
-                    <button class="entity" data-table="LMS_VideoInteractions"><strong>LMS_VideoInteractions</strong><small>VideoID + QuestionID + TimeSeconds</small></button>
-                    <button class="entity" data-table="LMS_StudentVideoProgress"><strong>LMS_StudentVideoProgress</strong><small>StudentUserID + LessonID + VideoID</small></button>
+                    <button class="entity" data-table="LMS_VideoInteractions"><strong>LMS_VideoInteractions</strong><small>VideoVersionID + QuestionID + TimeSeconds</small></button>
+                    <button class="entity" data-table="LMS_StudentVideoProgress"><strong>LMS_StudentVideoProgress</strong><small>StudentUserID + LessonID + VideoVersionID</small></button>
                     <button class="entity" data-table="LMS_StudentLessonProgress"><strong>LMS_StudentLessonProgress</strong><small>StudentUserID + LessonID</small></button>
-                    <button class="entity" data-table="LMS_StudentAnswers"><strong>LMS_StudentAnswers</strong><small>LessonID + VideoID + InteractionID</small></button>
+                    <button class="entity" data-table="LMS_StudentAnswers"><strong>LMS_StudentAnswers</strong><small>LessonID + VideoVersionID + InteractionID</small></button>
                     <button class="entity" data-table="LMS_StudentAnswerOptions"><strong>LMS_StudentAnswerOptions</strong><small>StudentAnswerID + QuestionOptionID</small></button>
                     <button class="entity" data-table="LMS_LearningSessions"><strong>LMS_LearningSessions</strong><small>SessionID • hành vi xem</small></button>
                   </div>
@@ -409,8 +452,9 @@
                 <div class="relation-card"><strong>SYS_Users 1 → N SIM_Courses</strong><span>Giảng viên sở hữu khóa qua TeacherUserID.</span></div>
                 <div class="relation-card"><strong>SIM_Courses 1 → N SIM_Chapters</strong><span>Một khóa có nhiều chương.</span></div>
                 <div class="relation-card"><strong>SIM_Chapters 1 → N SIM_Lessons</strong><span>Một chương có nhiều bài học.</span></div>
-                <div class="relation-card"><strong>SIM_Videos 1 → N SIM_Lessons</strong><span>Nhiều bài học dùng chung video qua VideoID.</span></div>
-                <div class="relation-card"><strong>SIM_Videos 1 → N LMS_VideoInteractions</strong><span>Một video có nhiều mốc tương tác.</span></div>
+                <div class="relation-card"><strong>SIM_Videos 1 → N SIM_VideoVersions</strong><span>Mỗi lần sửa tạo một phiên bản mới tăng dần.</span></div>
+                <div class="relation-card"><strong>SIM_VideoVersions 1 → N SIM_Lessons</strong><span>Mỗi bài học ghim chính xác một phiên bản.</span></div>
+                <div class="relation-card"><strong>SIM_VideoVersions 1 → N LMS_VideoInteractions</strong><span>Mỗi phiên bản có bộ mốc tương tác riêng.</span></div>
                 <div class="relation-card"><strong>LMS_Questions 1 → N LMS_VideoInteractions</strong><span>Một câu hỏi có thể dùng ở nhiều video.</span></div>
                 <div class="relation-card"><strong>SYS_Users N ↔ N SIM_Courses</strong><span>Học viên và khóa nối qua LMS_Enrollments.</span></div>
                 <div class="relation-card"><strong>LMS_StudentAnswers → Progress</strong><span>Điểm câu trả lời tổng hợp theo LessonID.</span></div>
@@ -423,7 +467,7 @@
           <div class="section-head">
             <div>
               <p class="kicker">Từ điển dữ liệu</p>
-              <h2 id="tableDictionaryTitle">24 bảng vật lý đang sử dụng</h2>
+              <h2 id="tableDictionaryTitle">25 bảng vật lý đang sử dụng</h2>
               <p class="section-desc">Tên cũ chỉ tồn tại dưới dạng compatibility view; phát triển mới dùng tên có prefix bên dưới.</p>
             </div>
           </div>
@@ -442,21 +486,22 @@
                 <tr data-search="SIM_CourseCategories category danh mục"><td>SIM_CourseCategories</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK CourseCategoryID</span></td><td>SIM_Courses</td><td>Danh mục phân loại khóa học.</td></tr>
                 <tr data-search="SIM_Courses course khóa học teacher"><td>SIM_Courses</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK CourseID</span><span class="key fk">TeacherUserID</span></td><td>SYS_Users, SIM_CourseCategories</td><td>Thông tin và trạng thái xuất bản khóa học.</td></tr>
                 <tr data-search="SIM_Chapters chapter chương"><td>SIM_Chapters</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK ChapterID</span><span class="key fk">CourseID</span></td><td>SIM_Courses</td><td>Chương nội dung thuộc khóa học.</td></tr>
-                <tr data-search="SIM_Lessons lesson bài học video"><td>SIM_Lessons</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK LessonID</span><span class="key fk">CourseID</span><span class="key fk">ChapterID</span><span class="key fk">VideoID</span></td><td>SIM_Courses, SIM_Chapters, SIM_Videos</td><td>Bài học; tham chiếu video tương tác đã soạn.</td></tr>
+                <tr data-search="SIM_Lessons lesson bài học video version"><td>SIM_Lessons</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK LessonID</span><span class="key fk">CourseID</span><span class="key fk">VideoID</span><span class="key fk">VideoVersionID</span></td><td>SIM_Courses, SIM_Videos, SIM_VideoVersions</td><td>Bài học ghim một phiên bản video cụ thể.</td></tr>
                 <tr data-search="SIM_VideoAssets asset thư viện file media"><td>SIM_VideoAssets</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetID</span><span class="key fk">CreatedByUserID</span></td><td>SYS_Users, SIM_Videos</td><td>Metadata tài nguyên video và tác giả.</td></tr>
                 <tr data-search="SIM_VideoAssetShares share chia sẻ giáo viên"><td>SIM_VideoAssetShares</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetShareID</span><span class="key fk">VideoAssetID</span><span class="key fk">TeacherUserID</span></td><td>SIM_VideoAssets, SYS_Users</td><td>Chia sẻ video cho giáo viên được chọn.</td></tr>
-                <tr data-search="SIM_Videos video tương tác độc lập"><td>SIM_Videos</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoID</span><span class="key fk">VideoAssetID</span></td><td>SIM_VideoAssets; được SIM_Lessons tham chiếu</td><td>Video tương tác độc lập dùng chung cho nhiều bài học.</td></tr>
+                <tr data-search="SIM_Videos video tương tác độc lập current version"><td>SIM_Videos</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoID</span><span class="key fk">VideoAssetID</span><span class="key fk">CurrentVideoVersionID</span></td><td>SIM_VideoAssets, SIM_VideoVersions</td><td>Định danh video dùng chung và con trỏ tới phiên bản mới nhất.</td></tr>
+                <tr data-search="SIM_VideoVersions version phiên bản lịch sử"><td>SIM_VideoVersions</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoVersionID</span><span class="key fk">VideoID</span><span class="key">VersionNumber</span></td><td>SIM_Videos; được bài học, tương tác và kết quả tham chiếu</td><td>Ảnh chụp bất biến của file, cấu hình và mô tả thay đổi mỗi phiên bản.</td></tr>
 
                 <tr data-search="LMS_Questions question câu hỏi ngân hàng"><td>LMS_Questions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionID</span><span class="key fk">CreatedByUserID</span></td><td>SYS_Users</td><td>Ngân hàng câu hỏi dùng lại.</td></tr>
                 <tr data-search="LMS_QuestionOptions option đáp án lựa chọn"><td>LMS_QuestionOptions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionOptionID</span><span class="key fk">QuestionID</span></td><td>LMS_Questions</td><td>Phương án của câu hỏi lựa chọn.</td></tr>
                 <tr data-search="LMS_QuestionAnswerKeys answer key trả lời ngắn"><td>LMS_QuestionAnswerKeys</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionAnswerKeyID</span><span class="key fk">QuestionID</span></td><td>LMS_Questions</td><td>Đáp án chữ được chấp nhận.</td></tr>
-                <tr data-search="LMS_VideoInteractions interaction timeline mốc"><td>LMS_VideoInteractions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK VideoInteractionID</span><span class="key fk">VideoID</span><span class="key fk">QuestionID</span></td><td>SIM_Videos, LMS_Questions</td><td>Mốc câu hỏi trong video, điểm và số lần làm.</td></tr>
+                <tr data-search="LMS_VideoInteractions interaction timeline mốc version"><td>LMS_VideoInteractions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK VideoInteractionID</span><span class="key fk">VideoVersionID</span><span class="key fk">QuestionID</span></td><td>SIM_VideoVersions, LMS_Questions</td><td>Mốc câu hỏi, điểm và số lần làm riêng của từng phiên bản.</td></tr>
                 <tr data-search="LMS_Enrollments enrollment ghi danh"><td>LMS_Enrollments</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK EnrollmentID</span><span class="key fk">CourseID</span><span class="key fk">StudentUserID</span></td><td>SIM_Courses, SYS_Users</td><td>Học viên được phân vào khóa học.</td></tr>
                 <tr data-search="LMS_StudentLessonProgress lesson progress điểm bài"><td>LMS_StudentLessonProgress</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentLessonProgressID</span><span class="key fk">LessonID</span></td><td>SYS_Users, SIM_Courses, SIM_Lessons</td><td>Tiến độ và điểm tổng theo bài học.</td></tr>
-                <tr data-search="LMS_StudentVideoProgress video progress xem"><td>LMS_StudentVideoProgress</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentVideoProgressID</span><span class="key fk">LessonID</span><span class="key fk">VideoID</span></td><td>SYS_Users, SIM_Lessons, SIM_Videos</td><td>Vị trí xem, thời lượng và % hoàn thành video.</td></tr>
-                <tr data-search="LMS_StudentAnswers answer sai đúng score điểm"><td>LMS_StudentAnswers</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentAnswerID</span><span class="key fk">VideoInteractionID</span><span class="key fk">QuestionID</span></td><td>Học viên, khóa, bài, video, tương tác, câu hỏi</td><td>Mọi lần trả lời, đúng/sai, điểm và trạng thái chấm.</td></tr>
+                <tr data-search="LMS_StudentVideoProgress video progress xem version"><td>LMS_StudentVideoProgress</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentVideoProgressID</span><span class="key fk">LessonID</span><span class="key fk">VideoVersionID</span></td><td>SYS_Users, SIM_Lessons, SIM_VideoVersions</td><td>Vị trí xem, thời lượng và % hoàn thành theo phiên bản.</td></tr>
+                <tr data-search="LMS_StudentAnswers answer sai đúng score điểm version"><td>LMS_StudentAnswers</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentAnswerID</span><span class="key fk">VideoVersionID</span><span class="key fk">VideoInteractionID</span><span class="key fk">QuestionID</span></td><td>Học viên, khóa, bài, phiên bản, tương tác, câu hỏi</td><td>Mọi lần trả lời đúng/sai, điểm và phiên bản nội dung đã làm.</td></tr>
                 <tr data-search="LMS_StudentAnswerOptions selected option"><td>LMS_StudentAnswerOptions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key fk">StudentAnswerID</span><span class="key fk">QuestionOptionID</span></td><td>LMS_StudentAnswers, LMS_QuestionOptions</td><td>Các lựa chọn học viên đã chọn.</td></tr>
-                <tr data-search="LMS_LearningSessions session học pause seek"><td>LMS_LearningSessions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK LearningSessionID</span><span class="key">SessionID</span></td><td>Học viên, khóa, bài học, video</td><td>Phiên học, thời lượng xem, seek/pause/tương tác.</td></tr>
+                <tr data-search="LMS_LearningSessions session học pause seek version"><td>LMS_LearningSessions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK LearningSessionID</span><span class="key">SessionID</span><span class="key fk">VideoVersionID</span></td><td>Học viên, khóa, bài học, phiên bản video</td><td>Phiên học, thời lượng xem, seek/pause/tương tác theo phiên bản.</td></tr>
               </tbody>
             </table>
           </div>
@@ -465,7 +510,7 @@
         <section id="businessRules" aria-labelledby="businessRulesTitle">
           <div class="section-head"><div><p class="kicker">Quy tắc không được nhầm</p><h2 id="businessRulesTitle">Các nguyên tắc chi phối dữ liệu</h2></div></div>
           <div class="rule-grid">
-            <article class="card rule-card" data-search="video nhiều bài học dùng chung"><h3>Video dùng chung, kết quả tách riêng</h3><p><code>SIM_Lessons.VideoID</code> cho phép nhiều bài học dùng cùng video. Tiến độ có khóa duy nhất theo <code>StudentUserID + LessonID + VideoID</code>.</p></article>
+            <article class="card rule-card" data-search="video nhiều bài học dùng chung version"><h3>Video dùng chung, phiên bản được ghim</h3><p><code>SIM_Lessons.VideoID</code> nhận diện video; <code>VideoVersionID</code> ghim nội dung. Tiến độ tách theo <code>StudentUserID + LessonID + VideoID + VideoVersionID</code>.</p></article>
             <article class="card rule-card" data-search="trả lời sai lưu database"><h3>Trả lời sai vẫn phải lưu</h3><p>Tạo bản ghi <code>LMS_StudentAnswers</code> với <code>IsCorrect = 0</code> và <code>ScoreAwarded = 0</code>; không được bỏ qua lần làm sai.</p></article>
             <article class="card rule-card" data-search="tác giả quyền video share admin"><h3>Quyền sở hữu video</h3><p>Giáo viên thấy video mình tạo/được chia sẻ. Quản trị viên được xem và sửa toàn bộ. Chia sẻ không chuyển quyền sở hữu.</p></article>
             <article class="card rule-card" data-search="xóa mềm soft delete"><h3>Xóa mềm nội dung</h3><p>Khóa học, bài học, câu hỏi và tương tác dùng <code>IsDeleted</code> hoặc trạng thái để giữ lịch sử học tập liên quan.</p></article>

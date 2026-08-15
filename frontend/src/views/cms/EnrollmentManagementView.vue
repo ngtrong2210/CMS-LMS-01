@@ -6,7 +6,9 @@
         <p class="page-subtitle mb-0">Ghi danh học viên để cấp quyền truy cập khóa học và theo dõi tiến độ.</p>
       </div>
       <CmsPageActions>
-        <button class="btn btn-brand" @click="openForm"><i class="bi bi-person-plus me-1"></i> Phân học viên</button>
+        <button class="btn btn-action-create" @click="openForm">
+          <i class="bi bi-person-plus me-1"></i> Phân học viên
+        </button>
       </CmsPageActions>
     </header>
 
@@ -158,7 +160,8 @@
             ></label
           >
           <button v-if="availableStudents.length" type="button" class="btn btn-link btn-sm" @click="toggleAllVisible">
-            {{ allVisibleSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả đang hiển thị' }}
+            <i :class="['bi', allVisibleSelected ? 'bi-x-square' : 'bi-check2-square', 'me-1']"></i
+            >{{ allVisibleSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả đang hiển thị' }}
           </button>
         </div>
         <div class="search-box mb-2">
@@ -189,8 +192,10 @@
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="formOpen = false"><i class="bi bi-x-lg"></i> Hủy</button>
-          <button class="btn btn-brand" :disabled="saving || !form.courseId || !form.studentIds.length">
+          <button type="button" class="btn btn-action-cancel" @click="formOpen = false">
+            <i class="bi bi-x-lg"></i> Hủy
+          </button>
+          <button class="btn btn-action-save" :disabled="saving || !form.courseId || !form.studentIds.length">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
             ><i v-else class="bi bi-check-lg me-1"></i>Ghi danh {{ form.studentIds.length || '' }} học viên
           </button>

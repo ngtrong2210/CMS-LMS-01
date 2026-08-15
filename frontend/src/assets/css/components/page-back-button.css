@@ -8,8 +8,8 @@
   padding: 0 0.7rem;
   border: 0;
   border-radius: var(--eduvers-bdr-radius);
-  color: var(--eduvers-base);
-  background: rgba(var(--eduvers-base-rgb), 0.1);
+  color: #fff;
+  background: var(--brand-green);
   font-size: 0.75rem;
   font-weight: 700;
   transition:
@@ -20,7 +20,7 @@
 
 .page-back-button:hover {
   color: #fff;
-  background: var(--eduvers-base);
+  background: var(--brand-green-dark);
   transform: translateX(-2px);
 }
 

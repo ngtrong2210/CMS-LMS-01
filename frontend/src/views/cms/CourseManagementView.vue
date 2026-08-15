@@ -6,7 +6,9 @@
         <p class="page-subtitle mb-0">Tạo, cập nhật và quản lý nội dung đào tạo từ SQL Server.</p>
       </div>
       <CmsPageActions>
-        <button class="btn btn-brand" @click="openForm()"><i class="bi bi-plus-lg me-1"></i> Thêm khóa học</button>
+        <button class="btn btn-action-create" @click="openForm()">
+          <i class="bi bi-plus-lg me-1"></i> Thêm khóa học
+        </button>
       </CmsPageActions>
     </header>
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
@@ -132,8 +134,9 @@
           </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-light" @click="showForm = false"><i class="bi bi-x-lg"></i> Hủy</button
-          ><button class="btn btn-brand" :disabled="saving">
+          <button type="button" class="btn btn-action-cancel" @click="showForm = false">
+            <i class="bi bi-x-lg"></i> Hủy</button
+          ><button class="btn btn-action-save" :disabled="saving">
             <span v-if="saving" class="spinner-border spinner-border-sm"></span
             ><i v-else class="bi bi-check-lg"></i> Lưu khóa học
           </button>

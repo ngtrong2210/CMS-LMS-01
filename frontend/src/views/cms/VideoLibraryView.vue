@@ -8,7 +8,9 @@
         </p>
       </div>
       <CmsPageActions>
-        <button class="btn btn-brand" @click="openUpload"><i class="bi bi-cloud-arrow-up"></i> Thêm video</button>
+        <button class="btn btn-action-create" @click="openUpload">
+          <i class="bi bi-cloud-arrow-up"></i> Thêm video
+        </button>
       </CmsPageActions>
     </header>
 
@@ -64,7 +66,7 @@
         <span
           ><i class="bi bi-collection-play"></i> Tìm thấy <strong>{{ items.length }}</strong> video</span
         >
-        <button v-if="hasFilters" class="btn btn-light btn-sm" @click="clearFilters">
+        <button v-if="hasFilters" class="btn btn-action-cancel btn-sm" @click="clearFilters">
           <i class="bi bi-arrow-counterclockwise"></i> Xóa bộ lọc
         </button>
       </div>
@@ -166,7 +168,7 @@
             <p>
               {{
                 form.id
-                  ? 'Quản trị viên được sửa mọi video; tác giả chỉ sửa video của mình. Thay đổi sẽ đồng bộ tới các bài học đang dùng.'
+                  ? 'Mỗi lần lưu sẽ tạo một phiên bản mới. Bài học không được chọn tiếp tục dùng nguyên phiên bản cũ.'
                   : 'Video mới được đặt ở chế độ riêng tư. Bạn có thể chia sẻ sau khi lưu.'
               }}
             </p>
@@ -192,7 +194,7 @@
             preload="metadata"
             @loadedmetadata="readDuration"
           ></video
-          ><label class="btn btn-light btn-sm mt-2" :class="{ disabled: uploading }"
+          ><label class="btn btn-action-upload btn-sm mt-2" :class="{ disabled: uploading }"
             ><i class="bi bi-arrow-repeat"></i> {{ uploading ? `Đang tải ${uploadProgress}%` : 'Thay file video'
             }}<input
               class="visually-hidden"
@@ -223,12 +225,74 @@
             ><input v-model="form.videoUrl" class="form-control" readonly required />
           </div>
         </div>
+        <section v-if="form.id" class="version-panel">
+          <div class="version-panel-heading">
+            <div>
+              <span class="version-badge"><i class="bi bi-layers"></i> Phiên bản {{ currentVersionNumber }}</span>
+              <h3>Tạo phiên bản {{ currentVersionNumber + 1 }}</h3>
+              <p>Chọn chính xác các bài học sẽ chuyển sang bản mới. Những bài còn lại không thay đổi.</p>
+            </div>
+            <span class="usage-total">{{ usageLessons.length }} bài đang dùng</span>
+          </div>
+          <label class="form-label" for="change-summary">Nội dung thay đổi</label>
+          <textarea
+            id="change-summary"
+            v-model.trim="form.changeSummary"
+            class="form-control"
+            rows="2"
+            maxlength="1000"
+            required
+            placeholder="Ví dụ: cập nhật file bài giảng và bổ sung câu hỏi tương tác."
+          ></textarea>
+          <div v-if="usageLoading" class="version-loading">
+            <span class="spinner-border spinner-border-sm text-brand"></span> Đang tải danh sách bài học...
+          </div>
+          <template v-else-if="usageLessons.length">
+            <div class="lesson-picker-heading">
+              <strong>Bài học chuyển sang phiên bản mới</strong>
+              <button type="button" class="btn btn-link btn-sm" @click="toggleAllUsageLessons">
+                {{ allUsageLessonsSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}
+              </button>
+            </div>
+            <div class="version-lesson-list">
+              <label
+                v-for="lesson in usageLessons"
+                :key="lesson.id"
+                :class="['version-lesson-option', { disabled: !lesson.canMove }]"
+              >
+                <input v-model="form.lessonIds" type="checkbox" :value="lesson.id" :disabled="!lesson.canMove" />
+                <span class="lesson-check"><i class="bi bi-check-lg"></i></span>
+                <span>
+                  <strong>{{ lesson.lessonTitle }}</strong>
+                  <small>
+                    {{ lesson.courseTitle }} · {{ lesson.chapterTitle || 'Chưa xếp chương' }}
+                    <em v-if="!lesson.canMove">· Do giáo viên khác quản lý</em>
+                  </small>
+                </span>
+                <span class="lesson-version">v{{ lesson.versionNumber }}</span>
+              </label>
+            </div>
+            <p class="selection-note">
+              <i class="bi bi-info-circle"></i>
+              Đã chọn <strong>{{ form.lessonIds.length }}</strong
+              >/{{ usageLessons.length }} bài. Tiến độ của các bài được chuyển sẽ tính lại theo phiên bản mới; lịch sử
+              câu trả lời cũ vẫn được lưu theo phiên bản cũ.
+            </p>
+          </template>
+          <p v-else class="unused-note">
+            <i class="bi bi-check-circle"></i> Video chưa gắn vào bài học. Phiên bản mới sẽ trở thành bản mặc định cho
+            lần gắn tiếp theo.
+          </p>
+        </section>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="uploadModal = false">
+          <button type="button" class="btn btn-action-cancel" @click="uploadModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
-          ><button class="btn btn-brand" :disabled="saving || uploading || !form.videoUrl">
+          ><button
+            class="btn btn-action-save"
+            :disabled="saving || uploading || usageLoading || !form.videoUrl || (form.id && !form.changeSummary)"
+          >
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
-            ><i v-else class="bi bi-check-lg"></i> {{ form.id ? 'Lưu thay đổi' : 'Lưu vào thư viện' }}
+            ><i v-else class="bi bi-layers"></i> {{ form.id ? 'Tạo phiên bản mới' : 'Lưu vào thư viện' }}
           </button>
         </div>
       </form>
@@ -293,9 +357,9 @@
           </div>
         </template>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="closeShare"><i class="bi bi-x-lg"></i> Hủy</button
+          <button type="button" class="btn btn-action-cancel" @click="closeShare"><i class="bi bi-x-lg"></i> Hủy</button
           ><button
-            class="btn btn-brand"
+            class="btn btn-action-share"
             :disabled="
               sharingLoading || sharingSaving || (shareForm.shareScope === 'SELECTED' && !shareForm.teacherIds.length)
             "
@@ -326,8 +390,11 @@ const items = ref([]),
 const uploadModal = ref(false),
   uploading = ref(false),
   saving = ref(false),
+  usageLoading = ref(false),
   uploadProgress = ref(0),
   metadataVideo = ref(null)
+const usageSummary = ref({}),
+  usageLessons = ref([])
 const shareModal = ref(false),
   sharingLoading = ref(false),
   sharingSaving = ref(false),
@@ -342,6 +409,15 @@ const playbackUrl = computed(() => resolveApiAssetUrl(form.videoUrl)),
   pick = (source, ...names) =>
     names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null),
   formatTime = formatInteractionTime
+const currentVersionNumber = computed(() =>
+  Number(pick(usageSummary.value, 'CurrentVersionNumber', 'currentVersionNumber') || 1)
+)
+const movableUsageLessons = computed(() => usageLessons.value.filter((lesson) => lesson.canMove))
+const allUsageLessonsSelected = computed(
+  () =>
+    movableUsageLessons.value.length > 0 &&
+    movableUsageLessons.value.every((lesson) => form.lessonIds.includes(lesson.id))
+)
 const hasFilters = computed(
   () =>
     Boolean(search.value) ||
@@ -393,7 +469,9 @@ function blank() {
     originalFileName: '',
     fileSize: 0,
     mimeType: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    changeSummary: '',
+    lessonIds: []
   }
 }
 async function load() {
@@ -471,7 +549,7 @@ function openUpload() {
   uploadProgress.value = 0
   uploadModal.value = true
 }
-function openEdit(item) {
+async function openEdit(item) {
   Object.assign(form, blank(), {
     id: item.id,
     title: item.title,
@@ -485,6 +563,29 @@ function openEdit(item) {
   })
   uploadProgress.value = 0
   uploadModal.value = true
+  usageLoading.value = true
+  usageSummary.value = {}
+  usageLessons.value = []
+  try {
+    const data = await axiosClient.get(`/video-library/${item.id}/usage`, { params: { _fresh: Date.now() } })
+    usageSummary.value = pick(data, 'Summary', 'summary') || {}
+    usageLessons.value = (pick(data, 'Lessons', 'lessons') || []).map((row) => ({
+      id: Number(pick(row, 'LessonID', 'LessonId', 'lessonID', 'lessonId')),
+      lessonTitle: pick(row, 'LessonTitle', 'lessonTitle') || '',
+      courseTitle: pick(row, 'CourseTitle', 'courseTitle') || '',
+      chapterTitle: pick(row, 'ChapterTitle', 'chapterTitle') || '',
+      versionNumber: Number(pick(row, 'VersionNumber', 'versionNumber') || 1),
+      canMove: Boolean(pick(row, 'CanMove', 'canMove'))
+    }))
+  } catch (error) {
+    uploadModal.value = false
+    show(error.message, 'danger')
+  } finally {
+    usageLoading.value = false
+  }
+}
+function toggleAllUsageLessons() {
+  form.lessonIds = allUsageLessonsSelected.value ? [] : movableUsageLessons.value.map((lesson) => lesson.id)
 }
 async function upload(event) {
   const file = event.target.files?.[0]
@@ -524,7 +625,7 @@ async function save() {
     await load()
     show(
       edited
-        ? 'Đã cập nhật video và đồng bộ tới các bài học đang sử dụng.'
+        ? `Đã tạo phiên bản mới và chuyển ${form.lessonIds.length} bài học đã chọn. Các bài học khác giữ nguyên.`
         : 'Đã thêm video riêng tư vào thư viện. Chỉ bạn nhìn thấy cho đến khi chia sẻ.'
     )
   } catch (error) {

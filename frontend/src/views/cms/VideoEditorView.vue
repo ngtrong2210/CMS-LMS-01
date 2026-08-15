@@ -6,11 +6,11 @@
         <p class="page-subtitle mb-0">{{ form.title }} • Thời lượng {{ formatTime(form.durationSeconds) }}</p>
       </div>
       <CmsPageActions class="video-header-actions">
-        <button class="btn header-preview-button" :disabled="previewLoading" @click="openPreview">
+        <button class="btn btn-action-view header-preview-button" :disabled="previewLoading" @click="openPreview">
           <span v-if="previewLoading" class="spinner-border spinner-border-sm me-1"></span
           ><i v-else class="bi bi-eye"></i> Xem như học viên
         </button>
-        <label class="btn header-upload-button mb-0" :class="{ disabled: uploading }"
+        <label class="btn btn-action-upload header-upload-button mb-0" :class="{ disabled: uploading }"
           ><i class="bi bi-cloud-arrow-up"></i> {{ uploading ? `Đang tải ${uploadProgress}%` : 'Upload video'
           }}<input
             class="visually-hidden"
@@ -19,7 +19,7 @@
             :disabled="uploading"
             @change="uploadVideo"
         /></label>
-        <button class="btn btn-brand" :disabled="saving || !form.lessonId" @click="saveVideo">
+        <button class="btn btn-action-save" :disabled="saving || !form.lessonId" @click="saveVideo">
           <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
           ><i v-else class="bi bi-check-lg"></i> Lưu video
         </button>
@@ -277,17 +277,18 @@
         <div class="interaction-editor-actions">
           <button
             type="button"
-            class="btn btn-light text-danger"
+            class="btn btn-action-delete"
             :disabled="interactionSaving"
             @click="requestDelete(selected)"
           >
             <i class="bi bi-trash me-1"></i>Xóa
           </button>
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-light" @click="closeInteractionEditor">Đóng</button
+            <button type="button" class="btn btn-action-cancel" @click="closeInteractionEditor">
+              <i class="bi bi-x-lg me-1"></i>Đóng</button
             ><button
               type="button"
-              class="btn btn-brand"
+              class="btn btn-action-save"
               :disabled="interactionSaving || !selected.questionId"
               @click="saveInteractionAndClose"
             >
@@ -308,9 +309,10 @@
           ><br />Mốc câu hỏi sẽ không còn xuất hiện trên timeline và Student Player.
         </p>
         <div class="d-flex justify-content-end gap-2">
-          <button class="btn btn-light" @click="confirmDelete = false">Hủy</button
-          ><button class="btn btn-danger" :disabled="interactionSaving" @click="deleteInteraction">
-            Xóa tương tác
+          <button class="btn btn-action-cancel" @click="confirmDelete = false">
+            <i class="bi bi-x-lg me-1"></i>Hủy</button
+          ><button class="btn btn-action-delete" :disabled="interactionSaving" @click="deleteInteraction">
+            <i class="bi bi-trash me-1"></i>Xóa tương tác
           </button>
         </div>
       </div>
@@ -363,7 +365,7 @@
         <div v-if="quickQuestion.questionType !== 'SHORT_ANSWER'" class="quick-options mt-3">
           <div class="d-flex justify-content-between align-items-center">
             <strong><i class="bi bi-list-check me-1 text-brand"></i>Phương án trả lời</strong
-            ><button type="button" class="btn btn-light btn-sm" @click="addQuickOption">
+            ><button type="button" class="btn btn-action-create btn-sm" @click="addQuickOption">
               <i class="bi bi-plus-lg"></i> Thêm phương án
             </button>
           </div>
@@ -387,7 +389,7 @@
               required
             /><button
               type="button"
-              class="btn btn-light btn-sm"
+              class="btn btn-action-delete btn-sm"
               :disabled="quickQuestion.options.length <= 2"
               @click="quickQuestion.options.splice(index, 1)"
             >
@@ -410,8 +412,9 @@
           </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-light" @click="quickQuestionOpen = false">Hủy</button
-          ><button class="btn btn-brand" :disabled="quickQuestionSaving">
+          <button type="button" class="btn btn-action-cancel" @click="quickQuestionOpen = false">
+            <i class="bi bi-x-lg me-1"></i>Hủy</button
+          ><button class="btn btn-action-save" :disabled="quickQuestionSaving">
             <span v-if="quickQuestionSaving" class="spinner-border spinner-border-sm me-1"></span
             ><i v-else class="bi bi-check-lg"></i> Lưu vào ngân hàng
           </button>

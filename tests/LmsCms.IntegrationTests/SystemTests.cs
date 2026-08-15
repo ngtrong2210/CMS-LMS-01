@@ -1,3 +1,4 @@
+using System.Data;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -156,11 +157,26 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
         var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
         using var connection = factory.CreateConnection();
-        var asset = await connection.QuerySingleAsync<(long Id, string Title, string VideoUrl, string? PosterUrl, int DurationSeconds, string? OriginalFileName, long? FileSize, string? MimeType, string Status)>("""
-            SELECT TOP(1) Id,Title,VideoUrl,PosterUrl,DurationSeconds,OriginalFileName,FileSize,MimeType,Status
-            FROM dbo.VideoAssets
-            WHERE IsDeleted=0 AND CreatedBy NOT IN(1,2) AND VideoUrl LIKE '/Media/Video/%'
-            ORDER BY Id DESC
+        var asset = await connection.QuerySingleAsync<(long Id, long VideoId, long CurrentVersionId, string Title, string VideoUrl, string? PosterUrl, int DurationSeconds, string? OriginalFileName, long? FileSize, string? MimeType, string Status)>("""
+            Select Top (1)
+                dbo.VideoAssets.Id,
+                dbo.Videos.Id VideoId,
+                dbo.Videos.CurrentVideoVersionId CurrentVersionId,
+                dbo.VideoAssets.Title,
+                dbo.VideoAssets.VideoUrl,
+                dbo.VideoAssets.PosterUrl,
+                dbo.VideoAssets.DurationSeconds,
+                dbo.VideoAssets.OriginalFileName,
+                dbo.VideoAssets.FileSize,
+                dbo.VideoAssets.MimeType,
+                dbo.VideoAssets.Status
+            From dbo.VideoAssets
+                Inner Join dbo.Videos On dbo.Videos.VideoAssetId = dbo.VideoAssets.Id
+            Where (dbo.VideoAssets.IsDeleted = 0)
+                And (dbo.VideoAssets.CreatedBy Not In (1, 2))
+                And (dbo.VideoAssets.VideoUrl Like '/Media/Video/%')
+            Order By
+                dbo.VideoAssets.Id Desc
             """);
         var updatedTitle = $"{asset.Title} [ADMIN-QA]";
         var payload = new
@@ -193,8 +209,108 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         finally
         {
             await connection.ExecuteAsync("UPDATE dbo.VideoAssets SET Title=@Title WHERE Id=@Id", new { asset.Title, asset.Id });
-            await connection.ExecuteAsync("UPDATE dbo.Videos SET Title=@Title WHERE VideoAssetId=@Id", new { asset.Title, asset.Id });
-            await connection.ExecuteAsync("DELETE dbo.AuditLogs WHERE Module='VIDEO_LIBRARY' AND EntityId=@EntityId AND Action='UPDATE'", new { EntityId = asset.Id.ToString() });
+            await connection.ExecuteAsync("UPDATE dbo.Videos SET CurrentVideoVersionId=@CurrentVersionId,Title=@Title WHERE Id=@VideoId", new { asset.CurrentVersionId, asset.Title, asset.VideoId });
+            await connection.ExecuteAsync("DELETE dbo.VideoInteractions WHERE VideoId=@VideoId AND VideoVersionId<>@CurrentVersionId", new { asset.VideoId, asset.CurrentVersionId });
+            await connection.ExecuteAsync("DELETE dbo.AuditLogs WHERE Module='VIDEO_LIBRARY' AND EntityName='VideoVersion' AND Action='CREATE_VERSION' AND EntityId IN (SELECT CONVERT(nvarchar(100),Id) FROM dbo.VideoVersions WHERE VideoId=@VideoId AND Id<>@CurrentVersionId)", new { asset.VideoId, asset.CurrentVersionId });
+            await connection.ExecuteAsync("DELETE dbo.VideoVersions WHERE VideoId=@VideoId AND Id<>@CurrentVersionId", new { asset.VideoId, asset.CurrentVersionId });
+        }
+    }
+
+    [Fact]
+    public async Task CreatingVideoVersion_OnlyMovesSelectedLessons()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        connection.Open();
+
+        var asset = await connection.QuerySingleAsync<(long Id, long VideoId, long CurrentVersionId, string Title, string VideoUrl, string? PosterUrl, int DurationSeconds, string? OriginalFileName, long? FileSize, string? MimeType, string Status)>("""
+            Select Top (1)
+                dbo.SIM_VideoAssets.VideoAssetID Id,
+                dbo.SIM_Videos.VideoID VideoId,
+                dbo.SIM_Videos.CurrentVideoVersionID CurrentVersionId,
+                dbo.SIM_VideoAssets.Title,
+                dbo.SIM_VideoAssets.VideoUrl,
+                dbo.SIM_VideoAssets.PosterUrl,
+                dbo.SIM_VideoAssets.DurationSeconds,
+                dbo.SIM_VideoAssets.OriginalFileName,
+                dbo.SIM_VideoAssets.FileSize,
+                dbo.SIM_VideoAssets.MimeType,
+                dbo.SIM_VideoAssets.Status
+            From dbo.SIM_VideoAssets
+                Inner Join dbo.SIM_Videos On dbo.SIM_Videos.VideoAssetID = dbo.SIM_VideoAssets.VideoAssetID
+                Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.VideoID = dbo.SIM_Videos.VideoID
+            Where (dbo.SIM_VideoAssets.IsDeleted = 0)
+            Group By
+                dbo.SIM_VideoAssets.VideoAssetID,
+                dbo.SIM_Videos.VideoID,
+                dbo.SIM_Videos.CurrentVideoVersionID,
+                dbo.SIM_VideoAssets.Title,
+                dbo.SIM_VideoAssets.VideoUrl,
+                dbo.SIM_VideoAssets.PosterUrl,
+                dbo.SIM_VideoAssets.DurationSeconds,
+                dbo.SIM_VideoAssets.OriginalFileName,
+                dbo.SIM_VideoAssets.FileSize,
+                dbo.SIM_VideoAssets.MimeType,
+                dbo.SIM_VideoAssets.Status
+            Having (Count(dbo.SIM_Lessons.LessonID) >= 2)
+            Order By
+                dbo.SIM_VideoAssets.VideoAssetID Desc
+            """);
+        var lessonIds = (await connection.QueryAsync<long>("""
+            Select
+                dbo.SIM_Lessons.LessonID
+            From dbo.SIM_Lessons
+            Where (dbo.SIM_Lessons.VideoID = @VideoId)
+                And (dbo.SIM_Lessons.IsDeleted = 0)
+            Order By
+                dbo.SIM_Lessons.LessonID
+            """, new { asset.VideoId })).ToArray();
+
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            await connection.ExecuteScalarAsync<long>(
+                "dbo.LMS_VideoLibrary_Update",
+                new
+                {
+                    asset.Id,
+                    asset.Title,
+                    asset.VideoUrl,
+                    asset.PosterUrl,
+                    asset.DurationSeconds,
+                    asset.OriginalFileName,
+                    asset.FileSize,
+                    asset.MimeType,
+                    asset.Status,
+                    LessonIdsJson = JsonSerializer.Serialize(new[] { lessonIds[0] }),
+                    ChangeSummary = "Kiểm thử chuyển có chọn lọc.",
+                    ActorId = 1,
+                    IsAdmin = true
+                },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+
+            var newVersionId = await connection.ExecuteScalarAsync<long>(
+                "Select CurrentVideoVersionID From dbo.SIM_Videos Where VideoID = @VideoId",
+                new { asset.VideoId },
+                transaction);
+            var lessonVersions = (await connection.QueryAsync<(long LessonId, long VersionId)>("""
+                Select
+                    dbo.SIM_Lessons.LessonID LessonId,
+                    dbo.SIM_Lessons.VideoVersionID VersionId
+                From dbo.SIM_Lessons
+                Where (dbo.SIM_Lessons.VideoID = @VideoId)
+                    And (dbo.SIM_Lessons.IsDeleted = 0)
+                """, new { asset.VideoId }, transaction)).ToDictionary(row => row.LessonId, row => row.VersionId);
+
+            Assert.NotEqual(asset.CurrentVersionId, newVersionId);
+            Assert.Equal(newVersionId, lessonVersions[lessonIds[0]]);
+            Assert.All(lessonIds.Skip(1), lessonId => Assert.Equal(asset.CurrentVersionId, lessonVersions[lessonId]));
+        }
+        finally
+        {
+            transaction.Rollback();
         }
     }
 
@@ -338,7 +454,7 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         var requiredTables = new[]
         {
             "SYS_Users", "SYS_Roles", "SYS_UserRoles", "SYS_Permissions", "SYS_RolePermissions", "SYS_RefreshTokens", "SYS_AuditLogs",
-            "SIM_Courses", "SIM_CourseCategories", "SIM_Chapters", "SIM_Lessons", "SIM_Videos", "SIM_VideoAssets", "SIM_VideoAssetShares",
+            "SIM_Courses", "SIM_CourseCategories", "SIM_Chapters", "SIM_Lessons", "SIM_Videos", "SIM_VideoVersions", "SIM_VideoAssets", "SIM_VideoAssetShares",
             "LMS_Questions", "LMS_QuestionOptions", "LMS_QuestionAnswerKeys", "LMS_VideoInteractions", "LMS_Enrollments",
             "LMS_StudentVideoProgress", "LMS_StudentLessonProgress", "LMS_StudentAnswers", "LMS_StudentAnswerOptions", "LMS_LearningSessions"
         };

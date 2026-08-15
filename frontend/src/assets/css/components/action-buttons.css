@@ -1,5 +1,19 @@
-/* Màu thao tác theo hệ Eduvers: chính, xem, sửa/chia sẻ và xóa. */
+/* Mỗi nghiệp vụ dùng một màu nhất quán để người dùng nhận biết nhanh. */
+.btn.btn-action-create {
+  color: #fff;
+  background: var(--brand-green);
+  border-color: var(--brand-green);
+}
+
+.btn.btn-action-create:hover,
+.btn.btn-action-create:focus {
+  color: #fff;
+  background: var(--brand-green-dark);
+  border-color: var(--brand-green-dark);
+}
+
 .btn.btn-action-view,
+.btn.btn-action-refresh,
 .btn[title^='Nội dung'],
 .btn[title^='Mở'],
 .btn[title^='Xem'],
@@ -11,6 +25,8 @@
 
 .btn.btn-action-view:hover,
 .btn.btn-action-view:focus,
+.btn.btn-action-refresh:hover,
+.btn.btn-action-refresh:focus,
 .btn[title^='Nội dung']:hover,
 .btn[title^='Mở']:hover,
 .btn[title^='Xem']:hover,
@@ -20,6 +36,7 @@
   border-color: var(--brand-blue-dark);
 }
 
+.btn.btn-action-upload,
 .btn.btn-action-edit,
 .btn[title^='Sửa'],
 .btn[title^='Chỉnh sửa'] {
@@ -28,6 +45,8 @@
   border-color: var(--brand-secondary);
 }
 
+.btn.btn-action-upload:hover,
+.btn.btn-action-upload:focus,
 .btn.btn-action-edit:hover,
 .btn.btn-action-edit:focus,
 .btn[title^='Sửa']:hover,
@@ -35,6 +54,22 @@
   color: #fff;
   background: var(--brand-secondary-dark);
   border-color: var(--brand-secondary-dark);
+}
+
+.btn.btn-action-save,
+.btn.btn-action-export {
+  color: #fff;
+  background: var(--brand-success);
+  border-color: var(--brand-success);
+}
+
+.btn.btn-action-save:hover,
+.btn.btn-action-save:focus,
+.btn.btn-action-export:hover,
+.btn.btn-action-export:focus {
+  color: #fff;
+  background: var(--brand-success-dark);
+  border-color: var(--brand-success-dark);
 }
 
 .btn.btn-action-share,
@@ -82,6 +117,19 @@
   border-color: var(--brand-blue-dark);
 }
 
+.btn.btn-action-cancel {
+  color: var(--ink);
+  background: #edf1f0;
+  border-color: #edf1f0;
+}
+
+.btn.btn-action-cancel:hover,
+.btn.btn-action-cancel:focus {
+  color: var(--ink);
+  background: #dfe7e4;
+  border-color: #dfe7e4;
+}
+
 .btn-icon,
 .table .btn-sm:has(> i:only-child) {
   width: 34px;
@@ -94,11 +142,15 @@
   line-height: 1;
 }
 
+.btn[class*='btn-action-'] i {
+  color: currentColor;
+}
+
 .action-cell {
   white-space: nowrap;
 }
 
 .action-cell .btn + .btn,
 .table td.text-end .btn + .btn {
-  margin-left: .28rem;
+  margin-left: 0.28rem;
 }

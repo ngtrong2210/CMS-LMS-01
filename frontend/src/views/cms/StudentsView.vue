@@ -6,7 +6,7 @@
         <p class="page-subtitle mb-0">Theo dõi hồ sơ và tiến độ học tập.</p>
       </div>
       <CmsPageActions>
-        <button class="btn btn-brand"><i class="bi bi-person-plus"></i> Thêm học viên</button>
+        <button class="btn btn-action-create"><i class="bi bi-person-plus"></i> Thêm học viên</button>
       </CmsPageActions>
     </header>
     <div class="app-card p-3 mb-3">

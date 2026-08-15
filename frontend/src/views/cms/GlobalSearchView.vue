@@ -18,7 +18,7 @@
           placeholder="Nhập ít nhất 2 ký tự..."
           autocomplete="off"
         />
-        <button class="btn btn-brand" :disabled="loading">
+        <button class="btn btn-action-filter" :disabled="loading">
           <span v-if="loading" class="spinner-border spinner-border-sm"></span
           ><template v-else><i class="bi bi-search"></i> Tìm kiếm</template>
         </button>

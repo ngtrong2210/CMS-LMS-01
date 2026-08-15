@@ -31,7 +31,7 @@
                 ><small>Học viên</small></span
               ></RouterLink
             >
-            <button class="btn btn-light btn-sm" title="Đăng xuất" @click="signOut">
+            <button class="btn btn-action-delete btn-sm" title="Đăng xuất" @click="signOut">
               <i class="bi bi-box-arrow-right"></i>
             </button>
           </div>

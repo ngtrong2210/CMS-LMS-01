@@ -11,6 +11,7 @@
   --brand-red-dark: #a71d1d;
   --brand-yellow: #ffc224;
   --brand-success: #07875a;
+  --brand-success-dark: #056b48;
   --theme-navy: #102f4d;
   --theme-sidebar: #183b59;
   --ink: #172636;
@@ -19,15 +20,15 @@
   --surface: #fff;
   --page: #f3f5f7;
   --soft-surface: #f8f4f2;
-  --soft-green: rgba(0,80,153,.08);
-  --soft-blue: rgba(0,80,153,.10);
-  --soft-yellow: rgba(255,194,36,.16);
+  --soft-green: rgba(0, 80, 153, 0.08);
+  --soft-blue: rgba(0, 80, 153, 0.1);
+  --soft-yellow: rgba(255, 194, 36, 0.16);
   --neutral-line: #ede8e6;
   --neutral-line-strong: #ede8e6;
   --sidebar-width: 252px;
   --topbar-height: 68px;
   --card-radius: 5px;
   --control-radius: 5px;
-  --font-body: "DM Sans", "Segoe UI", Arial, sans-serif;
-  --font-heading: "DM Sans", "Segoe UI", Arial, sans-serif;
+  --font-body: 'DM Sans', 'Segoe UI', Arial, sans-serif;
+  --font-heading: 'DM Sans', 'Segoe UI', Arial, sans-serif;
 }

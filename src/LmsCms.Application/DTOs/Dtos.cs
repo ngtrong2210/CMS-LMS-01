@@ -83,6 +83,8 @@ public sealed class VideoAssetSaveRequest
     [Range(0, long.MaxValue)] public long? FileSize { get; init; }
     [StringLength(150)] public string? MimeType { get; init; }
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
+    [StringLength(1000)] public string? ChangeSummary { get; init; }
+    public IReadOnlyCollection<long> LessonIds { get; init; } = [];
 }
 public sealed class VideoShareSaveRequest
 {

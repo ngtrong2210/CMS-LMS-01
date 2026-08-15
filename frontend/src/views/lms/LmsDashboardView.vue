@@ -3,7 +3,7 @@
     <div v-if="loading" class="app-card p-5 text-center"><span class="spinner-border text-success"></span></div>
     <div v-else-if="error" class="alert alert-danger">
       {{ error }}
-      <button class="btn btn-action-view btn-sm ms-2" @click="loadDashboard">
+      <button class="btn btn-action-refresh btn-sm ms-2" @click="loadDashboard">
         <i class="bi bi-arrow-clockwise"></i> Thử lại
       </button>
     </div>

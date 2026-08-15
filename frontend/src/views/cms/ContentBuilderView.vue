@@ -8,7 +8,7 @@
       <CmsPageActions>
         <RouterLink class="btn btn-action-view" to="/cms/videos"
           ><i class="bi bi-collection-play"></i> Thư viện video</RouterLink
-        ><button class="btn btn-brand" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
+        ><button class="btn btn-action-create" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
       </CmsPageActions>
     </header>
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
@@ -75,7 +75,7 @@
         <i class="bi bi-journal-plus"></i>
         <h2>Chưa có chương</h2>
         <p>Tạo chương đầu tiên để bắt đầu xây dựng nội dung khóa học.</p>
-        <button class="btn btn-brand" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
+        <button class="btn btn-action-create" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
       </div>
     </div>
 
@@ -110,9 +110,9 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="chapterModal = false">
+          <button type="button" class="btn btn-action-cancel" @click="chapterModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
-          ><button class="btn btn-brand" :disabled="saving">
+          ><button class="btn btn-action-save" :disabled="saving">
             <span v-if="saving" class="spinner-border spinner-border-sm"></span
             ><i v-else class="bi bi-check-lg"></i> Lưu chương
           </button>
@@ -170,9 +170,9 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-light" @click="lessonModal = false">
+          <button type="button" class="btn btn-action-cancel" @click="lessonModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
-          ><button class="btn btn-brand" :disabled="saving">
+          ><button class="btn btn-action-save" :disabled="saving">
             <span v-if="saving" class="spinner-border spinner-border-sm"></span
             ><i v-else class="bi bi-check-lg"></i> Lưu bài học
           </button>
@@ -195,7 +195,7 @@
             v-model.trim="videoSearch"
             class="form-control"
             placeholder="Tìm theo tên video hoặc tên file..."
-          /><RouterLink class="btn btn-brand text-nowrap" to="/cms/videos"
+          /><RouterLink class="btn btn-action-create text-nowrap" to="/cms/videos"
             ><i class="bi bi-plus-lg"></i> Thêm video mới</RouterLink
           >
         </div>
@@ -231,8 +231,8 @@
           }}
         </p>
         <div class="modal-actions">
-          <button class="btn btn-light" @click="deleteTarget = null"><i class="bi bi-x-lg"></i> Hủy</button
-          ><button class="btn btn-danger" :disabled="saving" @click="removeTarget">
+          <button class="btn btn-action-cancel" @click="deleteTarget = null"><i class="bi bi-x-lg"></i> Hủy</button
+          ><button class="btn btn-action-delete" :disabled="saving" @click="removeTarget">
             <i class="bi bi-trash"></i> Xóa
           </button>
         </div>

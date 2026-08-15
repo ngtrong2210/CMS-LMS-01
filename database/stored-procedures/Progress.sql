@@ -1,3 +1,7 @@
+Set Ansi_nulls On;
+Set Quoted_identifier On;
+Go
+
 Create Or Alter Procedure dbo.LMS_StudentCourse_GetList
     @StudentId Bigint
 As
@@ -319,17 +323,21 @@ Begin
     Select
         dbo.Videos.Id,
         @LessonId LessonId,
-        dbo.Videos.Title,
-        dbo.Videos.VideoUrl,
-        dbo.Videos.PosterUrl,
-        dbo.Videos.DurationSeconds,
-        dbo.Videos.AllowSeek,
-        dbo.Videos.AllowSpeed,
-        dbo.Videos.RequiredWatchPercent
+        dbo.VideoVersions.Id VideoVersionId,
+        dbo.VideoVersions.VersionNumber,
+        dbo.VideoVersions.Title,
+        dbo.VideoVersions.VideoUrl,
+        dbo.VideoVersions.PosterUrl,
+        dbo.VideoVersions.DurationSeconds,
+        dbo.VideoVersions.AllowSeek,
+        dbo.VideoVersions.AllowSpeed,
+        dbo.VideoVersions.RequiredWatchPercent
     From dbo.Lessons
         Inner Join dbo.Videos On dbo.Videos.Id = dbo.Lessons.VideoId
+        Inner Join dbo.VideoVersions On dbo.VideoVersions.Id = dbo.Lessons.VideoVersionId
     Where (dbo.Lessons.Id = @LessonId)
-        And (dbo.Videos.Status = 'ACTIVE');
+        And (dbo.Videos.Status = 'ACTIVE')
+        And (dbo.VideoVersions.VersionStatus = 'PUBLISHED');
 
     Select
         dbo.StudentVideoProgress.Id,
@@ -340,7 +348,8 @@ Begin
         dbo.StudentVideoProgress.Completed
     From dbo.StudentVideoProgress
     Where (dbo.StudentVideoProgress.LessonId = @LessonId)
-        And (dbo.StudentVideoProgress.StudentId = @StudentId);
+        And (dbo.StudentVideoProgress.StudentId = @StudentId)
+        And (dbo.StudentVideoProgress.VideoVersionId = (Select VideoVersionId From dbo.Lessons Where Id = @LessonId));
 
     Select
         dbo.VideoInteractions.Id,
@@ -375,6 +384,7 @@ Begin
     ) Options
     From dbo.Lessons
         Inner Join dbo.VideoInteractions On dbo.VideoInteractions.VideoId = dbo.Lessons.VideoId
+            And dbo.VideoInteractions.VideoVersionId = dbo.Lessons.VideoVersionId
         Inner Join dbo.Questions On dbo.Questions.Id = dbo.VideoInteractions.QuestionId
     Where (dbo.Lessons.Id = @LessonId)
         And (dbo.VideoInteractions.IsDeleted = 0)
@@ -394,7 +404,8 @@ Begin
         dbo.StudentAnswers.AnsweredAt
     From dbo.StudentAnswers
     Where (dbo.StudentAnswers.StudentId = @StudentId)
-        And (dbo.StudentAnswers.LessonId = @LessonId);
+        And (dbo.StudentAnswers.LessonId = @LessonId)
+        And (dbo.StudentAnswers.VideoVersionId = (Select VideoVersionId From dbo.Lessons Where Id = @LessonId));
 
 End
 Go
@@ -456,12 +467,14 @@ Begin
         @LessonScore Decimal(8, 2),
         @Completed Bit;
 
-    Declare @VideoId Bigint;
+    Declare @VideoId Bigint,
+        @VideoVersionId Bigint;
 
     Select
         @CourseId = CourseId,
         @PassingScore = Isnull(PassingScore, 0),
-        @VideoId = VideoId
+        @VideoId = VideoId,
+        @VideoVersionId = VideoVersionId
     From dbo.Lessons
     Where (Id = @LessonId)
         And (IsDeleted = 0);
@@ -470,17 +483,19 @@ Begin
 
     Select
         @VideoCount = Count(*)
-    From dbo.Videos
-    Where (Id = @VideoId)
-        And (Status = 'ACTIVE');
+    From dbo.VideoVersions
+    Where (Id = @VideoVersionId)
+        And (VideoId = @VideoId)
+        And (VersionStatus = 'PUBLISHED');
 
     Select
         @WatchPercent = Isnull(Avg(Isnull(dbo.StudentVideoProgress.WatchPercent, 0)), 0),
-        @WatchSatisfied = Iif(Count(*) = Sum(Iif(Isnull(dbo.StudentVideoProgress.WatchPercent, 0) >= dbo.Videos.RequiredWatchPercent, 1, 0)), 1, 0)
-    From dbo.Videos
-        Left Join dbo.StudentVideoProgress On dbo.StudentVideoProgress.VideoId = dbo.Videos.Id And dbo.StudentVideoProgress.StudentId = @StudentId And dbo.StudentVideoProgress.LessonId = @LessonId
-    Where (dbo.Videos.Id = @VideoId)
-        And (dbo.Videos.Status = 'ACTIVE');
+        @WatchSatisfied = Iif(Count(*) = Sum(Iif(Isnull(dbo.StudentVideoProgress.WatchPercent, 0) >= dbo.VideoVersions.RequiredWatchPercent, 1, 0)), 1, 0)
+    From dbo.VideoVersions
+        Left Join dbo.StudentVideoProgress On dbo.StudentVideoProgress.VideoVersionId = dbo.VideoVersions.Id And dbo.StudentVideoProgress.StudentId = @StudentId And dbo.StudentVideoProgress.LessonId = @LessonId
+    Where (dbo.VideoVersions.Id = @VideoVersionId)
+        And (dbo.VideoVersions.VideoId = @VideoId)
+        And (dbo.VideoVersions.VersionStatus = 'PUBLISHED');
 
     If @VideoCount = 0
     Begin
@@ -496,6 +511,7 @@ Begin
                     1
                 From dbo.VideoInteractions
                 Where (dbo.VideoInteractions.VideoId = @VideoId)
+                    And (dbo.VideoInteractions.VideoVersionId = @VideoVersionId)
                     And (dbo.VideoInteractions.Required = 1)
                     And (dbo.VideoInteractions.IsDeleted = 0)
                     And (dbo.VideoInteractions.Status = 'ACTIVE')
@@ -506,6 +522,7 @@ Begin
                         Where (dbo.StudentAnswers.StudentId = @StudentId)
                             And (dbo.StudentAnswers.LessonId = @LessonId)
                             And (dbo.StudentAnswers.VideoId = @VideoId)
+                            And (dbo.StudentAnswers.VideoVersionId = @VideoVersionId)
                             And (dbo.StudentAnswers.InteractionId = dbo.VideoInteractions.Id)
     )
     ),
@@ -521,6 +538,7 @@ Begin
         From dbo.StudentAnswers
         Where (dbo.StudentAnswers.StudentId = @StudentId)
             And (dbo.StudentAnswers.LessonId = @LessonId)
+            And (@VideoVersionId Is Null Or dbo.StudentAnswers.VideoVersionId = @VideoVersionId)
         Group By Isnull(dbo.StudentAnswers.InteractionId, - dbo.StudentAnswers.QuestionId)
     ) LessonScores;
 
@@ -572,17 +590,21 @@ Begin
     Set Xact_abort On;
 
     Declare @CourseId Bigint,
-        @Duration Int;
+        @Duration Int,
+        @VideoVersionId Bigint;
 
     Select
         @CourseId = dbo.Lessons.CourseId,
-        @Duration = dbo.Videos.DurationSeconds
+        @VideoVersionId = dbo.Lessons.VideoVersionId,
+        @Duration = dbo.VideoVersions.DurationSeconds
     From dbo.Lessons
         Inner Join dbo.Videos On dbo.Videos.Id = dbo.Lessons.VideoId
+        Inner Join dbo.VideoVersions On dbo.VideoVersions.Id = dbo.Lessons.VideoVersionId
     Where (dbo.Videos.Id = @VideoId)
         And (dbo.Lessons.Id = @LessonId)
         And (dbo.Lessons.IsDeleted = 0)
-        And (dbo.Videos.Status = 'ACTIVE');
+        And (dbo.Videos.Status = 'ACTIVE')
+        And (dbo.VideoVersions.VersionStatus = 'PUBLISHED');
 
     If @CourseId Is Null Throw 50001,
     N'Video hoặc bài học không hợp lệ.',
@@ -618,18 +640,20 @@ Begin
         UpdatedAt = Sysutcdatetime()
     Where (StudentId = @StudentId)
         And (LessonId = @LessonId)
-        And (VideoId = @VideoId);
+        And (VideoId = @VideoId)
+        And (VideoVersionId = @VideoVersionId);
 
     If @@Rowcount = 0
-    Insert dbo.StudentVideoProgress (StudentId, CourseId, LessonId, VideoId, CurrentTimeSeconds, MaxWatchedTimeSeconds, WatchedSeconds, WatchPercent, Completed, LastAccessAt)
+    Insert dbo.StudentVideoProgress (StudentId, CourseId, LessonId, VideoId, VideoVersionId, CurrentTimeSeconds, MaxWatchedTimeSeconds, WatchedSeconds, WatchPercent, Completed, LastAccessAt)
     Values
-        (@StudentId, @CourseId, @LessonId, @VideoId, @CurrentTimeSeconds, @MaxWatchedTimeSeconds, @MaxWatchedTimeSeconds, round(@MaxWatchedTimeSeconds * 100.0 / Nullif(@Duration, 0), 2), 0, Sysutcdatetime());
+        (@StudentId, @CourseId, @LessonId, @VideoId, @VideoVersionId, @CurrentTimeSeconds, @MaxWatchedTimeSeconds, @MaxWatchedTimeSeconds, round(@MaxWatchedTimeSeconds * 100.0 / Nullif(@Duration, 0), 2), 0, Sysutcdatetime());
 
     Declare @Required Decimal(5, 2) = (
         Select
             RequiredWatchPercent
-        From dbo.Videos
-        Where (Id = @VideoId)
+        From dbo.VideoVersions
+        Where (Id = @VideoVersionId)
+            And (VideoId = @VideoId)
     );
 
     Update dbo.StudentVideoProgress
@@ -638,7 +662,8 @@ Begin
         CompletedAt = Iif(WatchPercent >= @Required, Coalesce(CompletedAt, Sysutcdatetime()), Null)
     Where (StudentId = @StudentId)
         And (LessonId = @LessonId)
-        And (VideoId = @VideoId);
+        And (VideoId = @VideoId)
+        And (VideoVersionId = @VideoVersionId);
 
     Exec dbo.LMS_LessonProgress_Recalculate @StudentId,
         @LessonId;
@@ -669,10 +694,12 @@ Begin
         @Correct Nvarchar(Max),
         @IsCorrect Bit,
         @Attempt Int,
-        @AttemptLimit Int = 1;
+        @AttemptLimit Int = 1,
+        @VideoVersionId Bigint;
 
     Select
-        @CourseId = CourseId
+        @CourseId = CourseId,
+        @VideoVersionId = VideoVersionId
     From dbo.Lessons
     Where (Id = @LessonId)
         And (IsDeleted = 0);
@@ -711,9 +738,11 @@ Begin
             1
         From dbo.Lessons
             Inner Join dbo.Videos On dbo.Videos.Id = dbo.Lessons.VideoId
+            Inner Join dbo.VideoVersions On dbo.VideoVersions.Id = dbo.Lessons.VideoVersionId
         Where (dbo.Lessons.Id = @LessonId)
             And (dbo.Videos.Id = @VideoId)
             And (dbo.Videos.Status = 'ACTIVE')
+            And (dbo.VideoVersions.Id = @VideoVersionId)
     ) Throw 50005,
     N'Video không thuộc bài học này.',
     1;
@@ -724,8 +753,10 @@ Begin
             1
         From dbo.Lessons
             Inner Join dbo.Videos On dbo.Videos.Id = dbo.Lessons.VideoId
+            Inner Join dbo.VideoVersions On dbo.VideoVersions.Id = dbo.Lessons.VideoVersionId
         Where (dbo.Lessons.Id = @LessonId)
             And (dbo.Videos.Status = 'ACTIVE')
+            And (dbo.VideoVersions.Id = @VideoVersionId)
     ) Throw 50005,
     N'Bài học video yêu cầu một tương tác câu hỏi hợp lệ.',
     1;
@@ -736,7 +767,7 @@ Begin
             @AttemptLimit = dbo.VideoInteractions.AttemptLimit,
             @Score = dbo.VideoInteractions.Score
         From dbo.VideoInteractions
-            Inner Join dbo.Lessons On dbo.Lessons.VideoId = dbo.VideoInteractions.VideoId
+            Inner Join dbo.Lessons On dbo.Lessons.VideoId = dbo.VideoInteractions.VideoId And dbo.Lessons.VideoVersionId = dbo.VideoInteractions.VideoVersionId
         Where (dbo.VideoInteractions.Id = @InteractionId)
             And (dbo.VideoInteractions.QuestionId = @QuestionId)
             And (dbo.Lessons.Id = @LessonId)
@@ -771,6 +802,7 @@ Begin
         From dbo.StudentAnswers With (Updlock, Holdlock)
         Where (StudentId = @StudentId)
             And (LessonId = @LessonId)
+            And (Isnull(VideoVersionId, 0) = Isnull(@VideoVersionId, 0))
             And (QuestionId = @QuestionId)
             And (Isnull(InteractionId, 0) = Isnull(@InteractionId, 0));
 
@@ -818,9 +850,9 @@ Begin
             0
     );
 
-        Insert dbo.StudentAnswers (StudentId, CourseId, LessonId, VideoId, InteractionId, QuestionId, AttemptNumber, AnswerText, IsCorrect, ScoreAwarded, ReviewStatus, TimeInVideoSeconds, TimeSpentSeconds)
+        Insert dbo.StudentAnswers (StudentId, CourseId, LessonId, VideoId, VideoVersionId, InteractionId, QuestionId, AttemptNumber, AnswerText, IsCorrect, ScoreAwarded, ReviewStatus, TimeInVideoSeconds, TimeSpentSeconds)
         Values
-        (@StudentId, @CourseId, @LessonId, @VideoId, @InteractionId, @QuestionId, @Attempt, @AnswerText, @IsCorrect, Iif(@IsCorrect = 1, @Score, 0), Iif(@IsCorrect Is Null, 'PENDING_REVIEW', 'AUTO_GRADED'), @TimeInVideoSeconds, @TimeSpentSeconds);
+        (@StudentId, @CourseId, @LessonId, @VideoId, @VideoVersionId, @InteractionId, @QuestionId, @Attempt, @AnswerText, @IsCorrect, Iif(@IsCorrect = 1, @Score, 0), Iif(@IsCorrect Is Null, 'PENDING_REVIEW', 'AUTO_GRADED'), @TimeInVideoSeconds, @TimeSpentSeconds);
 
         Declare @AnswerId Bigint = Scope_identity();
 
@@ -851,6 +883,7 @@ Begin
                     From dbo.StudentAnswers
                     Where (StudentId = @StudentId)
                         And (LessonId = @LessonId)
+                        And (@VideoVersionId Is Null Or VideoVersionId = @VideoVersionId)
                     Group By Isnull(InteractionId, - QuestionId)
                 ) LessonScores
             ) As Decimal(8, 2)

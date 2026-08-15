@@ -6,7 +6,7 @@
         <p class="page-subtitle mb-0">Phân tích hiệu quả học tập theo nhiều góc nhìn.</p>
       </div>
       <CmsPageActions>
-        <button class="btn btn-brand"><i class="bi bi-download"></i> Xuất Excel</button>
+        <button class="btn btn-action-export"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</button>
       </CmsPageActions>
     </header>
     <div class="row g-3 mb-4">

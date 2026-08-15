@@ -11,7 +11,7 @@
       <i class="bi bi-exclamation-circle fs-1 text-danger"></i>
       <h1 class="h4 mt-3">Không thể mở bài học</h1>
       <p class="text-secondary">{{ error }}</p>
-      <button class="btn btn-brand" @click="loadPlayer"><i class="bi bi-arrow-clockwise"></i> Thử lại</button>
+      <button class="btn btn-action-refresh" @click="loadPlayer"><i class="bi bi-arrow-clockwise"></i> Thử lại</button>
     </div>
     <template v-else>
       <div class="player-grid app-card overflow-hidden">
