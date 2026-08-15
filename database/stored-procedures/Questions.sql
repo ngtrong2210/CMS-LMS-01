@@ -1,20 +1,353 @@
-CREATE OR ALTER PROCEDURE dbo.LMS_Question_GetList @Search NVARCHAR(500)=NULL,@Type VARCHAR(50)=NULL,@Page INT=1,@PageSize INT=20 AS
-BEGIN SET NOCOUNT ON; SELECT q.Id,q.QuestionType,q.QuestionText,q.Difficulty,q.DefaultScore,q.Status,u.FullName CreatedBy,q.CreatedAt,(SELECT COUNT(*) FROM dbo.VideoInteractions vi WHERE vi.QuestionId=q.Id AND vi.IsDeleted=0) UsedCount FROM dbo.Questions q JOIN dbo.Users u ON u.Id=q.CreatedBy WHERE q.IsDeleted=0 AND (@Type IS NULL OR @Type='' OR q.QuestionType=@Type) AND (@Search IS NULL OR @Search='' OR q.QuestionText LIKE '%'+@Search+'%') ORDER BY q.CreatedAt DESC OFFSET (@Page-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY; SELECT COUNT(*) FROM dbo.Questions q WHERE q.IsDeleted=0 AND (@Type IS NULL OR @Type='' OR q.QuestionType=@Type) AND (@Search IS NULL OR @Search='' OR q.QuestionText LIKE '%'+@Search+'%'); END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Question_GetById @Id BIGINT AS
-BEGIN SET NOCOUNT ON; SELECT Id,QuestionType,QuestionText,Description,Explanation,Difficulty,DefaultScore,ShortAnswerMode,CreatedBy,CreatedAt,UpdatedAt,Status FROM dbo.Questions WHERE Id=@Id AND IsDeleted=0; SELECT Id,QuestionId,OptionCode,OptionText,IsCorrect,SortOrder FROM dbo.QuestionOptions WHERE QuestionId=@Id AND IsDeleted=0 ORDER BY SortOrder; SELECT Id,QuestionId,AnswerText,IsCaseSensitive,SortOrder FROM dbo.QuestionAnswerKeys WHERE QuestionId=@Id ORDER BY SortOrder; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Question_Create @Id BIGINT=NULL,@QuestionType VARCHAR(50),@QuestionText NVARCHAR(MAX),@Description NVARCHAR(MAX)=NULL,@Explanation NVARCHAR(MAX)=NULL,@Difficulty VARCHAR(30),@DefaultScore DECIMAL(8,2),@ShortAnswerMode VARCHAR(30)=NULL,@Status VARCHAR(30),@ActorId BIGINT AS
-BEGIN SET NOCOUNT ON; IF @QuestionType NOT IN('SINGLE_CHOICE','MULTIPLE_CHOICE','TRUE_FALSE','SHORT_ANSWER') OR NULLIF(LTRIM(RTRIM(@QuestionText)),'') IS NULL OR @DefaultScore<0 THROW 50001,N'Dữ liệu câu hỏi không hợp lệ.',1; INSERT dbo.Questions(QuestionType,QuestionText,Description,Explanation,Difficulty,DefaultScore,ShortAnswerMode,CreatedBy,Status) VALUES(@QuestionType,@QuestionText,@Description,@Explanation,@Difficulty,@DefaultScore,@ShortAnswerMode,@ActorId,@Status); DECLARE @QuestionId BIGINT=SCOPE_IDENTITY(); INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CREATE','QUESTION','Question',CONVERT(NVARCHAR(100),@QuestionId)); SELECT @QuestionId; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Question_Update @Id BIGINT,@QuestionType VARCHAR(50),@QuestionText NVARCHAR(MAX),@Description NVARCHAR(MAX)=NULL,@Explanation NVARCHAR(MAX)=NULL,@Difficulty VARCHAR(30),@DefaultScore DECIMAL(8,2),@ShortAnswerMode VARCHAR(30)=NULL,@Status VARCHAR(30),@ActorId BIGINT AS
-BEGIN SET NOCOUNT ON; IF @QuestionType NOT IN('SINGLE_CHOICE','MULTIPLE_CHOICE','TRUE_FALSE','SHORT_ANSWER') OR NULLIF(LTRIM(RTRIM(@QuestionText)),'') IS NULL OR @DefaultScore<0 THROW 50001,N'Dữ liệu câu hỏi không hợp lệ.',1; UPDATE dbo.Questions SET QuestionType=@QuestionType,QuestionText=@QuestionText,Description=@Description,Explanation=@Explanation,Difficulty=@Difficulty,DefaultScore=@DefaultScore,ShortAnswerMode=@ShortAnswerMode,Status=@Status,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0; IF @@ROWCOUNT=0 THROW 50002,N'Không tìm thấy câu hỏi.',1; INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'UPDATE','QUESTION','Question',CONVERT(NVARCHAR(100),@Id)); SELECT @Id; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_QuestionAnswers_DeleteByQuestion @QuestionId BIGINT AS BEGIN SET NOCOUNT ON; UPDATE dbo.QuestionOptions SET IsDeleted=1 WHERE QuestionId=@QuestionId; DELETE FROM dbo.QuestionAnswerKeys WHERE QuestionId=@QuestionId; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_QuestionOption_Create @QuestionId BIGINT,@OptionCode NVARCHAR(20),@OptionText NVARCHAR(2000),@IsCorrect BIT,@SortOrder INT AS BEGIN SET NOCOUNT ON; IF NULLIF(LTRIM(RTRIM(@OptionCode)),'') IS NULL OR NULLIF(LTRIM(RTRIM(@OptionText)),'') IS NULL THROW 50001,N'Phương án trả lời không hợp lệ.',1; SET @OptionCode=UPPER(LTRIM(RTRIM(@OptionCode))); IF EXISTS(SELECT 1 FROM dbo.QuestionOptions WHERE QuestionId=@QuestionId AND OptionCode=@OptionCode) UPDATE dbo.QuestionOptions SET OptionText=@OptionText,IsCorrect=@IsCorrect,SortOrder=@SortOrder,IsDeleted=0 WHERE QuestionId=@QuestionId AND OptionCode=@OptionCode; ELSE INSERT dbo.QuestionOptions(QuestionId,OptionCode,OptionText,IsCorrect,SortOrder,IsDeleted) VALUES(@QuestionId,@OptionCode,@OptionText,@IsCorrect,@SortOrder,0); END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_QuestionAnswerKey_Create @QuestionId BIGINT,@AnswerText NVARCHAR(2000),@IsCaseSensitive BIT,@SortOrder INT AS BEGIN SET NOCOUNT ON; IF NULLIF(LTRIM(RTRIM(@AnswerText)),'') IS NULL THROW 50001,N'Đáp án mẫu không hợp lệ.',1; INSERT dbo.QuestionAnswerKeys(QuestionId,AnswerText,IsCaseSensitive,SortOrder) VALUES(@QuestionId,@AnswerText,@IsCaseSensitive,@SortOrder); END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Question_Delete @Id BIGINT,@ActorId BIGINT AS BEGIN SET NOCOUNT ON; UPDATE dbo.Questions SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0; DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 BEGIN UPDATE dbo.VideoInteractions SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE QuestionId=@Id AND IsDeleted=0; INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'DELETE','QUESTION','Question',CONVERT(NVARCHAR(100),@Id)); END; SELECT @Rows; END
-GO
+Create Or Alter Procedure dbo.LMS_Question_GetList
+    @Search Nvarchar(500) = Null,
+    @Type Varchar(50) = Null,
+    @Page Int = 1,
+    @PageSize Int = 20
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.Questions.Id,
+        dbo.Questions.QuestionType,
+        dbo.Questions.QuestionText,
+        dbo.Questions.Difficulty,
+        dbo.Questions.DefaultScore,
+        dbo.Questions.Status,
+        dbo.Users.FullName CreatedBy,
+        dbo.Questions.CreatedAt,
+        (Select Count(*) From dbo.VideoInteractions Where (dbo.VideoInteractions.QuestionId = dbo.Questions.Id) And (dbo.VideoInteractions.IsDeleted = 0)) UsedCount
+    From dbo.Questions
+    Inner Join dbo.Users On dbo.Users.Id = dbo.Questions.CreatedBy
+    Where (dbo.Questions.IsDeleted = 0)
+        And (@Type Is Null Or @Type = '' Or dbo.Questions.QuestionType = @Type)
+        And (@Search Is Null Or @Search = '' Or dbo.Questions.QuestionText Like '%' + @Search + '%')
+    Order By dbo.Questions.CreatedAt Desc
+    Offset (@Page - 1) * @PageSize Rows
+    Fetch Next @PageSize Rows Only;
+
+    Select
+        Count(*)
+    From dbo.Questions
+    Where (dbo.Questions.IsDeleted = 0)
+        And (@Type Is Null Or @Type = '' Or dbo.Questions.QuestionType = @Type)
+        And (@Search Is Null Or @Search = '' Or dbo.Questions.QuestionText Like '%' + @Search + '%');
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Question_GetById
+    @Id Bigint
+As
+Begin
+    Set Nocount On;
+
+    Select
+        Id,
+        QuestionType,
+        QuestionText,
+        Description,
+        Explanation,
+        Difficulty,
+        DefaultScore,
+        ShortAnswerMode,
+        CreatedBy,
+        CreatedAt,
+        UpdatedAt,
+        Status
+    From dbo.Questions
+    Where (Id = @Id)
+        And (IsDeleted = 0);
+
+    Select
+        Id,
+        QuestionId,
+        OptionCode,
+        OptionText,
+        IsCorrect,
+        SortOrder
+    From dbo.QuestionOptions
+    Where (QuestionId = @Id)
+        And (IsDeleted = 0)
+    Order By SortOrder;
+
+    Select
+        Id,
+        QuestionId,
+        AnswerText,
+        IsCaseSensitive,
+        SortOrder
+    From dbo.QuestionAnswerKeys
+    Where (QuestionId = @Id)
+    Order By SortOrder;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Question_Create
+    @Id Bigint = Null,
+    @QuestionType Varchar(50),
+    @QuestionText Nvarchar(Max),
+    @Description Nvarchar(Max) = Null,
+    @Explanation Nvarchar(Max) = Null,
+    @Difficulty Varchar(30),
+    @DefaultScore Decimal(8, 2),
+    @ShortAnswerMode Varchar(30) = Null,
+    @Status Varchar(30),
+    @ActorId Bigint
+As
+Begin
+    Set Nocount On;
+
+    If @QuestionType Not In ('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER')
+        Or Nullif(Ltrim(Rtrim(@QuestionText)), '') Is Null
+        Or @DefaultScore < 0
+        Throw 50001, N'Dữ liệu câu hỏi không hợp lệ.', 1;
+
+    Insert dbo.Questions
+    (
+        QuestionType,
+        QuestionText,
+        Description,
+        Explanation,
+        Difficulty,
+        DefaultScore,
+        ShortAnswerMode,
+        CreatedBy,
+        Status
+    )
+    Values
+    (
+        @QuestionType,
+        @QuestionText,
+        @Description,
+        @Explanation,
+        @Difficulty,
+        @DefaultScore,
+        @ShortAnswerMode,
+        @ActorId,
+        @Status
+    );
+
+    Declare @QuestionId Bigint = Scope_identity();
+
+    Insert dbo.AuditLogs
+    (
+        UserId,
+        Action,
+        Module,
+        EntityName,
+        EntityId
+    )
+    Values
+    (
+        @ActorId,
+        'CREATE',
+        'QUESTION',
+        'Question',
+        Convert(Nvarchar(100), @QuestionId)
+    );
+
+    Select
+        @QuestionId;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Question_Update
+    @Id Bigint,
+    @QuestionType Varchar(50),
+    @QuestionText Nvarchar(Max),
+    @Description Nvarchar(Max) = Null,
+    @Explanation Nvarchar(Max) = Null,
+    @Difficulty Varchar(30),
+    @DefaultScore Decimal(8, 2),
+    @ShortAnswerMode Varchar(30) = Null,
+    @Status Varchar(30),
+    @ActorId Bigint
+As
+Begin
+    Set Nocount On;
+
+    If @QuestionType Not In ('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER')
+        Or Nullif(Ltrim(Rtrim(@QuestionText)), '') Is Null
+        Or @DefaultScore < 0
+        Throw 50001, N'Dữ liệu câu hỏi không hợp lệ.', 1;
+
+    Update dbo.Questions
+    Set QuestionType = @QuestionType,
+        QuestionText = @QuestionText,
+        Description = @Description,
+        Explanation = @Explanation,
+        Difficulty = @Difficulty,
+        DefaultScore = @DefaultScore,
+        ShortAnswerMode = @ShortAnswerMode,
+        Status = @Status,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @Id)
+        And (IsDeleted = 0);
+
+    If @@Rowcount = 0
+        Throw 50002, N'Không tìm thấy câu hỏi.', 1;
+
+    Insert dbo.AuditLogs
+    (
+        UserId,
+        Action,
+        Module,
+        EntityName,
+        EntityId
+    )
+    Values
+    (
+        @ActorId,
+        'UPDATE',
+        'QUESTION',
+        'Question',
+        Convert(Nvarchar(100), @Id)
+    );
+
+    Select
+        @Id;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_QuestionAnswers_DeleteByQuestion
+    @QuestionId Bigint
+As
+Begin
+    Set Nocount On;
+
+    Update dbo.QuestionOptions
+    Set IsDeleted = 1
+    Where (QuestionId = @QuestionId);
+
+    Delete From dbo.QuestionAnswerKeys
+    Where (QuestionId = @QuestionId);
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_QuestionOption_Create
+    @QuestionId Bigint,
+    @OptionCode Nvarchar(20),
+    @OptionText Nvarchar(2000),
+    @IsCorrect Bit,
+    @SortOrder Int
+As
+Begin
+    Set Nocount On;
+
+    If Nullif(Ltrim(Rtrim(@OptionCode)), '') Is Null
+        Or Nullif(Ltrim(Rtrim(@OptionText)), '') Is Null
+        Throw 50001, N'Phương án trả lời không hợp lệ.', 1;
+
+    Set @OptionCode = Upper(Ltrim(Rtrim(@OptionCode)));
+
+    If Exists
+    (
+        Select
+            1
+        From dbo.QuestionOptions
+        Where (QuestionId = @QuestionId)
+            And (OptionCode = @OptionCode)
+    )
+        Update dbo.QuestionOptions
+        Set OptionText = @OptionText,
+            IsCorrect = @IsCorrect,
+            SortOrder = @SortOrder,
+            IsDeleted = 0
+        Where (QuestionId = @QuestionId)
+            And (OptionCode = @OptionCode);
+    Else
+        Insert dbo.QuestionOptions
+        (
+            QuestionId,
+            OptionCode,
+            OptionText,
+            IsCorrect,
+            SortOrder,
+            IsDeleted
+        )
+        Values
+        (
+            @QuestionId,
+            @OptionCode,
+            @OptionText,
+            @IsCorrect,
+            @SortOrder,
+            0
+        );
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_QuestionAnswerKey_Create
+    @QuestionId Bigint,
+    @AnswerText Nvarchar(2000),
+    @IsCaseSensitive Bit,
+    @SortOrder Int
+As
+Begin
+    Set Nocount On;
+
+    If Nullif(Ltrim(Rtrim(@AnswerText)), '') Is Null
+        Throw 50001, N'Đáp án mẫu không hợp lệ.', 1;
+
+    Insert dbo.QuestionAnswerKeys
+    (
+        QuestionId,
+        AnswerText,
+        IsCaseSensitive,
+        SortOrder
+    )
+    Values
+    (
+        @QuestionId,
+        @AnswerText,
+        @IsCaseSensitive,
+        @SortOrder
+    );
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Question_Delete
+    @Id Bigint,
+    @ActorId Bigint
+As
+Begin
+    Set Nocount On;
+
+    Update dbo.Questions
+    Set IsDeleted = 1,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @Id)
+        And (IsDeleted = 0);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Begin
+        Update dbo.VideoInteractions
+        Set IsDeleted = 1,
+            UpdatedAt = Sysutcdatetime()
+        Where (QuestionId = @Id)
+            And (IsDeleted = 0);
+
+        Insert dbo.AuditLogs
+        (
+            UserId,
+            Action,
+            Module,
+            EntityName,
+            EntityId
+        )
+        Values
+        (
+            @ActorId,
+            'DELETE',
+            'QUESTION',
+            'Question',
+            Convert(Nvarchar(100), @Id)
+        );
+    End
+
+    Select
+        @Rows;
+End
+Go

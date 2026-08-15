@@ -1,105 +1,187 @@
-CREATE OR ALTER PROCEDURE dbo.LMS_GlobalSearch
- @Search NVARCHAR(250),
- @ActorId BIGINT,
- @IsAdmin BIT=0,
- @Limit INT=60
-AS
-BEGIN
- SET NOCOUNT ON;
+Create Or Alter Procedure dbo.LMS_GlobalSearch
+    @Search Nvarchar(250),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0,
+    @Limit Int = 60
+As
+Begin
+    Set Nocount On;
 
- DECLARE @Term NVARCHAR(250)=LTRIM(RTRIM(ISNULL(@Search,N'')));
- IF LEN(@Term)<2
- BEGIN
-  SELECT TOP (0)
-   CAST(NULL AS VARCHAR(30)) ResultType,
-   CAST(NULL AS BIGINT) EntityId,
-   CAST(NULL AS BIGINT) ParentId,
-   CAST(NULL AS NVARCHAR(500)) Title,
-   CAST(NULL AS NVARCHAR(1000)) Subtitle,
-   CAST(NULL AS NVARCHAR(1000)) Description,
-   CAST(NULL AS VARCHAR(30)) Status,
-   CAST(NULL AS NVARCHAR(1000)) TargetUrl,
-   CAST(NULL AS VARCHAR(100)) Icon,
-   CAST(NULL AS DATETIME2) UpdatedAt,
-   CAST(NULL AS INT) Relevance;
-  RETURN;
- END;
+    Declare @Term Nvarchar(250) = Ltrim(Rtrim(Isnull(@Search, N'')));
 
- SET @Limit=IIF(@Limit BETWEEN 1 AND 100,@Limit,60);
- DECLARE @Pattern NVARCHAR(520)=N'%'+REPLACE(REPLACE(REPLACE(@Term,N'[',N'[[]'),N'%',N'[%]'),N'_',N'[_]')+N'%';
- DECLARE @StartsWith NVARCHAR(510)=REPLACE(REPLACE(REPLACE(@Term,N'[',N'[[]'),N'%',N'[%]'),N'_',N'[_]')+N'%';
+    If Len(@Term) < 2
+    Begin
+        Select
+            Top (0) Cast(Null As Varchar(30)) ResultType,
+            Cast(Null As Bigint) EntityId,
+            Cast(Null As Bigint) ParentId,
+            Cast(Null As Nvarchar(500)) Title,
+            Cast(Null As Nvarchar(1000)) Subtitle,
+            Cast(Null As Nvarchar(1000)) Description,
+            Cast(Null As Varchar(30)) Status,
+            Cast(Null As Nvarchar(1000)) TargetUrl,
+            Cast(Null As Varchar(100)) Icon,
+            Cast(Null As Datetime2) UpdatedAt,
+            Cast(Null As Int) Relevance;
 
- DECLARE @Results TABLE(
-  ResultType VARCHAR(30) NOT NULL,
-  EntityId BIGINT NOT NULL,
-  ParentId BIGINT NULL,
-  Title NVARCHAR(500) NOT NULL,
-  Subtitle NVARCHAR(1000) NULL,
-  Description NVARCHAR(1000) NULL,
-  Status VARCHAR(30) NULL,
-  TargetUrl NVARCHAR(1000) NOT NULL,
-  Icon VARCHAR(100) NOT NULL,
-  UpdatedAt DATETIME2 NULL,
-  Relevance INT NOT NULL
- );
+        Return;
 
- INSERT @Results(ResultType,EntityId,ParentId,Title,Subtitle,Description,Status,TargetUrl,Icon,UpdatedAt,Relevance)
- SELECT 'COURSE',c.Id,NULL,c.Title,
-  CONCAT(c.Code,N' · ',ISNULL(cat.Name,N'Chưa phân loại'),N' · ',teacher.FullName),
-  LEFT(COALESCE(c.ShortDescription,c.Description,N''),1000),c.Status,
-  CONCAT(N'/cms/courses/',c.Id,N'/content'),'bi-journal-bookmark',COALESCE(c.UpdatedAt,c.CreatedAt),
-  CASE WHEN c.Code=@Term THEN 120 WHEN c.Title=@Term THEN 115 WHEN c.Code LIKE @StartsWith THEN 100 WHEN c.Title LIKE @StartsWith THEN 90 ELSE 60 END
- FROM dbo.Courses c
- JOIN dbo.Users teacher ON teacher.Id=c.TeacherId
- LEFT JOIN dbo.CourseCategories cat ON cat.Id=c.CategoryId
- WHERE c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId)
-  AND (c.Code LIKE @Pattern OR c.Title LIKE @Pattern OR c.ShortDescription LIKE @Pattern OR c.Description LIKE @Pattern OR cat.Name LIKE @Pattern OR teacher.FullName LIKE @Pattern);
+    End;
 
- INSERT @Results(ResultType,EntityId,ParentId,Title,Subtitle,Description,Status,TargetUrl,Icon,UpdatedAt,Relevance)
- SELECT 'LESSON',l.Id,l.CourseId,l.Title,
-  CONCAT(c.Code,N' · ',c.Title,N' · ',ch.Title),LEFT(ISNULL(l.Description,N''),1000),l.Status,
-  CONCAT(N'/cms/courses/',l.CourseId,N'/content'),'bi-play-btn',COALESCE(l.UpdatedAt,l.CreatedAt),
-  CASE WHEN l.Title=@Term THEN 110 WHEN l.Title LIKE @StartsWith THEN 85 ELSE 55 END
- FROM dbo.Lessons l
- JOIN dbo.Courses c ON c.Id=l.CourseId AND c.IsDeleted=0
- JOIN dbo.Chapters ch ON ch.Id=l.ChapterId AND ch.IsDeleted=0
- WHERE l.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId)
-  AND (l.Title LIKE @Pattern OR l.Description LIKE @Pattern OR c.Code LIKE @Pattern OR c.Title LIKE @Pattern OR ch.Title LIKE @Pattern);
+    Set @Limit = Iif(@Limit Between 1 And 100, @Limit, 60);
 
- INSERT @Results(ResultType,EntityId,ParentId,Title,Subtitle,Description,Status,TargetUrl,Icon,UpdatedAt,Relevance)
- SELECT 'VIDEO',a.Id,ownedUse.FirstVideoId,a.Title,
-  CONCAT(COALESCE(NULLIF(a.OriginalFileName,N''),N'Tệp video'),N' · ',a.DurationSeconds,N' giây · Đang dùng ',usageInfo.UsageCount,N' bài học'),
-  N'Video trong thư viện dùng chung cho nhiều bài học và khóa học.',a.Status,
-  CASE WHEN ownedUse.FirstVideoId IS NULL THEN N'/cms/videos' ELSE CONCAT(N'/cms/videos/',ownedUse.FirstVideoId,N'/editor') END,
-  'bi-collection-play',COALESCE(a.UpdatedAt,a.CreatedAt),
-  CASE WHEN a.Title=@Term THEN 110 WHEN a.Title LIKE @StartsWith THEN 85 WHEN a.OriginalFileName LIKE @StartsWith THEN 80 ELSE 55 END
- FROM dbo.VideoAssets a
- OUTER APPLY(SELECT COUNT(*) UsageCount FROM dbo.Videos v JOIN dbo.Lessons l ON l.VideoId=v.Id AND l.IsDeleted=0 WHERE v.VideoAssetId=a.Id) usageInfo
- OUTER APPLY(SELECT MIN(v.Id) FirstVideoId FROM dbo.Videos v WHERE v.VideoAssetId=a.Id) ownedUse
- WHERE a.IsDeleted=0
-  AND (@IsAdmin=1 OR a.CreatedBy=@ActorId OR a.ShareScope='SCHOOL' OR EXISTS(SELECT 1 FROM dbo.VideoAssetShares s WHERE s.VideoAssetId=a.Id AND s.TeacherId=@ActorId))
-  AND (a.Title LIKE @Pattern OR a.OriginalFileName LIKE @Pattern OR a.VideoUrl LIKE @Pattern);
+    Declare @Pattern Nvarchar(520) = N'%' + Replace(Replace(Replace(@Term, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
 
- INSERT @Results(ResultType,EntityId,ParentId,Title,Subtitle,Description,Status,TargetUrl,Icon,UpdatedAt,Relevance)
- SELECT 'QUESTION',q.Id,NULL,LEFT(q.QuestionText,500),
-  CONCAT(q.QuestionType,N' · ',q.Difficulty,N' · ',q.DefaultScore,N' điểm'),LEFT(COALESCE(q.Description,q.Explanation,N''),1000),q.Status,
-  CONCAT(N'/cms/questions?edit=',q.Id),'bi-patch-question',COALESCE(q.UpdatedAt,q.CreatedAt),
-  CASE WHEN q.QuestionText=@Term THEN 110 WHEN q.QuestionText LIKE @StartsWith THEN 85 ELSE 55 END
- FROM dbo.Questions q
- WHERE q.IsDeleted=0 AND (q.QuestionText LIKE @Pattern OR q.Description LIKE @Pattern OR q.Explanation LIKE @Pattern OR q.QuestionType LIKE @Pattern OR q.Difficulty LIKE @Pattern);
+    Declare @StartsWith Nvarchar(510) = Replace(Replace(Replace(@Term, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
 
- INSERT @Results(ResultType,EntityId,ParentId,Title,Subtitle,Description,Status,TargetUrl,Icon,UpdatedAt,Relevance)
- SELECT 'STUDENT',u.Id,NULL,u.FullName,
-  CONCAT(COALESCE(NULLIF(u.StudentCode,N''),u.Username),N' · ',u.Email),
-  CONCAT(N'Đang tham gia ',(SELECT COUNT(*) FROM dbo.Enrollments e WHERE e.StudentId=u.Id AND e.Status<>'CANCELLED'),N' khóa học.'),u.Status,
-  CONCAT(N'/cms/enrollments?studentId=',u.Id),'bi-people',COALESCE(u.UpdatedAt,u.CreatedAt),
-  CASE WHEN u.StudentCode=@Term OR u.Username=@Term THEN 120 WHEN u.FullName=@Term THEN 110 WHEN u.StudentCode LIKE @StartsWith OR u.Username LIKE @StartsWith THEN 95 WHEN u.FullName LIKE @StartsWith THEN 85 ELSE 55 END
- FROM dbo.Users u
- WHERE u.IsDeleted=0 AND u.StudentCode IS NOT NULL
-  AND (u.FullName LIKE @Pattern OR u.StudentCode LIKE @Pattern OR u.Username LIKE @Pattern OR u.Email LIKE @Pattern);
+    Declare @Results
+    Table (ResultType Varchar(30) Not Null, EntityId Bigint Not Null, ParentId Bigint Null, Title Nvarchar(500) Not Null, Subtitle Nvarchar(1000) Null, Description Nvarchar(1000) Null, Status Varchar(30) Null, TargetUrl Nvarchar(1000) Not Null, Icon Varchar(100) Not Null, UpdatedAt Datetime2 Null, Relevance Int Not Null);
 
- SELECT TOP (@Limit) ResultType,EntityId,ParentId,Title,Subtitle,Description,Status,TargetUrl,Icon,UpdatedAt,Relevance
- FROM @Results
- ORDER BY Relevance DESC,UpdatedAt DESC,ResultType,Title;
-END
-GO
+    Insert @Results (ResultType, EntityId, ParentId, Title, Subtitle, Description, Status, TargetUrl, Icon, UpdatedAt, Relevance)
+    Select
+        'COURSE',
+        dbo.Courses.Id,
+        Null,
+        dbo.Courses.Title,
+        Concat(dbo.Courses.Code, N' · ', Isnull(dbo.CourseCategories.Name, N'Chưa phân loại'), N' · ', dbo.Users.FullName),
+        Left(Coalesce(dbo.Courses.ShortDescription, dbo.Courses.Description, N''), 1000),
+        dbo.Courses.Status,
+        Concat(N'/cms/courses/', dbo.Courses.Id, N'/content'),
+        'bi-journal-bookmark',
+        Coalesce(dbo.Courses.UpdatedAt, dbo.Courses.CreatedAt),
+        Case When dbo.Courses.Code = @Term Then 120 When dbo.Courses.Title = @Term Then 115 When dbo.Courses.Code Like @StartsWith Then 100 When dbo.Courses.Title Like @StartsWith Then 90 Else 60 End
+    From dbo.Courses
+        Inner Join dbo.Users On dbo.Users.Id = dbo.Courses.TeacherId
+        Left Join dbo.CourseCategories On dbo.CourseCategories.Id = dbo.Courses.CategoryId
+    Where (dbo.Courses.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+        And (dbo.Courses.Code Like @Pattern Or dbo.Courses.Title Like @Pattern Or dbo.Courses.ShortDescription Like @Pattern Or dbo.Courses.Description Like @Pattern Or dbo.CourseCategories.Name Like @Pattern Or dbo.Users.FullName Like @Pattern);
+
+    Insert @Results (ResultType, EntityId, ParentId, Title, Subtitle, Description, Status, TargetUrl, Icon, UpdatedAt, Relevance)
+    Select
+        'LESSON',
+        dbo.Lessons.Id,
+        dbo.Lessons.CourseId,
+        dbo.Lessons.Title,
+        Concat(dbo.Courses.Code, N' · ', dbo.Courses.Title, N' · ', dbo.Chapters.Title),
+        Left(Isnull(dbo.Lessons.Description, N''), 1000),
+        dbo.Lessons.Status,
+        Concat(N'/cms/courses/', dbo.Lessons.CourseId, N'/content'),
+        'bi-play-btn',
+        Coalesce(dbo.Lessons.UpdatedAt, dbo.Lessons.CreatedAt),
+        Case When dbo.Lessons.Title = @Term Then 110 When dbo.Lessons.Title Like @StartsWith Then 85 Else 55 End
+    From dbo.Lessons
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId And dbo.Courses.IsDeleted = 0
+        Inner Join dbo.Chapters On dbo.Chapters.Id = dbo.Lessons.ChapterId And dbo.Chapters.IsDeleted = 0
+    Where (dbo.Lessons.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+        And (dbo.Lessons.Title Like @Pattern Or dbo.Lessons.Description Like @Pattern Or dbo.Courses.Code Like @Pattern Or dbo.Courses.Title Like @Pattern Or dbo.Chapters.Title Like @Pattern);
+
+    Insert @Results (ResultType, EntityId, ParentId, Title, Subtitle, Description, Status, TargetUrl, Icon, UpdatedAt, Relevance)
+    Select
+        'VIDEO',
+        dbo.VideoAssets.Id,
+        ownedUse.FirstVideoId,
+        dbo.VideoAssets.Title,
+        Concat(Coalesce(Nullif(dbo.VideoAssets.OriginalFileName, N''), N'Tệp video'), N' · ', dbo.VideoAssets.DurationSeconds, N' giây · Đang dùng ', usageInfo.UsageCount, N' bài học'),
+        N'Video trong thư viện dùng chung cho nhiều bài học và khóa học.',
+        dbo.VideoAssets.Status,
+        Case When ownedUse.FirstVideoId Is Null Then N'/cms/videos' Else Concat(N'/cms/videos/', ownedUse.FirstVideoId, N'/editor') End,
+        'bi-collection-play',
+        Coalesce(dbo.VideoAssets.UpdatedAt, dbo.VideoAssets.CreatedAt),
+        Case When dbo.VideoAssets.Title = @Term Then 110 When dbo.VideoAssets.Title Like @StartsWith Then 85 When dbo.VideoAssets.OriginalFileName Like @StartsWith Then 80 Else 55 End
+    From dbo.VideoAssets
+        Outer Apply (
+            Select
+                Count(*) UsageCount
+            From dbo.Videos
+                Inner Join dbo.Lessons On dbo.Lessons.VideoId = dbo.Videos.Id And dbo.Lessons.IsDeleted = 0
+            Where (dbo.Videos.VideoAssetId = dbo.VideoAssets.Id)
+    ) usageInfo
+        Outer Apply (
+            Select
+                Min(dbo.Videos.Id) FirstVideoId
+            From dbo.Videos
+            Where (dbo.Videos.VideoAssetId = dbo.VideoAssets.Id)
+    ) ownedUse
+    Where (dbo.VideoAssets.IsDeleted = 0)
+        And (
+        @IsAdmin = 1
+            Or (dbo.VideoAssets.CreatedBy = @ActorId)
+            Or (dbo.VideoAssets.ShareScope = 'SCHOOL')
+            Or Exists (
+                Select
+                    1
+                From dbo.VideoAssetShares
+                Where (dbo.VideoAssetShares.VideoAssetId = dbo.VideoAssets.Id)
+                    And (dbo.VideoAssetShares.TeacherId = @ActorId)
+    )
+    )
+        And (dbo.VideoAssets.Title Like @Pattern Or dbo.VideoAssets.OriginalFileName Like @Pattern Or dbo.VideoAssets.VideoUrl Like @Pattern);
+
+    Insert @Results (ResultType, EntityId, ParentId, Title, Subtitle, Description, Status, TargetUrl, Icon, UpdatedAt, Relevance)
+    Select
+        'QUESTION',
+        dbo.Questions.Id,
+        Null,
+        Left(dbo.Questions.QuestionText, 500),
+        Concat(dbo.Questions.QuestionType, N' · ', dbo.Questions.Difficulty, N' · ', dbo.Questions.DefaultScore, N' điểm'),
+        Left(Coalesce(dbo.Questions.Description, dbo.Questions.Explanation, N''), 1000),
+        dbo.Questions.Status,
+        Concat(N'/cms/questions?edit=', dbo.Questions.Id),
+        'bi-patch-question',
+        Coalesce(dbo.Questions.UpdatedAt, dbo.Questions.CreatedAt),
+        Case When dbo.Questions.QuestionText = @Term Then 110 When dbo.Questions.QuestionText Like @StartsWith Then 85 Else 55 End
+    From dbo.Questions
+    Where (dbo.Questions.IsDeleted = 0)
+        And (dbo.Questions.QuestionText Like @Pattern Or dbo.Questions.Description Like @Pattern Or dbo.Questions.Explanation Like @Pattern Or dbo.Questions.QuestionType Like @Pattern Or dbo.Questions.Difficulty Like @Pattern);
+
+    Insert @Results (ResultType, EntityId, ParentId, Title, Subtitle, Description, Status, TargetUrl, Icon, UpdatedAt, Relevance)
+    Select
+        'STUDENT',
+        dbo.Users.Id,
+        Null,
+        dbo.Users.FullName,
+        Concat(Coalesce(Nullif(dbo.Users.StudentCode, N''), dbo.Users.Username), N' · ', dbo.Users.Email),
+        Concat(
+            N'Đang tham gia ',
+            (
+                Select
+                    Count(*)
+                From dbo.Enrollments
+                Where (dbo.Enrollments.StudentId = dbo.Users.Id)
+                    And (dbo.Enrollments.Status <> 'CANCELLED')
+    ),
+            N' khóa học.'
+    ),
+        dbo.Users.Status,
+        Concat(N'/cms/enrollments?studentId=', dbo.Users.Id),
+        'bi-people',
+        Coalesce(dbo.Users.UpdatedAt, dbo.Users.CreatedAt),
+        Case When dbo.Users.StudentCode = @Term Or dbo.Users.Username = @Term Then 120 When dbo.Users.FullName = @Term Then 110 When dbo.Users.StudentCode Like @StartsWith Or dbo.Users.Username Like @StartsWith Then 95 When dbo.Users.FullName Like @StartsWith Then 85 Else 55 End
+    From dbo.Users
+    Where (dbo.Users.IsDeleted = 0)
+        And (dbo.Users.StudentCode Is Not Null)
+        And (dbo.Users.FullName Like @Pattern Or dbo.Users.StudentCode Like @Pattern Or dbo.Users.Username Like @Pattern Or dbo.Users.Email Like @Pattern);
+
+    Select
+        Top (@Limit) ResultType,
+        EntityId,
+        ParentId,
+        Title,
+        Subtitle,
+        Description,
+        Status,
+        TargetUrl,
+        Icon,
+        UpdatedAt,
+        Relevance
+    From @Results
+    Order By
+        Relevance Desc,
+        UpdatedAt Desc,
+        ResultType,
+        Title;
+
+End
+Go

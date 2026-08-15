@@ -1,81 +1,553 @@
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetList @Search NVARCHAR(500)=NULL,@Status VARCHAR(30)=NULL,@Page INT=1,@PageSize INT=20,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON;
- ;WITH Data AS (SELECT c.Id,c.Code,c.Title,c.Slug,c.ThumbnailUrl,c.ShortDescription,c.TeacherId,c.CategoryId,u.FullName TeacherName,c.Level,c.PassingScore,c.Status,c.CreatedAt,
-  (SELECT COUNT(*) FROM dbo.Lessons l WHERE l.CourseId=c.Id AND l.IsDeleted=0) LessonCount,
-  (SELECT COUNT(*) FROM dbo.Enrollments e WHERE e.CourseId=c.Id AND e.Status<>'CANCELLED') StudentCount
- FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId WHERE c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId) AND (@Status IS NULL OR @Status='' OR c.Status=@Status) AND (@Search IS NULL OR @Search='' OR c.Title LIKE '%'+@Search+'%' OR c.Code LIKE '%'+@Search+'%'))
- SELECT * FROM Data ORDER BY CreatedAt DESC OFFSET (@Page-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY;
- SELECT COUNT(*) FROM dbo.Courses c WHERE c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId) AND (@Status IS NULL OR @Status='' OR c.Status=@Status) AND (@Search IS NULL OR @Search='' OR c.Title LIKE '%'+@Search+'%' OR c.Code LIKE '%'+@Search+'%');
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetById @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0) AND NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT c.*,u.FullName TeacherName,cc.Name CategoryName FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId LEFT JOIN dbo.CourseCategories cc ON cc.Id=c.CategoryId WHERE c.Id=@Id AND c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetContent @CourseId BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder; SELECT l.Id,l.CourseId,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.SortOrder,l.IsRequired,l.PassingScore,l.Status,l.VideoId,v.VideoAssetId,v.Title VideoTitle,v.VideoUrl,CAST(IIF(@IsAdmin=1 OR a.CreatedBy=@ActorId,1,0) AS BIT) CanEditVideo FROM dbo.Lessons l LEFT JOIN dbo.Videos v ON v.Id=l.VideoId LEFT JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE l.CourseId=@CourseId AND l.IsDeleted=0 ORDER BY l.ChapterId,l.SortOrder; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_Create
- @Code NVARCHAR(100),@Title NVARCHAR(500),@Slug NVARCHAR(500)=NULL,@ThumbnailUrl NVARCHAR(1000)=NULL,@ShortDescription NVARCHAR(1000)=NULL,@Description NVARCHAR(MAX)=NULL,
- @TeacherId BIGINT,@CategoryId BIGINT=NULL,@Level VARCHAR(50),@PassingScore DECIMAL(5,2),@Status VARCHAR(30),@ActorId BIGINT
-AS
-BEGIN
- SET NOCOUNT ON; SET XACT_ABORT ON;
- SET @Code=LTRIM(RTRIM(@Code)); SET @Title=LTRIM(RTRIM(@Title)); SET @Slug=COALESCE(NULLIF(LTRIM(RTRIM(@Slug)),''),LOWER(REPLACE(@Code,' ','-')));
- IF @Code='' OR @Title='' OR @PassingScore<0 OR @PassingScore>100 OR @Status NOT IN('DRAFT','PUBLISHED','ARCHIVED') THROW 50001,N'Dữ liệu khóa học không hợp lệ.',1;
- IF NOT EXISTS(SELECT 1 FROM dbo.Users WHERE Id=@TeacherId AND TeacherCode IS NOT NULL AND IsDeleted=0) THROW 50002,N'Giảng viên không tồn tại.',1;
- IF @CategoryId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.CourseCategories WHERE Id=@CategoryId AND Status='ACTIVE') THROW 50002,N'Danh mục không tồn tại.',1;
- IF EXISTS(SELECT 1 FROM dbo.Courses WHERE (Code=@Code OR Slug=@Slug) AND IsDeleted=0) THROW 50006,N'Mã hoặc slug khóa học đã tồn tại.',1;
- BEGIN TRANSACTION;
- INSERT dbo.Courses(Code,Title,Slug,ThumbnailUrl,ShortDescription,Description,TeacherId,CategoryId,Level,PassingScore,Status,PublishedAt,CreatedBy)
- VALUES(@Code,@Title,@Slug,@ThumbnailUrl,@ShortDescription,@Description,@TeacherId,@CategoryId,@Level,@PassingScore,@Status,IIF(@Status='PUBLISHED',SYSUTCDATETIME(),NULL),@ActorId);
- DECLARE @Id BIGINT=SCOPE_IDENTITY();
- INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,NewValuesJson,CreatedAt) VALUES(@ActorId,'CREATE','COURSE','Course',CONVERT(NVARCHAR(100),@Id),(SELECT @Code code,@Title title,@Status status FOR JSON PATH,WITHOUT_ARRAY_WRAPPER),SYSUTCDATETIME());
- COMMIT TRANSACTION; SELECT @Id;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_Update
- @Id BIGINT,@Code NVARCHAR(100),@Title NVARCHAR(500),@Slug NVARCHAR(500)=NULL,@ThumbnailUrl NVARCHAR(1000)=NULL,@ShortDescription NVARCHAR(1000)=NULL,@Description NVARCHAR(MAX)=NULL,
- @TeacherId BIGINT,@CategoryId BIGINT=NULL,@Level VARCHAR(50),@PassingScore DECIMAL(5,2),@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0
-AS
-BEGIN
- SET NOCOUNT ON; SET XACT_ABORT ON;
- SET @Code=LTRIM(RTRIM(@Code)); SET @Title=LTRIM(RTRIM(@Title)); SET @Slug=COALESCE(NULLIF(LTRIM(RTRIM(@Slug)),''),LOWER(REPLACE(@Code,' ','-')));
- IF @Code='' OR @Title='' OR @PassingScore<0 OR @PassingScore>100 OR @Status NOT IN('DRAFT','PUBLISHED','ARCHIVED') THROW 50001,N'Dữ liệu khóa học không hợp lệ.',1;
- IF NOT EXISTS(SELECT 1 FROM dbo.Users WHERE Id=@TeacherId AND TeacherCode IS NOT NULL AND IsDeleted=0) THROW 50002,N'Giảng viên không tồn tại.',1;
- IF @CategoryId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.CourseCategories WHERE Id=@CategoryId AND Status='ACTIVE') THROW 50002,N'Danh mục không tồn tại.',1;
- IF EXISTS(SELECT 1 FROM dbo.Courses WHERE Id<>@Id AND (Code=@Code OR Slug=@Slug) AND IsDeleted=0) THROW 50006,N'Mã hoặc slug khóa học đã tồn tại.',1;
- DECLARE @Old NVARCHAR(MAX)=(SELECT Code code,Title title,Status status FROM dbo.Courses WHERE Id=@Id FOR JSON PATH,WITHOUT_ARRAY_WRAPPER);
- BEGIN TRANSACTION;
- UPDATE dbo.Courses SET Code=@Code,Title=@Title,Slug=@Slug,ThumbnailUrl=@ThumbnailUrl,ShortDescription=@ShortDescription,Description=@Description,TeacherId=@TeacherId,CategoryId=@CategoryId,Level=@Level,PassingScore=@PassingScore,Status=@Status,PublishedAt=IIF(@Status='PUBLISHED',COALESCE(PublishedAt,SYSUTCDATETIME()),PublishedAt),UpdatedAt=SYSUTCDATETIME(),UpdatedBy=@ActorId
- WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId);
- DECLARE @Rows INT=@@ROWCOUNT;
- IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,OldValuesJson,NewValuesJson,CreatedAt) VALUES(@ActorId,'UPDATE','COURSE','Course',CONVERT(NVARCHAR(100),@Id),@Old,(SELECT @Code code,@Title title,@Status status FOR JSON PATH,WITHOUT_ARRAY_WRAPPER),SYSUTCDATETIME());
- COMMIT TRANSACTION; SELECT @Rows;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_ChangeStatus @Id BIGINT,@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN
- SET NOCOUNT ON; SET XACT_ABORT ON;
- IF @Status NOT IN('PUBLISHED','ARCHIVED','DRAFT') THROW 50001,N'Trạng thái khóa học không hợp lệ.',1;
- DECLARE @OldStatus VARCHAR(30)=(SELECT Status FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0);
- BEGIN TRANSACTION;
- UPDATE dbo.Courses SET Status=@Status,PublishedAt=IIF(@Status='PUBLISHED',COALESCE(PublishedAt,SYSUTCDATETIME()),PublishedAt),UpdatedAt=SYSUTCDATETIME(),UpdatedBy=@ActorId WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId);
- DECLARE @Rows INT=@@ROWCOUNT;
- IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,OldValuesJson,NewValuesJson,CreatedAt) VALUES(@ActorId,@Status,'COURSE','Course',CONVERT(NVARCHAR(100),@Id),(SELECT @OldStatus status FOR JSON PATH,WITHOUT_ARRAY_WRAPPER),(SELECT @Status status FOR JSON PATH,WITHOUT_ARRAY_WRAPPER),SYSUTCDATETIME());
- COMMIT TRANSACTION; SELECT @Rows;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_Publish @Id BIGINT,@UserId BIGINT AS BEGIN SET NOCOUNT ON; EXEC dbo.LMS_Course_ChangeStatus @Id,'PUBLISHED',@UserId,1; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Course_Delete @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN
- SET NOCOUNT ON; SET XACT_ABORT ON;
- IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) BEGIN SELECT 0; RETURN; END;
- BEGIN TRANSACTION;
- UPDATE dbo.Courses SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME(),UpdatedBy=@ActorId WHERE Id=@Id;
- UPDATE dbo.Chapters SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE CourseId=@Id;
- UPDATE dbo.Lessons SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE CourseId=@Id;
- INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,NewValuesJson,CreatedAt) VALUES(@ActorId,'DELETE','COURSE','Course',CONVERT(NVARCHAR(100),@Id),N'{"isDeleted":true}',SYSUTCDATETIME());
- COMMIT TRANSACTION; SELECT 1;
-END
-GO
+Create Or Alter Procedure dbo.LMS_Course_GetList
+    @Search Nvarchar(500) = Null,
+    @Status Varchar(30) = Null,
+    @Page Int = 1,
+    @PageSize Int = 20,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    ;
+
+    With
+        Data As (
+            Select
+                dbo.Courses.Id,
+                dbo.Courses.Code,
+                dbo.Courses.Title,
+                dbo.Courses.Slug,
+                dbo.Courses.ThumbnailUrl,
+                dbo.Courses.ShortDescription,
+                dbo.Courses.TeacherId,
+                dbo.Courses.CategoryId,
+                dbo.Users.FullName TeacherName,
+                dbo.Courses.Level,
+                dbo.Courses.PassingScore,
+                dbo.Courses.Status,
+                dbo.Courses.CreatedAt,
+                (
+                    Select
+                        Count(*)
+                    From dbo.Lessons
+                    Where (dbo.Lessons.CourseId = dbo.Courses.Id)
+                        And (dbo.Lessons.IsDeleted = 0)
+    ) LessonCount,
+                (
+                    Select
+                        Count(*)
+                    From dbo.Enrollments
+                    Where (dbo.Enrollments.CourseId = dbo.Courses.Id)
+                        And (dbo.Enrollments.Status <> 'CANCELLED')
+    ) StudentCount
+            From dbo.Courses
+                Inner Join dbo.Users On dbo.Users.Id = dbo.Courses.TeacherId
+            Where (dbo.Courses.IsDeleted = 0)
+                And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+                And (@Status Is Null Or @Status = '' Or dbo.Courses.Status = @Status)
+                And (@Search Is Null Or @Search = '' Or dbo.Courses.Title Like '%' + @Search + '%' Or dbo.Courses.Code Like '%' + @Search + '%')
+    )
+    Select
+        *
+    From Data
+    Order By
+        CreatedAt Desc
+    Offset
+        (@Page -1) * @PageSize Rows
+    Fetch Next
+        @PageSize Rows Only;
+
+    Select
+        Count(*)
+    From dbo.Courses
+    Where (dbo.Courses.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+        And (@Status Is Null Or @Status = '' Or dbo.Courses.Status = @Status)
+        And (@Search Is Null Or @Search = '' Or dbo.Courses.Title Like '%' + @Search + '%' Or dbo.Courses.Code Like '%' + @Search + '%');
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Course_GetById
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+    )
+    And Not Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or TeacherId = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý khóa học này.',
+    1;
+
+    Select
+        dbo.Courses.*,
+        dbo.Users.FullName TeacherName,
+        dbo.CourseCategories.Name CategoryName
+    From dbo.Courses
+        Inner Join dbo.Users On dbo.Users.Id = dbo.Courses.TeacherId
+        Left Join dbo.CourseCategories On dbo.CourseCategories.Id = dbo.Courses.CategoryId
+    Where (dbo.Courses.Id = @Id)
+        And (dbo.Courses.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Course_GetContent
+    @CourseId Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (Id = @CourseId)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or TeacherId = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý khóa học này.',
+    1;
+
+    Select
+        Id,
+        CourseId,
+        Title,
+        Description,
+        SortOrder,
+        Status
+    From dbo.Chapters
+    Where (CourseId = @CourseId)
+        And (IsDeleted = 0)
+    Order By
+        SortOrder;
+
+    Select
+        dbo.Lessons.Id,
+        dbo.Lessons.CourseId,
+        dbo.Lessons.ChapterId,
+        dbo.Lessons.Title,
+        dbo.Lessons.Description,
+        dbo.Lessons.LessonType,
+        dbo.Lessons.DurationSeconds,
+        dbo.Lessons.SortOrder,
+        dbo.Lessons.IsRequired,
+        dbo.Lessons.PassingScore,
+        dbo.Lessons.Status,
+        dbo.Lessons.VideoId,
+        dbo.Videos.VideoAssetId,
+        dbo.Videos.Title VideoTitle,
+        dbo.Videos.VideoUrl,
+        Cast(
+            Iif(
+        @IsAdmin = 1
+                Or dbo.VideoAssets.CreatedBy = @ActorId,
+                1,
+                0
+    ) As Bit
+    ) CanEditVideo
+    From dbo.Lessons
+        Left Join dbo.Videos On dbo.Videos.Id = dbo.Lessons.VideoId
+        Left Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+    Where (dbo.Lessons.CourseId = @CourseId)
+        And (dbo.Lessons.IsDeleted = 0)
+    Order By
+        dbo.Lessons.ChapterId,
+        dbo.Lessons.SortOrder;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Course_Create
+    @Code Nvarchar(100),
+    @Title Nvarchar(500),
+    @Slug Nvarchar(500) = Null,
+    @ThumbnailUrl Nvarchar(1000) = Null,
+    @ShortDescription Nvarchar(1000) = Null,
+    @Description Nvarchar(Max) = Null,
+    @TeacherId Bigint,
+    @CategoryId Bigint = Null,
+    @Level Varchar(50),
+    @PassingScore Decimal(5, 2),
+    @Status Varchar(30),
+    @ActorId Bigint
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    Set @Code = Ltrim(Rtrim(@Code));
+
+    Set @Title = Ltrim(Rtrim(@Title));
+
+    Set @Slug = Coalesce(Nullif(Ltrim(Rtrim(@Slug)), ''), Lower(Replace(@Code, ' ', '-')));
+
+    If @Code = ''
+    Or @Title = ''
+    Or @PassingScore < 0
+    Or @PassingScore > 100
+    Or @Status Not In ('DRAFT', 'PUBLISHED', 'ARCHIVED') Throw 50001,
+    N'Dữ liệu khóa học không hợp lệ.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Users
+        Where (Id = @TeacherId)
+            And (TeacherCode Is Not Null)
+            And (IsDeleted = 0)
+    ) Throw 50002,
+    N'Giảng viên không tồn tại.',
+    1;
+
+    If @CategoryId Is Not Null
+    And Not Exists (
+        Select
+            1
+        From dbo.CourseCategories
+        Where (Id = @CategoryId)
+            And (Status = 'ACTIVE')
+    ) Throw 50002,
+    N'Danh mục không tồn tại.',
+    1;
+
+    If Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (
+                Code = @Code
+                Or (Slug = @Slug)
+    )
+            And (IsDeleted = 0)
+    ) Throw 50006,
+    N'Mã hoặc slug khóa học đã tồn tại.',
+    1;
+
+    Begin Transaction;
+
+    Insert dbo.Courses (Code, Title, Slug, ThumbnailUrl, ShortDescription, Description, TeacherId, CategoryId, Level, PassingScore, Status, PublishedAt, CreatedBy)
+    Values
+        (@Code, @Title, @Slug, @ThumbnailUrl, @ShortDescription, @Description, @TeacherId, @CategoryId, @Level, @PassingScore, @Status, Iif(@Status = 'PUBLISHED', Sysutcdatetime(), Null), @ActorId);
+
+    Declare @Id Bigint = Scope_identity();
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, NewValuesJson, CreatedAt)
+    Values
+        (
+        @ActorId,
+            'CREATE',
+            'COURSE',
+            'Course',
+            Convert(Nvarchar(100), @Id),
+            (
+                Select
+        @Code code,
+        @Title title,
+        @Status status
+                For Json
+                    Path,
+                    Without_array_wrapper
+    ),
+            Sysutcdatetime()
+    );
+
+    Commit Transaction;
+
+    Select
+        @Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Course_Update
+    @Id Bigint,
+    @Code Nvarchar(100),
+    @Title Nvarchar(500),
+    @Slug Nvarchar(500) = Null,
+    @ThumbnailUrl Nvarchar(1000) = Null,
+    @ShortDescription Nvarchar(1000) = Null,
+    @Description Nvarchar(Max) = Null,
+    @TeacherId Bigint,
+    @CategoryId Bigint = Null,
+    @Level Varchar(50),
+    @PassingScore Decimal(5, 2),
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    Set @Code = Ltrim(Rtrim(@Code));
+
+    Set @Title = Ltrim(Rtrim(@Title));
+
+    Set @Slug = Coalesce(Nullif(Ltrim(Rtrim(@Slug)), ''), Lower(Replace(@Code, ' ', '-')));
+
+    If @Code = ''
+    Or @Title = ''
+    Or @PassingScore < 0
+    Or @PassingScore > 100
+    Or @Status Not In ('DRAFT', 'PUBLISHED', 'ARCHIVED') Throw 50001,
+    N'Dữ liệu khóa học không hợp lệ.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Users
+        Where (Id = @TeacherId)
+            And (TeacherCode Is Not Null)
+            And (IsDeleted = 0)
+    ) Throw 50002,
+    N'Giảng viên không tồn tại.',
+    1;
+
+    If @CategoryId Is Not Null
+    And Not Exists (
+        Select
+            1
+        From dbo.CourseCategories
+        Where (Id = @CategoryId)
+            And (Status = 'ACTIVE')
+    ) Throw 50002,
+    N'Danh mục không tồn tại.',
+    1;
+
+    If Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (Id <> @Id)
+            And (Code = @Code Or Slug = @Slug)
+            And (IsDeleted = 0)
+    ) Throw 50006,
+    N'Mã hoặc slug khóa học đã tồn tại.',
+    1;
+
+    Declare @Old Nvarchar(Max) = (
+        Select
+            Code code,
+            Title title,
+            Status status
+        From dbo.Courses
+        Where (Id = @Id)
+        For Json
+            Path,
+            Without_array_wrapper
+    );
+
+    Begin Transaction;
+
+    Update dbo.Courses
+    Set
+        Code = @Code,
+        Title = @Title,
+        Slug = @Slug,
+        ThumbnailUrl = @ThumbnailUrl,
+        ShortDescription = @ShortDescription,
+        Description = @Description,
+        TeacherId = @TeacherId,
+        CategoryId = @CategoryId,
+        Level = @Level,
+        PassingScore = @PassingScore,
+        Status = @Status,
+        PublishedAt = Iif(@Status = 'PUBLISHED', Coalesce(PublishedAt, Sysutcdatetime()), PublishedAt),
+        UpdatedAt = Sysutcdatetime(),
+        UpdatedBy = @ActorId
+    Where (Id = @Id)
+        And (IsDeleted = 0)
+        And (@IsAdmin = 1 Or TeacherId = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, OldValuesJson, NewValuesJson, CreatedAt)
+    Values
+        (
+        @ActorId,
+            'UPDATE',
+            'COURSE',
+            'Course',
+            Convert(Nvarchar(100), @Id),
+        @Old,
+            (
+                Select
+        @Code code,
+        @Title title,
+        @Status status
+                For Json
+                    Path,
+                    Without_array_wrapper
+    ),
+            Sysutcdatetime()
+    );
+
+    Commit Transaction;
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Course_ChangeStatus
+    @Id Bigint,
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    If @Status Not In ('PUBLISHED', 'ARCHIVED', 'DRAFT') Throw 50001,
+    N'Trạng thái khóa học không hợp lệ.',
+    1;
+
+    Declare @OldStatus Varchar(30) = (
+        Select
+            Status
+        From dbo.Courses
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+    );
+
+    Begin Transaction;
+
+    Update dbo.Courses
+    Set
+        Status = @Status,
+        PublishedAt = Iif(@Status = 'PUBLISHED', Coalesce(PublishedAt, Sysutcdatetime()), PublishedAt),
+        UpdatedAt = Sysutcdatetime(),
+        UpdatedBy = @ActorId
+    Where (Id = @Id)
+        And (IsDeleted = 0)
+        And (@IsAdmin = 1 Or TeacherId = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, OldValuesJson, NewValuesJson, CreatedAt)
+    Values
+        (
+        @ActorId,
+        @Status,
+            'COURSE',
+            'Course',
+            Convert(Nvarchar(100), @Id),
+            (
+                Select
+        @OldStatus status
+                For Json
+                    Path,
+                    Without_array_wrapper
+    ),
+            (
+                Select
+        @Status status
+                For Json
+                    Path,
+                    Without_array_wrapper
+    ),
+            Sysutcdatetime()
+    );
+
+    Commit Transaction;
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Course_Publish
+    @Id Bigint,
+    @UserId Bigint
+As
+Begin
+    Set Nocount On;
+
+    Exec dbo.LMS_Course_ChangeStatus @Id,
+    'PUBLISHED',
+        @UserId,
+    1;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Course_Delete
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or TeacherId = @ActorId)
+    ) Begin
+    Select
+        0;
+
+    Return;
+
+End;
+
+Begin Transaction;
+
+Update dbo.Courses
+Set
+    IsDeleted = 1,
+    UpdatedAt = Sysutcdatetime(),
+    UpdatedBy = @ActorId
+Where (Id = @Id);
+
+Update dbo.Chapters
+Set
+    IsDeleted = 1,
+    UpdatedAt = Sysutcdatetime()
+Where (CourseId = @Id);
+
+Update dbo.Lessons
+Set
+    IsDeleted = 1,
+    UpdatedAt = Sysutcdatetime()
+Where (CourseId = @Id);
+
+Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, NewValuesJson, CreatedAt)
+Values
+    (@ActorId, 'DELETE', 'COURSE', 'Course', Convert(Nvarchar(100), @Id), N'{"isDeleted":true}', Sysutcdatetime());
+
+Commit Transaction;
+
+Select
+    1;
+
+End
+Go

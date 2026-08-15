@@ -1,176 +1,1553 @@
-CREATE OR ALTER PROCEDURE dbo.LMS_Chapter_GetByCourse @CourseId BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder,Id; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Chapter_Create @CourseId BIGINT,@Title NVARCHAR(500),@Description NVARCHAR(1000)=NULL,@SortOrder INT,@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF NULLIF(LTRIM(RTRIM(@Title)),'') IS NULL OR @SortOrder<1 THROW 50001,N'Dữ liệu chương không hợp lệ.',1; IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; INSERT dbo.Chapters(CourseId,Title,Description,SortOrder,Status) VALUES(@CourseId,@Title,@Description,@SortOrder,@Status); DECLARE @Id BIGINT=SCOPE_IDENTITY(); INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,NewValuesJson) VALUES(@ActorId,'CREATE','CHAPTER','Chapter',CONVERT(NVARCHAR(100),@Id),(SELECT @Title title FOR JSON PATH,WITHOUT_ARRAY_WRAPPER)); SELECT @Id; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Chapter_Update @Id BIGINT,@Title NVARCHAR(500),@Description NVARCHAR(1000)=NULL,@SortOrder INT,@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF NULLIF(LTRIM(RTRIM(@Title)),'') IS NULL OR @SortOrder<1 THROW 50001,N'Dữ liệu chương không hợp lệ.',1; UPDATE ch SET Title=@Title,Description=@Description,SortOrder=@SortOrder,Status=@Status,UpdatedAt=SYSUTCDATETIME() FROM dbo.Chapters ch JOIN dbo.Courses c ON c.Id=ch.CourseId WHERE ch.Id=@Id AND ch.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'UPDATE','CHAPTER','Chapter',CONVERT(NVARCHAR(100),@Id)); SELECT @Rows; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Chapter_Delete @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION; UPDATE ch SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() FROM dbo.Chapters ch JOIN dbo.Courses c ON c.Id=ch.CourseId WHERE ch.Id=@Id AND ch.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 BEGIN UPDATE dbo.Lessons SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE ChapterId=@Id; INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'DELETE','CHAPTER','Chapter',CONVERT(NVARCHAR(100),@Id)); END; COMMIT; SELECT @Rows; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Chapter_Reorder @Id BIGINT,@SortOrder INT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; UPDATE ch SET SortOrder=@SortOrder,UpdatedAt=SYSUTCDATETIME() FROM dbo.Chapters ch JOIN dbo.Courses c ON c.Id=ch.CourseId WHERE ch.Id=@Id AND ch.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); IF @@ROWCOUNT=0 THROW 50003,N'Không thể sắp xếp chương này.',1; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Lesson_GetById @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; SELECT l.* FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId WHERE l.Id=@Id AND l.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Lesson_Create @ChapterId BIGINT,@Title NVARCHAR(500),@Description NVARCHAR(1000)=NULL,@LessonType VARCHAR(50),@DurationSeconds INT,@SortOrder INT,@IsRequired BIT,@PassingScore DECIMAL(5,2)=NULL,@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; DECLARE @CourseId BIGINT=(SELECT ch.CourseId FROM dbo.Chapters ch JOIN dbo.Courses c ON c.Id=ch.CourseId WHERE ch.Id=@ChapterId AND ch.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId)); IF @CourseId IS NULL THROW 50003,N'Bạn không có quyền quản lý chương này.',1; IF NULLIF(LTRIM(RTRIM(@Title)),'') IS NULL OR @LessonType NOT IN('VIDEO','INTERACTIVE_VIDEO','QUIZ','DOCUMENT') OR @DurationSeconds<0 OR @SortOrder<1 OR @PassingScore NOT BETWEEN 0 AND 100 THROW 50001,N'Dữ liệu bài học không hợp lệ.',1; INSERT dbo.Lessons(CourseId,ChapterId,Title,Description,LessonType,DurationSeconds,SortOrder,IsRequired,PassingScore,Status) VALUES(@CourseId,@ChapterId,@Title,@Description,@LessonType,@DurationSeconds,@SortOrder,@IsRequired,@PassingScore,@Status); DECLARE @Id BIGINT=SCOPE_IDENTITY(); INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CREATE','LESSON','Lesson',CONVERT(NVARCHAR(100),@Id)); SELECT @Id; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Lesson_Update @Id BIGINT,@Title NVARCHAR(500),@Description NVARCHAR(1000)=NULL,@LessonType VARCHAR(50),@DurationSeconds INT,@SortOrder INT,@IsRequired BIT,@PassingScore DECIMAL(5,2)=NULL,@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF NULLIF(LTRIM(RTRIM(@Title)),'') IS NULL OR @LessonType NOT IN('VIDEO','INTERACTIVE_VIDEO','QUIZ','DOCUMENT') OR @DurationSeconds<0 OR @SortOrder<1 OR @PassingScore NOT BETWEEN 0 AND 100 THROW 50001,N'Dữ liệu bài học không hợp lệ.',1; UPDATE l SET Title=@Title,Description=@Description,LessonType=@LessonType,DurationSeconds=@DurationSeconds,SortOrder=@SortOrder,IsRequired=@IsRequired,PassingScore=@PassingScore,Status=@Status,UpdatedAt=SYSUTCDATETIME() FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId WHERE l.Id=@Id AND l.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'UPDATE','LESSON','Lesson',CONVERT(NVARCHAR(100),@Id)); SELECT @Rows; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Lesson_Delete @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; UPDATE l SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId WHERE l.Id=@Id AND l.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'DELETE','LESSON','Lesson',CONVERT(NVARCHAR(100),@Id)); SELECT @Rows; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Lesson_Reorder @Id BIGINT,@SortOrder INT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; UPDATE l SET SortOrder=@SortOrder,UpdatedAt=SYSUTCDATETIME() FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId WHERE l.Id=@Id AND l.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); IF @@ROWCOUNT=0 THROW 50003,N'Không thể sắp xếp bài học này.',1; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Video_GetById @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS BEGIN SET NOCOUNT ON; IF EXISTS(SELECT 1 FROM dbo.Videos WHERE Id=@Id) AND NOT EXISTS(SELECT 1 FROM dbo.Videos v JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE v.Id=@Id AND a.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý video này.',1; SELECT v.*,a.CreatedBy,a.ShareScope,(SELECT COUNT(*) FROM dbo.Lessons l WHERE l.VideoId=v.Id AND l.IsDeleted=0) AssetUsageCount FROM dbo.Videos v JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE v.Id=@Id AND a.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId); END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Video_Create @Id BIGINT=NULL,@LessonId BIGINT,@Title NVARCHAR(500),@VideoUrl NVARCHAR(1000)=NULL,@PosterUrl NVARCHAR(1000)=NULL,@DurationSeconds INT,@AllowSeek BIT,@AllowSpeed BIT,@RequiredWatchPercent DECIMAL(5,2),@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; IF @DurationSeconds<=0 OR @RequiredWatchPercent NOT BETWEEN 0 AND 100 THROW 50001,N'Dữ liệu video không hợp lệ.',1; IF @VideoUrl IS NOT NULL AND (@VideoUrl NOT LIKE '/Media/Video/%' OR @VideoUrl LIKE '%..%' OR @VideoUrl LIKE '%\%' OR @VideoUrl LIKE '%?%' OR @VideoUrl LIKE '%#%') THROW 50001,N'VideoUrl phải là URL tương đối an toàn trong /Media/Video/.',1; IF NOT EXISTS(SELECT 1 FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId WHERE l.Id=@LessonId AND l.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý bài học này.',1; BEGIN TRANSACTION; INSERT dbo.VideoAssets(Title,VideoUrl,PosterUrl,DurationSeconds,CreatedBy,Status) VALUES(@Title,@VideoUrl,@PosterUrl,@DurationSeconds,@ActorId,@Status); DECLARE @AssetId BIGINT=SCOPE_IDENTITY(); INSERT dbo.Videos(VideoAssetId,Title,VideoUrl,PosterUrl,DurationSeconds,AllowSeek,AllowSpeed,RequiredWatchPercent,Status) VALUES(@AssetId,@Title,@VideoUrl,@PosterUrl,@DurationSeconds,@AllowSeek,@AllowSpeed,@RequiredWatchPercent,@Status); DECLARE @VideoId BIGINT=SCOPE_IDENTITY(); UPDATE dbo.Lessons SET VideoId=@VideoId,DurationSeconds=@DurationSeconds,UpdatedAt=SYSUTCDATETIME() WHERE Id=@LessonId; INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CREATE','VIDEO','Video',CONVERT(NVARCHAR(100),@VideoId)); COMMIT; SELECT @VideoId; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Video_Update @Id BIGINT,@LessonId BIGINT,@Title NVARCHAR(500),@VideoUrl NVARCHAR(1000)=NULL,@PosterUrl NVARCHAR(1000)=NULL,@DurationSeconds INT,@AllowSeek BIT,@AllowSpeed BIT,@RequiredWatchPercent DECIMAL(5,2),@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; IF @DurationSeconds<=0 OR @RequiredWatchPercent NOT BETWEEN 0 AND 100 THROW 50001,N'Dữ liệu video không hợp lệ.',1; IF @VideoUrl IS NOT NULL AND (@VideoUrl NOT LIKE '/Media/Video/%' OR @VideoUrl LIKE '%..%' OR @VideoUrl LIKE '%\%' OR @VideoUrl LIKE '%?%' OR @VideoUrl LIKE '%#%') THROW 50001,N'VideoUrl phải là URL tương đối an toàn trong /Media/Video/.',1; DECLARE @AssetId BIGINT=(SELECT v.VideoAssetId FROM dbo.Videos v JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE v.Id=@Id AND a.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId)); IF @AssetId IS NULL THROW 50003,N'Bạn không có quyền quản lý video này.',1; BEGIN TRANSACTION; UPDATE dbo.Videos SET Title=@Title,VideoUrl=@VideoUrl,PosterUrl=@PosterUrl,DurationSeconds=@DurationSeconds,AllowSeek=@AllowSeek,AllowSpeed=@AllowSpeed,RequiredWatchPercent=@RequiredWatchPercent,Status=@Status,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id; UPDATE dbo.VideoAssets SET Title=@Title,VideoUrl=@VideoUrl,PosterUrl=@PosterUrl,DurationSeconds=@DurationSeconds,Status=@Status,UpdatedAt=SYSUTCDATETIME() WHERE Id=@AssetId; UPDATE l SET DurationSeconds=@DurationSeconds,UpdatedAt=SYSUTCDATETIME() FROM dbo.Lessons l WHERE l.VideoId=@Id AND l.IsDeleted=0; INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'UPDATE','VIDEO','Video',CONVERT(NVARCHAR(100),@Id)); COMMIT; SELECT @Id; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoLibrary_GetList
- @Search NVARCHAR(500)=NULL,@Access VARCHAR(30)='ALL',@Source VARCHAR(30)='ALL',@Usage VARCHAR(30)='ALL',@Status VARCHAR(30)='ALL',@ActorId BIGINT,@IsAdmin BIT=0
-AS
-BEGIN
- SET NOCOUNT ON;
- SELECT a.Id,a.Title,a.VideoUrl,a.PosterUrl,a.DurationSeconds,a.OriginalFileName,a.FileSize,a.MimeType,a.Status,a.CreatedAt,
-  a.CreatedBy,u.FullName CreatedByName,a.ShareScope,ISNULL(useInfo.UsageCount,0) UsageCount,videoInfo.VideoId,videoInfo.VideoId FirstVideoId,
-  CAST(IIF(a.CreatedBy=@ActorId,1,0) AS BIT) IsOwner,CAST(IIF(@IsAdmin=1 OR a.CreatedBy=@ActorId,1,0) AS BIT) CanEdit,CAST(IIF(@IsAdmin=1 OR a.CreatedBy=@ActorId,1,0) AS BIT) CanShare,
-  CAST(IIF((@IsAdmin=1 OR a.CreatedBy=@ActorId) AND ISNULL(useInfo.UsageCount,0)=0,1,0) AS BIT) CanDelete,
-  CASE WHEN a.CreatedBy=@ActorId THEN 'OWNER' WHEN a.ShareScope='SCHOOL' THEN 'SCHOOL' WHEN directShare.IsShared=1 THEN 'SHARED' ELSE 'ADMIN' END AccessType,
-  ISNULL(shareInfo.ShareCount,0) SharedTeacherCount
- FROM dbo.VideoAssets a
- JOIN dbo.Users u ON u.Id=a.CreatedBy
- OUTER APPLY(SELECT COUNT(*) UsageCount FROM dbo.Videos v JOIN dbo.Lessons l ON l.VideoId=v.Id AND l.IsDeleted=0 WHERE v.VideoAssetId=a.Id) useInfo
- OUTER APPLY(SELECT MIN(v.Id) VideoId FROM dbo.Videos v WHERE v.VideoAssetId=a.Id) videoInfo
- OUTER APPLY(SELECT CAST(IIF(EXISTS(SELECT 1 FROM dbo.VideoAssetShares s WHERE s.VideoAssetId=a.Id AND s.TeacherId=@ActorId),1,0) AS BIT) IsShared) directShare
- OUTER APPLY(SELECT COUNT(*) ShareCount FROM dbo.VideoAssetShares s WHERE s.VideoAssetId=a.Id) shareInfo
- WHERE a.IsDeleted=0
-  AND (@IsAdmin=1 OR a.CreatedBy=@ActorId OR a.ShareScope='SCHOOL' OR directShare.IsShared=1)
-  AND (@Access IS NULL OR @Access='' OR @Access='ALL'
-       OR (@Access='MINE' AND a.CreatedBy=@ActorId)
-       OR (@Access='SHARED' AND a.CreatedBy<>@ActorId AND (a.ShareScope='SCHOOL' OR directShare.IsShared=1))
-       OR (@Access='SCHOOL' AND a.ShareScope='SCHOOL'))
-  AND (@Status IS NULL OR @Status='' OR @Status='ALL' OR a.Status=@Status)
-  AND (@Usage IS NULL OR @Usage='' OR @Usage='ALL' OR (@Usage='USED' AND ISNULL(useInfo.UsageCount,0)>0) OR (@Usage='UNUSED' AND ISNULL(useInfo.UsageCount,0)=0))
-  AND (@Source IS NULL OR @Source='' OR @Source='ALL'
-       OR (@Source='MP4' AND (a.MimeType='video/mp4' OR a.OriginalFileName LIKE '%.mp4'))
-       OR (@Source='WEBM' AND (a.MimeType='video/webm' OR a.OriginalFileName LIKE '%.webm'))
-       OR (@Source='OTHER' AND ISNULL(a.MimeType,'') NOT IN('video/mp4','video/webm') AND ISNULL(a.OriginalFileName,'') NOT LIKE '%.mp4' AND ISNULL(a.OriginalFileName,'') NOT LIKE '%.webm'))
-  AND (@Search IS NULL OR @Search='' OR a.Title LIKE '%'+@Search+'%' OR a.OriginalFileName LIKE '%'+@Search+'%' OR u.FullName LIKE '%'+@Search+'%')
- ORDER BY a.CreatedAt DESC,a.Id DESC;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoLibrary_Create @Title NVARCHAR(500),@VideoUrl NVARCHAR(1000)=NULL,@PosterUrl NVARCHAR(1000)=NULL,@DurationSeconds INT,@OriginalFileName NVARCHAR(500)=NULL,@FileSize BIGINT=NULL,@MimeType NVARCHAR(150)=NULL,@ActorId BIGINT AS
-BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; IF NULLIF(LTRIM(RTRIM(@Title)),'') IS NULL OR @DurationSeconds<=0 THROW 50001,N'Dữ liệu video thư viện không hợp lệ.',1; IF @VideoUrl IS NOT NULL AND (@VideoUrl NOT LIKE '/Media/Video/%' OR @VideoUrl LIKE '%..%' OR @VideoUrl LIKE '%\%' OR @VideoUrl LIKE '%?%' OR @VideoUrl LIKE '%#%') THROW 50001,N'VideoUrl không hợp lệ.',1; BEGIN TRANSACTION; INSERT dbo.VideoAssets(Title,VideoUrl,PosterUrl,DurationSeconds,OriginalFileName,FileSize,MimeType,CreatedBy) VALUES(@Title,@VideoUrl,@PosterUrl,@DurationSeconds,@OriginalFileName,@FileSize,@MimeType,@ActorId); DECLARE @AssetId BIGINT=SCOPE_IDENTITY(); INSERT dbo.Videos(VideoAssetId,Title,VideoUrl,PosterUrl,DurationSeconds,AllowSeek,AllowSpeed,RequiredWatchPercent,Status) VALUES(@AssetId,@Title,@VideoUrl,@PosterUrl,@DurationSeconds,0,1,80,'ACTIVE'); DECLARE @VideoId BIGINT=SCOPE_IDENTITY(); INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CREATE','VIDEO_LIBRARY','Video',CONVERT(NVARCHAR(100),@VideoId)); COMMIT; SELECT @AssetId; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoLibrary_Update @Id BIGINT,@Title NVARCHAR(500),@VideoUrl NVARCHAR(1000),@PosterUrl NVARCHAR(1000)=NULL,@DurationSeconds INT,@OriginalFileName NVARCHAR(500)=NULL,@FileSize BIGINT=NULL,@MimeType NVARCHAR(150)=NULL,@Status VARCHAR(30)='ACTIVE',@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN
- SET NOCOUNT ON; SET XACT_ABORT ON;
- IF NULLIF(LTRIM(RTRIM(@Title)),'') IS NULL OR @DurationSeconds<=0 OR @Status NOT IN('ACTIVE','INACTIVE') THROW 50001,N'Dữ liệu video thư viện không hợp lệ.',1;
- IF @VideoUrl NOT LIKE '/Media/Video/%' OR @VideoUrl LIKE '%..%' OR @VideoUrl LIKE '%\%' OR @VideoUrl LIKE '%?%' OR @VideoUrl LIKE '%#%' THROW 50001,N'VideoUrl không hợp lệ.',1;
- IF EXISTS(SELECT 1 FROM dbo.VideoAssets WHERE Id=@Id AND IsDeleted=0) AND NOT EXISTS(SELECT 1 FROM dbo.VideoAssets WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR CreatedBy=@ActorId)) THROW 50003,N'Bạn không có quyền sửa video này.',1;
- BEGIN TRANSACTION;
- UPDATE dbo.VideoAssets SET Title=@Title,VideoUrl=@VideoUrl,PosterUrl=@PosterUrl,DurationSeconds=@DurationSeconds,OriginalFileName=COALESCE(@OriginalFileName,OriginalFileName),FileSize=COALESCE(@FileSize,FileSize),MimeType=COALESCE(@MimeType,MimeType),Status=@Status,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR CreatedBy=@ActorId);
- DECLARE @Rows INT=@@ROWCOUNT;
- IF @Rows>0
- BEGIN
-  UPDATE dbo.Videos SET Title=@Title,VideoUrl=@VideoUrl,PosterUrl=@PosterUrl,DurationSeconds=@DurationSeconds,Status=@Status,UpdatedAt=SYSUTCDATETIME() WHERE VideoAssetId=@Id;
-  UPDATE l SET DurationSeconds=@DurationSeconds,UpdatedAt=SYSUTCDATETIME() FROM dbo.Lessons l JOIN dbo.Videos v ON v.Id=l.VideoId WHERE v.VideoAssetId=@Id AND l.IsDeleted=0;
-  INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,NewValuesJson) VALUES(@ActorId,'UPDATE','VIDEO_LIBRARY','VideoAsset',CONVERT(NVARCHAR(100),@Id),(SELECT @Title title,@Status status FOR JSON PATH,WITHOUT_ARRAY_WRAPPER));
- END;
- COMMIT;
- SELECT @Rows;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoLibrary_Delete @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF EXISTS(SELECT 1 FROM dbo.VideoAssets WHERE Id=@Id AND IsDeleted=0) AND NOT EXISTS(SELECT 1 FROM dbo.VideoAssets WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR CreatedBy=@ActorId)) THROW 50003,N'Chỉ tác giả video mới có quyền xóa.',1; IF EXISTS(SELECT 1 FROM dbo.Videos v JOIN dbo.Lessons l ON l.VideoId=v.Id WHERE v.VideoAssetId=@Id AND l.IsDeleted=0) THROW 50006,N'Video đang được sử dụng trong bài học nên không thể xóa.',1; UPDATE dbo.VideoAssets SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR CreatedBy=@ActorId); DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'DELETE','VIDEO_LIBRARY','VideoAsset',CONVERT(NVARCHAR(100),@Id)); SELECT @Rows; END
-GO
+Create Or Alter Procedure dbo.LMS_Chapter_GetByCourse
+    @CourseId Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
 
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoLibrary_Sharing_Get @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN
- SET NOCOUNT ON;
- IF NOT EXISTS(SELECT 1 FROM dbo.VideoAssets WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR CreatedBy=@ActorId)) THROW 50003,N'Chỉ tác giả video mới được quản lý chia sẻ.',1;
- SELECT Id,Title,ShareScope,CreatedBy FROM dbo.VideoAssets WHERE Id=@Id AND IsDeleted=0;
- SELECT u.Id,u.FullName,u.Email,u.TeacherCode,CAST(IIF(s.Id IS NULL,0,1) AS BIT) IsSelected
- FROM dbo.Users u LEFT JOIN dbo.VideoAssetShares s ON s.VideoAssetId=@Id AND s.TeacherId=u.Id
- WHERE u.TeacherCode IS NOT NULL AND u.IsDeleted=0 AND u.Status='ACTIVE' AND u.Id<>(SELECT CreatedBy FROM dbo.VideoAssets WHERE Id=@Id)
- ORDER BY u.FullName,u.Id;
-END
-GO
+    If Not Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (Id = @CourseId)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or TeacherId = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý khóa học này.',
+    1;
 
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoLibrary_Sharing_Save @Id BIGINT,@ShareScope VARCHAR(20),@TeacherIdsJson NVARCHAR(MAX)=N'[]',@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN
- SET NOCOUNT ON; SET XACT_ABORT ON;
- IF @ShareScope NOT IN('PRIVATE','SELECTED','SCHOOL') THROW 50001,N'Phạm vi chia sẻ không hợp lệ.',1;
- IF NOT EXISTS(SELECT 1 FROM dbo.VideoAssets WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR CreatedBy=@ActorId)) THROW 50003,N'Chỉ tác giả video mới được quản lý chia sẻ.',1;
- BEGIN TRANSACTION;
- DELETE dbo.VideoAssetShares WHERE VideoAssetId=@Id;
- IF @ShareScope='SELECTED'
- BEGIN
-  INSERT dbo.VideoAssetShares(VideoAssetId,TeacherId,SharedBy)
-  SELECT @Id,u.Id,@ActorId FROM dbo.Users u
-  WHERE u.TeacherCode IS NOT NULL AND u.IsDeleted=0 AND u.Status='ACTIVE' AND u.Id<>(SELECT CreatedBy FROM dbo.VideoAssets WHERE Id=@Id)
-   AND u.Id IN(SELECT TRY_CONVERT(BIGINT,[value]) FROM OPENJSON(COALESCE(@TeacherIdsJson,N'[]')) WHERE TRY_CONVERT(BIGINT,[value]) IS NOT NULL);
-  IF NOT EXISTS(SELECT 1 FROM dbo.VideoAssetShares WHERE VideoAssetId=@Id) THROW 50001,N'Hãy chọn ít nhất một giáo viên để chia sẻ.',1;
- END;
- UPDATE dbo.VideoAssets SET ShareScope=@ShareScope,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id;
- INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,NewValuesJson) VALUES(@ActorId,'SHARE','VIDEO_LIBRARY','VideoAsset',CONVERT(NVARCHAR(100),@Id),(SELECT @ShareScope shareScope,@TeacherIdsJson teacherIds FOR JSON PATH,WITHOUT_ARRAY_WRAPPER));
- COMMIT;
- SELECT @Id;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoLibrary_Attach @LessonId BIGINT,@VideoAssetId BIGINT,@AllowSeek BIT,@AllowSpeed BIT,@RequiredWatchPercent DECIMAL(5,2),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF @RequiredWatchPercent NOT BETWEEN 0 AND 100 THROW 50001,N'Tỷ lệ xem bắt buộc không hợp lệ.',1; IF NOT EXISTS(SELECT 1 FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId WHERE l.Id=@LessonId AND l.IsDeleted=0 AND l.LessonType IN('VIDEO','INTERACTIVE_VIDEO') AND (@IsAdmin=1 OR c.TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý bài học này.',1; DECLARE @VideoId BIGINT,@DurationSeconds INT; SELECT @VideoId=v.Id,@DurationSeconds=v.DurationSeconds FROM dbo.VideoAssets a JOIN dbo.Videos v ON v.VideoAssetId=a.Id WHERE a.Id=@VideoAssetId AND a.IsDeleted=0 AND a.Status='ACTIVE' AND v.Status='ACTIVE' AND (@IsAdmin=1 OR a.CreatedBy=@ActorId OR a.ShareScope='SCHOOL' OR EXISTS(SELECT 1 FROM dbo.VideoAssetShares s WHERE s.VideoAssetId=a.Id AND s.TeacherId=@ActorId)); IF @VideoId IS NULL THROW 50003,N'Video không tồn tại hoặc chưa được tác giả chia sẻ cho bạn.',1; UPDATE dbo.Lessons SET VideoId=@VideoId,DurationSeconds=@DurationSeconds,UpdatedAt=SYSUTCDATETIME() WHERE Id=@LessonId; INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'ATTACH','VIDEO_LIBRARY','Video',CONVERT(NVARCHAR(100),@VideoId)); SELECT @VideoId; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Video_AttachToLesson @LessonId BIGINT,@VideoId BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN
- SET NOCOUNT ON;
- IF NOT EXISTS(SELECT 1 FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId WHERE l.Id=@LessonId AND l.IsDeleted=0 AND l.LessonType IN('VIDEO','INTERACTIVE_VIDEO') AND (@IsAdmin=1 OR c.TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý bài học này.',1;
- DECLARE @DurationSeconds INT;
- SELECT @DurationSeconds=v.DurationSeconds FROM dbo.Videos v JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId
- WHERE v.Id=@VideoId AND v.Status='ACTIVE' AND a.IsDeleted=0 AND a.Status='ACTIVE'
-   AND (@IsAdmin=1 OR a.CreatedBy=@ActorId OR a.ShareScope='SCHOOL' OR EXISTS(SELECT 1 FROM dbo.VideoAssetShares s WHERE s.VideoAssetId=a.Id AND s.TeacherId=@ActorId));
- IF @DurationSeconds IS NULL THROW 50003,N'Video không tồn tại hoặc chưa được tác giả chia sẻ cho bạn.',1;
- UPDATE dbo.Lessons SET VideoId=@VideoId,DurationSeconds=@DurationSeconds,UpdatedAt=SYSUTCDATETIME() WHERE Id=@LessonId;
- INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,NewValuesJson) VALUES(@ActorId,'ATTACH','VIDEO_LIBRARY','Lesson',CONVERT(NVARCHAR(100),@LessonId),(SELECT @VideoId videoId FOR JSON PATH,WITHOUT_ARRAY_WRAPPER));
- SELECT @VideoId;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoInteraction_GetByVideo @VideoId BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS BEGIN SET NOCOUNT ON; IF NOT EXISTS(SELECT 1 FROM dbo.Videos v JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE v.Id=@VideoId AND a.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý video này.',1; SELECT vi.*,q.QuestionText,q.QuestionType,q.Description,(SELECT o.OptionCode,o.OptionText FROM dbo.QuestionOptions o WHERE o.QuestionId=q.Id AND o.IsDeleted=0 ORDER BY o.SortOrder FOR JSON PATH) Options FROM dbo.VideoInteractions vi JOIN dbo.Questions q ON q.Id=vi.QuestionId WHERE vi.VideoId=@VideoId AND vi.IsDeleted=0 ORDER BY vi.TimeSeconds,vi.SortOrder; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoInteraction_PreviewAnswer @VideoId BIGINT,@InteractionId BIGINT,@QuestionId BIGINT,@AnswerText NVARCHAR(MAX),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN
- SET NOCOUNT ON;
- DECLARE @Type VARCHAR(50),@Mode VARCHAR(30),@Score DECIMAL(8,2),@Correct NVARCHAR(MAX),@IsCorrect BIT;
- SELECT @Type=q.QuestionType,@Mode=q.ShortAnswerMode,@Score=vi.Score
- FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId JOIN dbo.Questions q ON q.Id=vi.QuestionId
- WHERE vi.Id=@InteractionId AND vi.VideoId=@VideoId AND vi.QuestionId=@QuestionId AND vi.IsDeleted=0 AND vi.Status='ACTIVE' AND q.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId);
- IF @Type IS NULL THROW 50003,N'Bạn không có quyền xem trước câu hỏi này.',1;
- IF @Type IN('SINGLE_CHOICE','TRUE_FALSE','MULTIPLE_CHOICE') BEGIN SELECT @Correct=STRING_AGG(UPPER(LTRIM(RTRIM(OptionCode))),'|') WITHIN GROUP(ORDER BY UPPER(LTRIM(RTRIM(OptionCode)))) FROM dbo.QuestionOptions WHERE QuestionId=@QuestionId AND IsCorrect=1 AND IsDeleted=0; SET @IsCorrect=IIF(UPPER(ISNULL(@AnswerText,''))=ISNULL(@Correct,''),1,0); END
- ELSE IF @Mode='MANUAL_REVIEW' SET @IsCorrect=NULL;
- ELSE IF @Mode='CONTAINS' SET @IsCorrect=IIF(EXISTS(SELECT 1 FROM dbo.QuestionAnswerKeys WHERE QuestionId=@QuestionId AND ((IsCaseSensitive=1 AND CHARINDEX(AnswerText,@AnswerText COLLATE Latin1_General_100_CS_AS)>0) OR (IsCaseSensitive=0 AND CHARINDEX(LOWER(AnswerText),LOWER(@AnswerText))>0))),1,0);
- ELSE SET @IsCorrect=IIF(EXISTS(SELECT 1 FROM dbo.QuestionAnswerKeys WHERE QuestionId=@QuestionId AND ((IsCaseSensitive=1 AND AnswerText=@AnswerText COLLATE Latin1_General_100_CS_AS) OR (IsCaseSensitive=0 AND LOWER(AnswerText)=LOWER(@AnswerText)))),1,0);
- SELECT @IsCorrect IsCorrect,CAST(IIF(@IsCorrect=1,@Score,0) AS DECIMAL(8,2)) ScoreAwarded,IIF(@IsCorrect IS NULL,'PREVIEW_PENDING','PREVIEW_AUTO_GRADED') ReviewStatus,(SELECT Explanation FROM dbo.Questions WHERE Id=@QuestionId) Explanation;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoInteraction_Create @VideoId BIGINT,@QuestionId BIGINT,@TimeSeconds INT,@EndTimeSeconds INT=NULL,@InteractionType VARCHAR(50),@Required BIT,@PauseVideo BIT,@AllowSkip BIT,@Score DECIMAL(8,2),@AttemptLimit INT,@SortOrder INT,@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; DECLARE @Duration INT=(SELECT v.DurationSeconds FROM dbo.Videos v JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE v.Id=@VideoId AND a.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId)); IF @Duration IS NULL THROW 50003,N'Bạn không có quyền quản lý video này.',1; IF NOT EXISTS(SELECT 1 FROM dbo.Questions WHERE Id=@QuestionId AND IsDeleted=0) OR @TimeSeconds<0 OR @TimeSeconds>@Duration OR @AttemptLimit<1 OR @Score<0 THROW 50001,N'Dữ liệu tương tác không hợp lệ.',1; INSERT dbo.VideoInteractions(VideoId,QuestionId,TimeSeconds,EndTimeSeconds,InteractionType,Required,PauseVideo,AllowSkip,Score,AttemptLimit,SortOrder,Status) VALUES(@VideoId,@QuestionId,@TimeSeconds,@EndTimeSeconds,@InteractionType,@Required,@PauseVideo,@AllowSkip,@Score,@AttemptLimit,@SortOrder,@Status); DECLARE @Id BIGINT=SCOPE_IDENTITY(); INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'CREATE','VIDEO_INTERACTION','VideoInteraction',CONVERT(NVARCHAR(100),@Id)); SELECT @Id; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoInteraction_Update @Id BIGINT,@QuestionId BIGINT,@TimeSeconds INT,@EndTimeSeconds INT=NULL,@InteractionType VARCHAR(50),@Required BIT,@PauseVideo BIT,@AllowSkip BIT,@Score DECIMAL(8,2),@AttemptLimit INT,@SortOrder INT,@Status VARCHAR(30),@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; DECLARE @Duration INT=(SELECT v.DurationSeconds FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE vi.Id=@Id AND vi.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId)); IF @Duration IS NULL THROW 50003,N'Bạn không có quyền quản lý tương tác này.',1; IF NOT EXISTS(SELECT 1 FROM dbo.Questions WHERE Id=@QuestionId AND IsDeleted=0) OR @TimeSeconds<0 OR @TimeSeconds>@Duration OR @AttemptLimit<1 OR @Score<0 THROW 50001,N'Dữ liệu tương tác không hợp lệ.',1; UPDATE dbo.VideoInteractions SET QuestionId=@QuestionId,TimeSeconds=@TimeSeconds,EndTimeSeconds=@EndTimeSeconds,InteractionType=@InteractionType,Required=@Required,PauseVideo=@PauseVideo,AllowSkip=@AllowSkip,Score=@Score,AttemptLimit=@AttemptLimit,SortOrder=@SortOrder,Status=@Status,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id; INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'UPDATE','VIDEO_INTERACTION','VideoInteraction',CONVERT(NVARCHAR(100),@Id)); SELECT 1; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoInteraction_Delete @Id BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; UPDATE vi SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE vi.Id=@Id AND vi.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId); DECLARE @Rows INT=@@ROWCOUNT; IF @Rows>0 INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId) VALUES(@ActorId,'DELETE','VIDEO_INTERACTION','VideoInteraction',CONVERT(NVARCHAR(100),@Id)); SELECT @Rows; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_VideoInteraction_Reorder @Id BIGINT,@SortOrder INT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; UPDATE vi SET SortOrder=@SortOrder,UpdatedAt=SYSUTCDATETIME() FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE vi.Id=@Id AND vi.IsDeleted=0 AND (@IsAdmin=1 OR a.CreatedBy=@ActorId); IF @@ROWCOUNT=0 THROW 50003,N'Không thể sắp xếp tương tác này.',1; END
-GO
+    Select
+        Id,
+        CourseId,
+        Title,
+        Description,
+        SortOrder,
+        Status
+    From dbo.Chapters
+    Where (CourseId = @CourseId)
+        And (IsDeleted = 0)
+    Order By
+        SortOrder,
+        Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Chapter_Create
+    @CourseId Bigint,
+    @Title Nvarchar(500),
+    @Description Nvarchar(1000) = Null,
+    @SortOrder Int,
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
+    Or @SortOrder < 1 Throw 50001,
+    N'Dữ liệu chương không hợp lệ.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Courses
+        Where (Id = @CourseId)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or TeacherId = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý khóa học này.',
+    1;
+
+    Insert dbo.Chapters (CourseId, Title, Description, SortOrder, Status)
+    Values
+        (@CourseId, @Title, @Description, @SortOrder, @Status);
+
+    Declare @Id Bigint = Scope_identity();
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, NewValuesJson)
+    Values
+        (
+        @ActorId,
+            'CREATE',
+            'CHAPTER',
+            'Chapter',
+            Convert(Nvarchar(100), @Id),
+            (
+                Select
+        @Title title
+                For Json
+                    Path,
+                    Without_array_wrapper
+    )
+    );
+
+    Select
+        @Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Chapter_Update
+    @Id Bigint,
+    @Title Nvarchar(500),
+    @Description Nvarchar(1000) = Null,
+    @SortOrder Int,
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
+    Or @SortOrder < 1 Throw 50001,
+    N'Dữ liệu chương không hợp lệ.',
+    1;
+
+    Update dbo.Chapters
+    Set
+        Title = @Title,
+        Description = @Description,
+        SortOrder = @SortOrder,
+        Status = @Status,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.Chapters
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Chapters.CourseId
+    Where (dbo.Chapters.Id = @Id)
+        And (dbo.Chapters.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'UPDATE', 'CHAPTER', 'Chapter', Convert(Nvarchar(100), @Id));
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Chapter_Delete
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    Begin Transaction;
+
+    Update dbo.Chapters
+    Set
+        IsDeleted = 1,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.Chapters
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Chapters.CourseId
+    Where (dbo.Chapters.Id = @Id)
+        And (dbo.Chapters.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Begin
+        Update dbo.Lessons
+        Set
+            IsDeleted = 1,
+            UpdatedAt = Sysutcdatetime()
+        Where (ChapterId = @Id);
+
+        Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+        Values
+            (@ActorId, 'DELETE', 'CHAPTER', 'Chapter', Convert(Nvarchar(100), @Id));
+
+    End;
+
+    Commit;
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Chapter_Reorder
+    @Id Bigint,
+    @SortOrder Int,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Update dbo.Chapters
+    Set
+        SortOrder = @SortOrder,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.Chapters
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Chapters.CourseId
+    Where (dbo.Chapters.Id = @Id)
+        And (dbo.Chapters.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+    If @@Rowcount = 0 Throw 50003,
+    N'Không thể sắp xếp chương này.',
+    1;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Lesson_GetById
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.Lessons.*
+    From dbo.Lessons
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+    Where (dbo.Lessons.Id = @Id)
+        And (dbo.Lessons.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Lesson_Create
+    @ChapterId Bigint,
+    @Title Nvarchar(500),
+    @Description Nvarchar(1000) = Null,
+    @LessonType Varchar(50),
+    @DurationSeconds Int,
+    @SortOrder Int,
+    @IsRequired Bit,
+    @PassingScore Decimal(5, 2) = Null,
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Declare @CourseId Bigint = (
+        Select
+            dbo.Chapters.CourseId
+        From dbo.Chapters
+            Inner Join dbo.Courses On dbo.Courses.Id = dbo.Chapters.CourseId
+        Where (dbo.Chapters.Id = @ChapterId)
+            And (dbo.Chapters.IsDeleted = 0)
+            And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+    );
+
+    If @CourseId Is Null Throw 50003,
+    N'Bạn không có quyền quản lý chương này.',
+    1;
+
+    If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
+    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT')
+    Or @DurationSeconds < 0
+    Or @SortOrder < 1
+    Or @PassingScore Not Between 0 And 100  Throw 50001,
+    N'Dữ liệu bài học không hợp lệ.',
+    1;
+
+    Insert dbo.Lessons (CourseId, ChapterId, Title, Description, LessonType, DurationSeconds, SortOrder, IsRequired, PassingScore, Status)
+    Values
+        (@CourseId, @ChapterId, @Title, @Description, @LessonType, @DurationSeconds, @SortOrder, @IsRequired, @PassingScore, @Status);
+
+    Declare @Id Bigint = Scope_identity();
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'CREATE', 'LESSON', 'Lesson', Convert(Nvarchar(100), @Id));
+
+    Select
+        @Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Lesson_Update
+    @Id Bigint,
+    @Title Nvarchar(500),
+    @Description Nvarchar(1000) = Null,
+    @LessonType Varchar(50),
+    @DurationSeconds Int,
+    @SortOrder Int,
+    @IsRequired Bit,
+    @PassingScore Decimal(5, 2) = Null,
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
+    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT')
+    Or @DurationSeconds < 0
+    Or @SortOrder < 1
+    Or @PassingScore Not Between 0 And 100  Throw 50001,
+    N'Dữ liệu bài học không hợp lệ.',
+    1;
+
+    Update dbo.Lessons
+    Set
+        Title = @Title,
+        Description = @Description,
+        LessonType = @LessonType,
+        DurationSeconds = @DurationSeconds,
+        SortOrder = @SortOrder,
+        IsRequired = @IsRequired,
+        PassingScore = @PassingScore,
+        Status = @Status,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.Lessons
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+    Where (dbo.Lessons.Id = @Id)
+        And (dbo.Lessons.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'UPDATE', 'LESSON', 'Lesson', Convert(Nvarchar(100), @Id));
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Lesson_Delete
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Update dbo.Lessons
+    Set
+        IsDeleted = 1,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.Lessons
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+    Where (dbo.Lessons.Id = @Id)
+        And (dbo.Lessons.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'DELETE', 'LESSON', 'Lesson', Convert(Nvarchar(100), @Id));
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Lesson_Reorder
+    @Id Bigint,
+    @SortOrder Int,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Update dbo.Lessons
+    Set
+        SortOrder = @SortOrder,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.Lessons
+        Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+    Where (dbo.Lessons.Id = @Id)
+        And (dbo.Lessons.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId);
+
+    If @@Rowcount = 0 Throw 50003,
+    N'Không thể sắp xếp bài học này.',
+    1;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Video_GetById
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Exists (
+        Select
+            1
+        From dbo.Videos
+        Where (Id = @Id)
+    )
+    And Not Exists (
+        Select
+            1
+        From dbo.Videos
+            Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+        Where (dbo.Videos.Id = @Id)
+            And (dbo.VideoAssets.IsDeleted = 0)
+            And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý video này.',
+    1;
+
+    Select
+        dbo.Videos.*,
+        dbo.VideoAssets.CreatedBy,
+        dbo.VideoAssets.ShareScope,
+        (
+            Select
+                Count(*)
+            From dbo.Lessons
+            Where (dbo.Lessons.VideoId = dbo.Videos.Id)
+                And (dbo.Lessons.IsDeleted = 0)
+    ) AssetUsageCount
+    From dbo.Videos
+        Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+    Where (dbo.Videos.Id = @Id)
+        And (dbo.VideoAssets.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId);
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Video_Create
+    @Id Bigint = Null,
+    @LessonId Bigint,
+    @Title Nvarchar(500),
+    @VideoUrl Nvarchar(1000) = Null,
+    @PosterUrl Nvarchar(1000) = Null,
+    @DurationSeconds Int,
+    @AllowSeek Bit,
+    @AllowSpeed Bit,
+    @RequiredWatchPercent Decimal(5, 2),
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    If @DurationSeconds <= 0
+    Or @RequiredWatchPercent Not Between 0 And 100  Throw 50001,
+    N'Dữ liệu video không hợp lệ.',
+    1;
+
+    If @VideoUrl Is Not Null
+    And (@VideoUrl Not Like '/Media/Video/%' Or @VideoUrl Like '%..%' Or @VideoUrl Like '%\%' Or @VideoUrl Like '%?%' Or @VideoUrl Like '%#%') Throw 50001,
+    N'VideoUrl phải là URL tương đối an toàn trong /Media/Video/.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Lessons
+            Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+        Where (dbo.Lessons.Id = @LessonId)
+            And (dbo.Lessons.IsDeleted = 0)
+            And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý bài học này.',
+    1;
+
+    Begin Transaction;
+
+    Insert dbo.VideoAssets (Title, VideoUrl, PosterUrl, DurationSeconds, CreatedBy, Status)
+    Values
+        (@Title, @VideoUrl, @PosterUrl, @DurationSeconds, @ActorId, @Status);
+
+    Declare @AssetId Bigint = Scope_identity();
+
+    Insert dbo.Videos (VideoAssetId, Title, VideoUrl, PosterUrl, DurationSeconds, AllowSeek, AllowSpeed, RequiredWatchPercent, Status)
+    Values
+        (@AssetId, @Title, @VideoUrl, @PosterUrl, @DurationSeconds, @AllowSeek, @AllowSpeed, @RequiredWatchPercent, @Status);
+
+    Declare @VideoId Bigint = Scope_identity();
+
+    Update dbo.Lessons
+    Set
+        VideoId = @VideoId,
+        DurationSeconds = @DurationSeconds,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @LessonId);
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'CREATE', 'VIDEO', 'Video', Convert(Nvarchar(100), @VideoId));
+
+    Commit;
+
+    Select
+        @VideoId;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Video_Update
+    @Id Bigint,
+    @LessonId Bigint,
+    @Title Nvarchar(500),
+    @VideoUrl Nvarchar(1000) = Null,
+    @PosterUrl Nvarchar(1000) = Null,
+    @DurationSeconds Int,
+    @AllowSeek Bit,
+    @AllowSpeed Bit,
+    @RequiredWatchPercent Decimal(5, 2),
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    If @DurationSeconds <= 0
+    Or @RequiredWatchPercent Not Between 0 And 100  Throw 50001,
+    N'Dữ liệu video không hợp lệ.',
+    1;
+
+    If @VideoUrl Is Not Null
+    And (@VideoUrl Not Like '/Media/Video/%' Or @VideoUrl Like '%..%' Or @VideoUrl Like '%\%' Or @VideoUrl Like '%?%' Or @VideoUrl Like '%#%') Throw 50001,
+    N'VideoUrl phải là URL tương đối an toàn trong /Media/Video/.',
+    1;
+
+    Declare @AssetId Bigint = (
+        Select
+            dbo.Videos.VideoAssetId
+        From dbo.Videos
+            Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+        Where (dbo.Videos.Id = @Id)
+            And (dbo.VideoAssets.IsDeleted = 0)
+            And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId)
+    );
+
+    If @AssetId Is Null Throw 50003,
+    N'Bạn không có quyền quản lý video này.',
+    1;
+
+    Begin Transaction;
+
+    Update dbo.Videos
+    Set
+        Title = @Title,
+        VideoUrl = @VideoUrl,
+        PosterUrl = @PosterUrl,
+        DurationSeconds = @DurationSeconds,
+        AllowSeek = @AllowSeek,
+        AllowSpeed = @AllowSpeed,
+        RequiredWatchPercent = @RequiredWatchPercent,
+        Status = @Status,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @Id);
+
+    Update dbo.VideoAssets
+    Set
+        Title = @Title,
+        VideoUrl = @VideoUrl,
+        PosterUrl = @PosterUrl,
+        DurationSeconds = @DurationSeconds,
+        Status = @Status,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @AssetId);
+
+    Update dbo.Lessons
+    Set
+        DurationSeconds = @DurationSeconds,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.Lessons
+    Where (dbo.Lessons.VideoId = @Id)
+        And (dbo.Lessons.IsDeleted = 0);
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'UPDATE', 'VIDEO', 'Video', Convert(Nvarchar(100), @Id));
+
+    Commit;
+
+    Select
+        @Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoLibrary_GetList
+    @Search Nvarchar(500) = Null,
+    @Access Varchar(30) = 'ALL',
+    @Source Varchar(30) = 'ALL',
+    @Usage Varchar(30) = 'ALL',
+    @Status Varchar(30) = 'ALL',
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.VideoAssets.Id,
+        dbo.VideoAssets.Title,
+        dbo.VideoAssets.VideoUrl,
+        dbo.VideoAssets.PosterUrl,
+        dbo.VideoAssets.DurationSeconds,
+        dbo.VideoAssets.OriginalFileName,
+        dbo.VideoAssets.FileSize,
+        dbo.VideoAssets.MimeType,
+        dbo.VideoAssets.Status,
+        dbo.VideoAssets.CreatedAt,
+        dbo.VideoAssets.CreatedBy,
+        dbo.Users.FullName CreatedByName,
+        dbo.VideoAssets.ShareScope,
+        Isnull(useInfo.UsageCount, 0) UsageCount,
+        videoInfo.VideoId,
+        videoInfo.VideoId FirstVideoId,
+        Cast(Iif(dbo.VideoAssets.CreatedBy = @ActorId, 1, 0) As Bit) IsOwner,
+        Cast(
+            Iif(
+        @IsAdmin = 1
+                Or dbo.VideoAssets.CreatedBy = @ActorId,
+                1,
+                0
+    ) As Bit
+    ) CanEdit,
+        Cast(
+            Iif(
+        @IsAdmin = 1
+                Or dbo.VideoAssets.CreatedBy = @ActorId,
+                1,
+                0
+    ) As Bit
+    ) CanShare,
+        Cast(
+            Iif(
+                (
+        @IsAdmin = 1
+                    Or dbo.VideoAssets.CreatedBy = @ActorId
+    )
+                And Isnull(useInfo.UsageCount, 0) = 0,
+                1,
+                0
+    ) As Bit
+    ) CanDelete,
+        Case When dbo.VideoAssets.CreatedBy = @ActorId Then 'OWNER' When dbo.VideoAssets.ShareScope = 'SCHOOL' Then 'SCHOOL' When directShare.IsShared = 1 Then 'SHARED' Else 'ADMIN' End AccessType,
+        Isnull(shareInfo.ShareCount, 0) SharedTeacherCount
+    From dbo.VideoAssets
+        Inner Join dbo.Users On dbo.Users.Id = dbo.VideoAssets.CreatedBy
+        Outer Apply (
+            Select
+                Count(*) UsageCount
+            From dbo.Videos
+                Inner Join dbo.Lessons On dbo.Lessons.VideoId = dbo.Videos.Id And dbo.Lessons.IsDeleted = 0
+            Where (dbo.Videos.VideoAssetId = dbo.VideoAssets.Id)
+    ) useInfo
+        Outer Apply (
+            Select
+                Min(dbo.Videos.Id) VideoId
+            From dbo.Videos
+            Where (dbo.Videos.VideoAssetId = dbo.VideoAssets.Id)
+    ) videoInfo
+        Outer Apply (
+            Select
+                Cast(
+                    Iif(
+                        Exists (
+                            Select
+                                1
+                            From dbo.VideoAssetShares
+                            Where (dbo.VideoAssetShares.VideoAssetId = dbo.VideoAssets.Id)
+                                And (dbo.VideoAssetShares.TeacherId = @ActorId)
+    ),
+                        1,
+                        0
+    ) As Bit
+    ) IsShared
+    ) directShare
+        Outer Apply (
+            Select
+                Count(*) ShareCount
+            From dbo.VideoAssetShares
+            Where (dbo.VideoAssetShares.VideoAssetId = dbo.VideoAssets.Id)
+    ) shareInfo
+    Where (dbo.VideoAssets.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId Or dbo.VideoAssets.ShareScope = 'SCHOOL' Or directShare.IsShared = 1)
+        And (@Access Is Null Or @Access = '' Or @Access = 'ALL' Or (@Access = 'MINE' And dbo.VideoAssets.CreatedBy = @ActorId) Or (@Access = 'SHARED' And dbo.VideoAssets.CreatedBy <> @ActorId And (dbo.VideoAssets.ShareScope = 'SCHOOL' Or directShare.IsShared = 1)) Or (@Access = 'SCHOOL' And dbo.VideoAssets.ShareScope = 'SCHOOL'))
+        And (@Status Is Null Or @Status = '' Or @Status = 'ALL' Or dbo.VideoAssets.Status = @Status)
+        And (@Usage Is Null Or @Usage = '' Or @Usage = 'ALL' Or (@Usage = 'USED' And Isnull(useInfo.UsageCount, 0) > 0) Or (@Usage = 'UNUSED' And Isnull(useInfo.UsageCount, 0) = 0))
+        And (@Source Is Null Or @Source = '' Or @Source = 'ALL' Or (@Source = 'MP4' And (dbo.VideoAssets.MimeType = 'video/mp4' Or dbo.VideoAssets.OriginalFileName Like '%.mp4')) Or (@Source = 'WEBM' And (dbo.VideoAssets.MimeType = 'video/webm' Or dbo.VideoAssets.OriginalFileName Like '%.webm')) Or (@Source = 'OTHER' And Isnull(dbo.VideoAssets.MimeType, '') Not In ('video/mp4', 'video/webm') And Isnull(dbo.VideoAssets.OriginalFileName, '') Not Like '%.mp4' And Isnull(dbo.VideoAssets.OriginalFileName, '') Not Like '%.webm'))
+        And (@Search Is Null Or @Search = '' Or dbo.VideoAssets.Title Like '%' + @Search + '%' Or dbo.VideoAssets.OriginalFileName Like '%' + @Search + '%' Or dbo.Users.FullName Like '%' + @Search + '%')
+    Order By
+        dbo.VideoAssets.CreatedAt Desc,
+        dbo.VideoAssets.Id Desc;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoLibrary_Create
+    @Title Nvarchar(500),
+    @VideoUrl Nvarchar(1000) = Null,
+    @PosterUrl Nvarchar(1000) = Null,
+    @DurationSeconds Int,
+    @OriginalFileName Nvarchar(500) = Null,
+    @FileSize Bigint = Null,
+    @MimeType Nvarchar(150) = Null,
+    @ActorId Bigint
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
+    Or @DurationSeconds <= 0 Throw 50001,
+    N'Dữ liệu video thư viện không hợp lệ.',
+    1;
+
+    If @VideoUrl Is Not Null
+    And (@VideoUrl Not Like '/Media/Video/%' Or @VideoUrl Like '%..%' Or @VideoUrl Like '%\%' Or @VideoUrl Like '%?%' Or @VideoUrl Like '%#%') Throw 50001,
+    N'VideoUrl không hợp lệ.',
+    1;
+
+    Begin Transaction;
+
+    Insert dbo.VideoAssets (Title, VideoUrl, PosterUrl, DurationSeconds, OriginalFileName, FileSize, MimeType, CreatedBy)
+    Values
+        (@Title, @VideoUrl, @PosterUrl, @DurationSeconds, @OriginalFileName, @FileSize, @MimeType, @ActorId);
+
+    Declare @AssetId Bigint = Scope_identity();
+
+    Insert dbo.Videos (VideoAssetId, Title, VideoUrl, PosterUrl, DurationSeconds, AllowSeek, AllowSpeed, RequiredWatchPercent, Status)
+    Values
+        (@AssetId, @Title, @VideoUrl, @PosterUrl, @DurationSeconds, 0, 1, 80, 'ACTIVE');
+
+    Declare @VideoId Bigint = Scope_identity();
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'CREATE', 'VIDEO_LIBRARY', 'Video', Convert(Nvarchar(100), @VideoId));
+
+    Commit;
+
+    Select
+        @AssetId;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoLibrary_Update
+    @Id Bigint,
+    @Title Nvarchar(500),
+    @VideoUrl Nvarchar(1000),
+    @PosterUrl Nvarchar(1000) = Null,
+    @DurationSeconds Int,
+    @OriginalFileName Nvarchar(500) = Null,
+    @FileSize Bigint = Null,
+    @MimeType Nvarchar(150) = Null,
+    @Status Varchar(30) = 'ACTIVE',
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
+    Or @DurationSeconds <= 0
+    Or @Status Not In ('ACTIVE', 'INACTIVE') Throw 50001,
+    N'Dữ liệu video thư viện không hợp lệ.',
+    1;
+
+    If @VideoUrl Not Like '/Media/Video/%'
+    Or @VideoUrl Like '%..%'
+    Or @VideoUrl Like '%\%'
+    Or @VideoUrl Like '%?%'
+    Or @VideoUrl Like '%#%' Throw 50001,
+    N'VideoUrl không hợp lệ.',
+    1;
+
+    If Exists (
+        Select
+            1
+        From dbo.VideoAssets
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+    )
+    And Not Exists (
+        Select
+            1
+        From dbo.VideoAssets
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or CreatedBy = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền sửa video này.',
+    1;
+
+    Begin Transaction;
+
+    Update dbo.VideoAssets
+    Set
+        Title = @Title,
+        VideoUrl = @VideoUrl,
+        PosterUrl = @PosterUrl,
+        DurationSeconds = @DurationSeconds,
+        OriginalFileName = Coalesce(@OriginalFileName, OriginalFileName),
+        FileSize = Coalesce(@FileSize, FileSize),
+        MimeType = Coalesce(@MimeType, MimeType),
+        Status = @Status,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @Id)
+        And (IsDeleted = 0)
+        And (@IsAdmin = 1 Or CreatedBy = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Begin
+        Update dbo.Videos
+        Set
+            Title = @Title,
+            VideoUrl = @VideoUrl,
+            PosterUrl = @PosterUrl,
+            DurationSeconds = @DurationSeconds,
+            Status = @Status,
+            UpdatedAt = Sysutcdatetime()
+        Where (VideoAssetId = @Id);
+
+        Update dbo.Lessons
+        Set
+            DurationSeconds = @DurationSeconds,
+            UpdatedAt = Sysutcdatetime()
+        From dbo.Lessons
+            Inner Join dbo.Videos On dbo.Videos.Id = dbo.Lessons.VideoId
+        Where (dbo.Videos.VideoAssetId = @Id)
+            And (dbo.Lessons.IsDeleted = 0);
+
+        Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, NewValuesJson)
+        Values
+            (
+            @ActorId,
+                'UPDATE',
+                'VIDEO_LIBRARY',
+                'VideoAsset',
+                Convert(Nvarchar(100), @Id),
+                (
+                    Select
+            @Title title,
+            @Status status
+                    For Json
+                        Path,
+                        Without_array_wrapper
+        )
+        );
+
+    End;
+
+    Commit;
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoLibrary_Delete
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Exists (
+        Select
+            1
+        From dbo.VideoAssets
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+    )
+    And Not Exists (
+        Select
+            1
+        From dbo.VideoAssets
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or CreatedBy = @ActorId)
+    ) Throw 50003,
+    N'Chỉ tác giả video mới có quyền xóa.',
+    1;
+
+    If Exists (
+        Select
+            1
+        From dbo.Videos
+            Inner Join dbo.Lessons On dbo.Lessons.VideoId = dbo.Videos.Id
+        Where (dbo.Videos.VideoAssetId = @Id)
+            And (dbo.Lessons.IsDeleted = 0)
+    ) Throw 50006,
+    N'Video đang được sử dụng trong bài học nên không thể xóa.',
+    1;
+
+    Update dbo.VideoAssets
+    Set
+        IsDeleted = 1,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @Id)
+        And (IsDeleted = 0)
+        And (@IsAdmin = 1 Or CreatedBy = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'DELETE', 'VIDEO_LIBRARY', 'VideoAsset', Convert(Nvarchar(100), @Id));
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoLibrary_Sharing_Get
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.VideoAssets
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or CreatedBy = @ActorId)
+    ) Throw 50003,
+    N'Chỉ tác giả video mới được quản lý chia sẻ.',
+    1;
+
+    Select
+        Id,
+        Title,
+        ShareScope,
+        CreatedBy
+    From dbo.VideoAssets
+    Where (Id = @Id)
+        And (IsDeleted = 0);
+
+    Select
+        dbo.Users.Id,
+        dbo.Users.FullName,
+        dbo.Users.Email,
+        dbo.Users.TeacherCode,
+        Cast(Iif(dbo.VideoAssetShares.Id Is Null, 0, 1) As Bit) IsSelected
+    From dbo.Users
+        Left Join dbo.VideoAssetShares On dbo.VideoAssetShares.VideoAssetId = @Id And dbo.VideoAssetShares.TeacherId = dbo.Users.Id
+    Where (dbo.Users.TeacherCode Is Not Null)
+        And (dbo.Users.IsDeleted = 0)
+        And (dbo.Users.Status = 'ACTIVE')
+        And dbo.Users.Id <> (
+            Select
+                CreatedBy
+            From dbo.VideoAssets
+            Where (Id = @Id)
+    )
+    Order By
+        dbo.Users.FullName,
+        dbo.Users.Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoLibrary_Sharing_Save
+    @Id Bigint,
+    @ShareScope Varchar(20),
+    @TeacherIdsJson Nvarchar(Max) = N'[]',
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Set Xact_abort On;
+
+    If @ShareScope Not In ('PRIVATE', 'SELECTED', 'SCHOOL') Throw 50001,
+    N'Phạm vi chia sẻ không hợp lệ.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.VideoAssets
+        Where (Id = @Id)
+            And (IsDeleted = 0)
+            And (@IsAdmin = 1 Or CreatedBy = @ActorId)
+    ) Throw 50003,
+    N'Chỉ tác giả video mới được quản lý chia sẻ.',
+    1;
+
+    Begin Transaction;
+
+    Delete dbo.VideoAssetShares
+    Where (VideoAssetId = @Id);
+
+    If @ShareScope = 'SELECTED'
+    Begin
+        Insert dbo.VideoAssetShares (VideoAssetId, TeacherId, SharedBy)
+        Select
+            @Id,
+            dbo.Users.Id,
+            @ActorId
+        From dbo.Users
+        Where (dbo.Users.TeacherCode Is Not Null)
+            And (dbo.Users.IsDeleted = 0)
+            And (dbo.Users.Status = 'ACTIVE')
+            And dbo.Users.Id <> (
+                Select
+                    CreatedBy
+                From dbo.VideoAssets
+                Where (Id = @Id)
+        )
+            And dbo.Users.Id In (
+                Select
+                    Try_convert(Bigint, [value])
+                From Openjson(Coalesce(@TeacherIdsJson, N'[]'))
+                Where (Try_convert(Bigint, [value]) Is Not Null)
+        );
+
+        If Not Exists (
+            Select
+                1
+            From dbo.VideoAssetShares
+            Where (VideoAssetId = @Id)
+        ) Throw 50001,
+        N'Hãy chọn ít nhất một giáo viên để chia sẻ.',
+        1;
+
+    End;
+
+    Update dbo.VideoAssets
+    Set
+        ShareScope = @ShareScope,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @Id);
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, NewValuesJson)
+    Values
+        (
+        @ActorId,
+            'SHARE',
+            'VIDEO_LIBRARY',
+            'VideoAsset',
+            Convert(Nvarchar(100), @Id),
+            (
+                Select
+        @ShareScope shareScope,
+        @TeacherIdsJson teacherIds
+                For Json
+                    Path,
+                    Without_array_wrapper
+    )
+    );
+
+    Commit;
+
+    Select
+        @Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoLibrary_Attach
+    @LessonId Bigint,
+    @VideoAssetId Bigint,
+    @AllowSeek Bit,
+    @AllowSpeed Bit,
+    @RequiredWatchPercent Decimal(5, 2),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If @RequiredWatchPercent Not Between 0 And 100  Throw 50001,
+    N'Tỷ lệ xem bắt buộc không hợp lệ.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Lessons
+            Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+        Where (dbo.Lessons.Id = @LessonId)
+            And (dbo.Lessons.IsDeleted = 0)
+            And (dbo.Lessons.LessonType In ('VIDEO', 'INTERACTIVE_VIDEO'))
+            And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý bài học này.',
+    1;
+
+    Declare @VideoId Bigint,
+        @DurationSeconds Int;
+
+    Select
+        @VideoId = dbo.Videos.Id,
+        @DurationSeconds = dbo.Videos.DurationSeconds
+    From dbo.VideoAssets
+        Inner Join dbo.Videos On dbo.Videos.VideoAssetId = dbo.VideoAssets.Id
+    Where (dbo.VideoAssets.Id = @VideoAssetId)
+        And (dbo.VideoAssets.IsDeleted = 0)
+        And (dbo.VideoAssets.Status = 'ACTIVE')
+        And (dbo.Videos.Status = 'ACTIVE')
+        And (
+        @IsAdmin = 1
+            Or (dbo.VideoAssets.CreatedBy = @ActorId)
+            Or (dbo.VideoAssets.ShareScope = 'SCHOOL')
+            Or Exists (
+                Select
+                    1
+                From dbo.VideoAssetShares
+                Where (dbo.VideoAssetShares.VideoAssetId = dbo.VideoAssets.Id)
+                    And (dbo.VideoAssetShares.TeacherId = @ActorId)
+    )
+    );
+
+    If @VideoId Is Null Throw 50003,
+    N'Video không tồn tại hoặc chưa được tác giả chia sẻ cho bạn.',
+    1;
+
+    Update dbo.Lessons
+    Set
+        VideoId = @VideoId,
+        DurationSeconds = @DurationSeconds,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @LessonId);
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'ATTACH', 'VIDEO_LIBRARY', 'Video', Convert(Nvarchar(100), @VideoId));
+
+    Select
+        @VideoId;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_Video_AttachToLesson
+    @LessonId Bigint,
+    @VideoId Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Lessons
+            Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+        Where (dbo.Lessons.Id = @LessonId)
+            And (dbo.Lessons.IsDeleted = 0)
+            And (dbo.Lessons.LessonType In ('VIDEO', 'INTERACTIVE_VIDEO'))
+            And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý bài học này.',
+    1;
+
+    Declare @DurationSeconds Int;
+
+    Select
+        @DurationSeconds = dbo.Videos.DurationSeconds
+    From dbo.Videos
+        Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+    Where (dbo.Videos.Id = @VideoId)
+        And (dbo.Videos.Status = 'ACTIVE')
+        And (dbo.VideoAssets.IsDeleted = 0)
+        And (dbo.VideoAssets.Status = 'ACTIVE')
+        And (
+        @IsAdmin = 1
+            Or (dbo.VideoAssets.CreatedBy = @ActorId)
+            Or (dbo.VideoAssets.ShareScope = 'SCHOOL')
+            Or Exists (
+                Select
+                    1
+                From dbo.VideoAssetShares
+                Where (dbo.VideoAssetShares.VideoAssetId = dbo.VideoAssets.Id)
+                    And (dbo.VideoAssetShares.TeacherId = @ActorId)
+    )
+    );
+
+    If @DurationSeconds Is Null Throw 50003,
+    N'Video không tồn tại hoặc chưa được tác giả chia sẻ cho bạn.',
+    1;
+
+    Update dbo.Lessons
+    Set
+        VideoId = @VideoId,
+        DurationSeconds = @DurationSeconds,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @LessonId);
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, NewValuesJson)
+    Values
+        (
+        @ActorId,
+            'ATTACH',
+            'VIDEO_LIBRARY',
+            'Lesson',
+            Convert(Nvarchar(100), @LessonId),
+            (
+                Select
+        @VideoId videoId
+                For Json
+                    Path,
+                    Without_array_wrapper
+    )
+    );
+
+    Select
+        @VideoId;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoInteraction_GetByVideo
+    @VideoId Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Videos
+            Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+        Where (dbo.Videos.Id = @VideoId)
+            And (dbo.VideoAssets.IsDeleted = 0)
+            And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId)
+    ) Throw 50003,
+    N'Bạn không có quyền quản lý video này.',
+    1;
+
+    Select
+        dbo.VideoInteractions.*,
+        dbo.Questions.QuestionText,
+        dbo.Questions.QuestionType,
+        dbo.Questions.Description,
+        (
+            Select
+                dbo.QuestionOptions.OptionCode,
+                dbo.QuestionOptions.OptionText
+            From dbo.QuestionOptions
+            Where (dbo.QuestionOptions.QuestionId = dbo.Questions.Id)
+                And (dbo.QuestionOptions.IsDeleted = 0)
+            Order By
+                dbo.QuestionOptions.SortOrder
+            For Json
+                Path
+    ) Options
+    From dbo.VideoInteractions
+        Inner Join dbo.Questions On dbo.Questions.Id = dbo.VideoInteractions.QuestionId
+    Where (dbo.VideoInteractions.VideoId = @VideoId)
+        And (dbo.VideoInteractions.IsDeleted = 0)
+    Order By
+        dbo.VideoInteractions.TimeSeconds,
+        dbo.VideoInteractions.SortOrder;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoInteraction_PreviewAnswer
+    @VideoId Bigint,
+    @InteractionId Bigint,
+    @QuestionId Bigint,
+    @AnswerText Nvarchar(Max),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Declare @Type Varchar(50),
+        @Mode Varchar(30),
+        @Score Decimal(8, 2),
+        @Correct Nvarchar(Max),
+        @IsCorrect Bit;
+
+    Select
+        @Type = dbo.Questions.QuestionType,
+        @Mode = dbo.Questions.ShortAnswerMode,
+        @Score = dbo.VideoInteractions.Score
+    From dbo.VideoInteractions
+        Inner Join dbo.Videos On dbo.Videos.Id = dbo.VideoInteractions.VideoId
+        Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+        Inner Join dbo.Questions On dbo.Questions.Id = dbo.VideoInteractions.QuestionId
+    Where (dbo.VideoInteractions.Id = @InteractionId)
+        And (dbo.VideoInteractions.VideoId = @VideoId)
+        And (dbo.VideoInteractions.QuestionId = @QuestionId)
+        And (dbo.VideoInteractions.IsDeleted = 0)
+        And (dbo.VideoInteractions.Status = 'ACTIVE')
+        And (dbo.Questions.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId);
+
+    If @Type Is Null Throw 50003,
+    N'Bạn không có quyền xem trước câu hỏi này.',
+    1;
+
+    If @Type In ('SINGLE_CHOICE', 'TRUE_FALSE', 'MULTIPLE_CHOICE')
+    Begin
+        Select
+            @Correct = String_agg(Upper(Ltrim(Rtrim(OptionCode))), '|') Within Group (
+                Order By
+                    Upper(Ltrim(Rtrim(OptionCode)))
+        )
+        From dbo.QuestionOptions
+        Where (QuestionId = @QuestionId)
+            And (IsCorrect = 1)
+            And (IsDeleted = 0);
+
+        Set @IsCorrect = Iif(Upper(Isnull(@AnswerText, '')) = Isnull(@Correct, ''), 1, 0);
+
+    End Else If @Mode = 'MANUAL_REVIEW'
+    Set @IsCorrect = Null;
+
+    Else If @Mode = 'CONTAINS'
+    Set @IsCorrect = Iif(
+            Exists (
+                Select
+                    1
+                From dbo.QuestionAnswerKeys
+                Where (QuestionId = @QuestionId)
+                    And ((IsCaseSensitive = 1 And Charindex(AnswerText, @AnswerText collate Latin1_General_100_CS_AS) > 0) Or (IsCaseSensitive = 0 And Charindex(Lower(AnswerText), Lower(@AnswerText)) > 0))
+    ),
+            1,
+            0
+    );
+
+    Else
+    Set @IsCorrect = Iif(
+            Exists (
+                Select
+                    1
+                From dbo.QuestionAnswerKeys
+                Where (QuestionId = @QuestionId)
+                    And ((IsCaseSensitive = 1 And AnswerText = @AnswerText collate Latin1_General_100_CS_AS) Or (IsCaseSensitive = 0 And Lower(AnswerText) = Lower(@AnswerText)))
+    ),
+            1,
+            0
+    );
+
+    Select
+        @IsCorrect IsCorrect,
+        Cast(Iif(@IsCorrect = 1, @Score, 0) As Decimal(8, 2)) ScoreAwarded,
+        Iif(@IsCorrect Is Null, 'PREVIEW_PENDING', 'PREVIEW_AUTO_GRADED') ReviewStatus,
+        (
+            Select
+                Explanation
+            From dbo.Questions
+            Where (Id = @QuestionId)
+    ) Explanation;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoInteraction_Create
+    @VideoId Bigint,
+    @QuestionId Bigint,
+    @TimeSeconds Int,
+    @EndTimeSeconds Int = Null,
+    @InteractionType Varchar(50),
+    @Required Bit,
+    @PauseVideo Bit,
+    @AllowSkip Bit,
+    @Score Decimal(8, 2),
+    @AttemptLimit Int,
+    @SortOrder Int,
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Declare @Duration Int = (
+        Select
+            dbo.Videos.DurationSeconds
+        From dbo.Videos
+            Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+        Where (dbo.Videos.Id = @VideoId)
+            And (dbo.VideoAssets.IsDeleted = 0)
+            And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId)
+    );
+
+    If @Duration Is Null Throw 50003,
+    N'Bạn không có quyền quản lý video này.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Questions
+        Where (Id = @QuestionId)
+            And (IsDeleted = 0)
+    )
+    Or @TimeSeconds < 0
+    Or @TimeSeconds > @Duration
+    Or @AttemptLimit < 1
+    Or @Score < 0 Throw 50001,
+    N'Dữ liệu tương tác không hợp lệ.',
+    1;
+
+    Insert dbo.VideoInteractions (VideoId, QuestionId, TimeSeconds, EndTimeSeconds, InteractionType, Required, PauseVideo, AllowSkip, Score, AttemptLimit, SortOrder, Status)
+    Values
+        (@VideoId, @QuestionId, @TimeSeconds, @EndTimeSeconds, @InteractionType, @Required, @PauseVideo, @AllowSkip, @Score, @AttemptLimit, @SortOrder, @Status);
+
+    Declare @Id Bigint = Scope_identity();
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'CREATE', 'VIDEO_INTERACTION', 'VideoInteraction', Convert(Nvarchar(100), @Id));
+
+    Select
+        @Id;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoInteraction_Update
+    @Id Bigint,
+    @QuestionId Bigint,
+    @TimeSeconds Int,
+    @EndTimeSeconds Int = Null,
+    @InteractionType Varchar(50),
+    @Required Bit,
+    @PauseVideo Bit,
+    @AllowSkip Bit,
+    @Score Decimal(8, 2),
+    @AttemptLimit Int,
+    @SortOrder Int,
+    @Status Varchar(30),
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Declare @Duration Int = (
+        Select
+            dbo.Videos.DurationSeconds
+        From dbo.VideoInteractions
+            Inner Join dbo.Videos On dbo.Videos.Id = dbo.VideoInteractions.VideoId
+            Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+        Where (dbo.VideoInteractions.Id = @Id)
+            And (dbo.VideoInteractions.IsDeleted = 0)
+            And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId)
+    );
+
+    If @Duration Is Null Throw 50003,
+    N'Bạn không có quyền quản lý tương tác này.',
+    1;
+
+    If Not Exists (
+        Select
+            1
+        From dbo.Questions
+        Where (Id = @QuestionId)
+            And (IsDeleted = 0)
+    )
+    Or @TimeSeconds < 0
+    Or @TimeSeconds > @Duration
+    Or @AttemptLimit < 1
+    Or @Score < 0 Throw 50001,
+    N'Dữ liệu tương tác không hợp lệ.',
+    1;
+
+    Update dbo.VideoInteractions
+    Set
+        QuestionId = @QuestionId,
+        TimeSeconds = @TimeSeconds,
+        EndTimeSeconds = @EndTimeSeconds,
+        InteractionType = @InteractionType,
+        Required = @Required,
+        PauseVideo = @PauseVideo,
+        AllowSkip = @AllowSkip,
+        Score = @Score,
+        AttemptLimit = @AttemptLimit,
+        SortOrder = @SortOrder,
+        Status = @Status,
+        UpdatedAt = Sysutcdatetime()
+    Where (Id = @Id);
+
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'UPDATE', 'VIDEO_INTERACTION', 'VideoInteraction', Convert(Nvarchar(100), @Id));
+
+    Select
+        1;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoInteraction_Delete
+    @Id Bigint,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Update dbo.VideoInteractions
+    Set
+        IsDeleted = 1,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.VideoInteractions
+        Inner Join dbo.Videos On dbo.Videos.Id = dbo.VideoInteractions.VideoId
+        Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+    Where (dbo.VideoInteractions.Id = @Id)
+        And (dbo.VideoInteractions.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId);
+
+    Declare @Rows Int = @@Rowcount;
+
+    If @Rows > 0
+    Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId)
+    Values
+        (@ActorId, 'DELETE', 'VIDEO_INTERACTION', 'VideoInteraction', Convert(Nvarchar(100), @Id));
+
+    Select
+        @Rows;
+
+End
+Go
+Create Or Alter Procedure dbo.LMS_VideoInteraction_Reorder
+    @Id Bigint,
+    @SortOrder Int,
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
+As
+Begin
+    Set Nocount On;
+
+    Update dbo.VideoInteractions
+    Set
+        SortOrder = @SortOrder,
+        UpdatedAt = Sysutcdatetime()
+    From dbo.VideoInteractions
+        Inner Join dbo.Videos On dbo.Videos.Id = dbo.VideoInteractions.VideoId
+        Inner Join dbo.VideoAssets On dbo.VideoAssets.Id = dbo.Videos.VideoAssetId
+    Where (dbo.VideoInteractions.Id = @Id)
+        And (dbo.VideoInteractions.IsDeleted = 0)
+        And (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId);
+
+    If @@Rowcount = 0 Throw 50003,
+    N'Không thể sắp xếp tương tác này.',
+    1;
+
+End
+Go

@@ -1,20 +1,138 @@
-CREATE OR ALTER PROCEDURE dbo.LMS_Report_Dashboard AS
-BEGIN SET NOCOUNT ON;
- SELECT (SELECT COUNT(*) FROM dbo.Courses WHERE IsDeleted=0) TotalCourses,(SELECT COUNT(*) FROM dbo.Users WHERE StudentCode IS NOT NULL AND IsDeleted=0) TotalStudents,(SELECT COUNT(*) FROM dbo.Users WHERE TeacherCode IS NOT NULL AND IsDeleted=0) TotalTeachers,(SELECT COUNT(*) FROM dbo.Lessons WHERE IsDeleted=0) TotalLessons,(SELECT COUNT(*) FROM dbo.Videos) TotalVideos,(SELECT COUNT(*) FROM dbo.Questions WHERE IsDeleted=0) TotalQuestions,CAST(ISNULL((SELECT AVG(ProgressPercent) FROM dbo.Enrollments WHERE Status<>'CANCELLED'),0) AS DECIMAL(5,2)) CompletionRate,CAST(ISNULL((SELECT AVG(FinalScore) FROM dbo.Enrollments WHERE FinalScore IS NOT NULL),0) AS DECIMAL(5,2)) AverageScore;
-END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Report_CourseOverview AS
-BEGIN SET NOCOUNT ON; SELECT c.Id,c.Code,c.Title,c.Status,COUNT(DISTINCT e.Id) EnrollmentCount,CAST(ISNULL(AVG(e.ProgressPercent),0) AS DECIMAL(5,2)) CompletionRate,CAST(ISNULL(AVG(e.FinalScore),0) AS DECIMAL(8,2)) AverageScore,COUNT(DISTINCT l.Id) LessonCount FROM dbo.Courses c LEFT JOIN dbo.Enrollments e ON e.CourseId=c.Id AND e.Status<>'CANCELLED' LEFT JOIN dbo.Lessons l ON l.CourseId=c.Id AND l.IsDeleted=0 WHERE c.IsDeleted=0 GROUP BY c.Id,c.Code,c.Title,c.Status ORDER BY c.Title; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Report_StudentProgress AS
-BEGIN SET NOCOUNT ON; SELECT u.Id,u.StudentCode,u.FullName,c.Code CourseCode,c.Title CourseTitle,e.Status,e.ProgressPercent,e.FinalScore,e.LastAccessAt FROM dbo.Enrollments e JOIN dbo.Users u ON u.Id=e.StudentId JOIN dbo.Courses c ON c.Id=e.CourseId WHERE e.Status<>'CANCELLED' ORDER BY e.ProgressPercent DESC; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Report_LessonCompletion AS
-BEGIN SET NOCOUNT ON; SELECT l.Id,l.Title,c.Code CourseCode,COUNT(p.Id) StartedCount,SUM(IIF(p.Completed=1,1,0)) CompletedCount,CAST(ISNULL(AVG(p.Score),0) AS DECIMAL(8,2)) AverageScore FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId LEFT JOIN dbo.StudentLessonProgress p ON p.LessonId=l.Id WHERE l.IsDeleted=0 GROUP BY l.Id,l.Title,c.Code ORDER BY c.Code,l.Id; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Report_QuestionPerformance AS
-BEGIN SET NOCOUNT ON; SELECT q.Id,q.QuestionText,q.QuestionType,COUNT(a.Id) AnswerCount,SUM(IIF(a.IsCorrect=1,1,0)) CorrectCount,SUM(IIF(a.IsCorrect=0,1,0)) WrongCount,CAST(ISNULL(AVG(a.ScoreAwarded),0) AS DECIMAL(8,2)) AverageScore FROM dbo.Questions q LEFT JOIN dbo.StudentAnswers a ON a.QuestionId=q.Id WHERE q.IsDeleted=0 GROUP BY q.Id,q.QuestionText,q.QuestionType ORDER BY AnswerCount DESC; END
-GO
-CREATE OR ALTER PROCEDURE dbo.LMS_Report_VideoEngagement AS
-BEGIN SET NOCOUNT ON; SELECT v.Id,v.Title,COUNT(DISTINCT l.Id) LessonUsageCount,COUNT(p.Id) ViewerCount,CAST(ISNULL(AVG(p.WatchPercent),0) AS DECIMAL(5,2)) AverageWatchPercent,SUM(IIF(p.Completed=1,1,0)) CompletedCount FROM dbo.Videos v LEFT JOIN dbo.Lessons l ON l.VideoId=v.Id AND l.IsDeleted=0 LEFT JOIN dbo.StudentVideoProgress p ON p.VideoId=v.Id AND p.LessonId=l.Id GROUP BY v.Id,v.Title ORDER BY ViewerCount DESC; END
-GO
+Create Or Alter Procedure dbo.LMS_Report_Dashboard
+As
+Begin
+    Set Nocount On;
+
+    Select
+        (Select Count(*) From dbo.Courses Where (IsDeleted = 0)) TotalCourses,
+        (Select Count(*) From dbo.Users Where (StudentCode Is Not Null) And (IsDeleted = 0)) TotalStudents,
+        (Select Count(*) From dbo.Users Where (TeacherCode Is Not Null) And (IsDeleted = 0)) TotalTeachers,
+        (Select Count(*) From dbo.Lessons Where (IsDeleted = 0)) TotalLessons,
+        (Select Count(*) From dbo.Videos) TotalVideos,
+        (Select Count(*) From dbo.Questions Where (IsDeleted = 0)) TotalQuestions,
+        Cast(Isnull((Select Avg(ProgressPercent) From dbo.Enrollments Where (Status <> 'CANCELLED')), 0) As Decimal(5, 2)) CompletionRate,
+        Cast(Isnull((Select Avg(FinalScore) From dbo.Enrollments Where (FinalScore Is Not Null)), 0) As Decimal(5, 2)) AverageScore;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Report_CourseOverview
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.Courses.Id,
+        dbo.Courses.Code,
+        dbo.Courses.Title,
+        dbo.Courses.Status,
+        Count(Distinct dbo.Enrollments.Id) EnrollmentCount,
+        Cast(Isnull(Avg(dbo.Enrollments.ProgressPercent), 0) As Decimal(5, 2)) CompletionRate,
+        Cast(Isnull(Avg(dbo.Enrollments.FinalScore), 0) As Decimal(8, 2)) AverageScore,
+        Count(Distinct dbo.Lessons.Id) LessonCount
+    From dbo.Courses
+    Left Join dbo.Enrollments On dbo.Enrollments.CourseId = dbo.Courses.Id And dbo.Enrollments.Status <> 'CANCELLED'
+    Left Join dbo.Lessons On dbo.Lessons.CourseId = dbo.Courses.Id And dbo.Lessons.IsDeleted = 0
+    Where (dbo.Courses.IsDeleted = 0)
+    Group By
+        dbo.Courses.Id,
+        dbo.Courses.Code,
+        dbo.Courses.Title,
+        dbo.Courses.Status
+    Order By dbo.Courses.Title;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Report_StudentProgress
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.Users.Id,
+        dbo.Users.StudentCode,
+        dbo.Users.FullName,
+        dbo.Courses.Code CourseCode,
+        dbo.Courses.Title CourseTitle,
+        dbo.Enrollments.Status,
+        dbo.Enrollments.ProgressPercent,
+        dbo.Enrollments.FinalScore,
+        dbo.Enrollments.LastAccessAt
+    From dbo.Enrollments
+    Inner Join dbo.Users On dbo.Users.Id = dbo.Enrollments.StudentId
+    Inner Join dbo.Courses On dbo.Courses.Id = dbo.Enrollments.CourseId
+    Where (dbo.Enrollments.Status <> 'CANCELLED')
+    Order By dbo.Enrollments.ProgressPercent Desc;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Report_LessonCompletion
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.Lessons.Id,
+        dbo.Lessons.Title,
+        dbo.Courses.Code CourseCode,
+        Count(dbo.StudentLessonProgress.Id) StartedCount,
+        Sum(Iif(dbo.StudentLessonProgress.Completed = 1, 1, 0)) CompletedCount,
+        Cast(Isnull(Avg(dbo.StudentLessonProgress.Score), 0) As Decimal(8, 2)) AverageScore
+    From dbo.Lessons
+    Inner Join dbo.Courses On dbo.Courses.Id = dbo.Lessons.CourseId
+    Left Join dbo.StudentLessonProgress On dbo.StudentLessonProgress.LessonId = dbo.Lessons.Id
+    Where (dbo.Lessons.IsDeleted = 0)
+    Group By
+        dbo.Lessons.Id,
+        dbo.Lessons.Title,
+        dbo.Courses.Code
+    Order By
+        dbo.Courses.Code,
+        dbo.Lessons.Id;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Report_QuestionPerformance
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.Questions.Id,
+        dbo.Questions.QuestionText,
+        dbo.Questions.QuestionType,
+        Count(dbo.StudentAnswers.Id) AnswerCount,
+        Sum(Iif(dbo.StudentAnswers.IsCorrect = 1, 1, 0)) CorrectCount,
+        Sum(Iif(dbo.StudentAnswers.IsCorrect = 0, 1, 0)) WrongCount,
+        Cast(Isnull(Avg(dbo.StudentAnswers.ScoreAwarded), 0) As Decimal(8, 2)) AverageScore
+    From dbo.Questions
+    Left Join dbo.StudentAnswers On dbo.StudentAnswers.QuestionId = dbo.Questions.Id
+    Where (dbo.Questions.IsDeleted = 0)
+    Group By
+        dbo.Questions.Id,
+        dbo.Questions.QuestionText,
+        dbo.Questions.QuestionType
+    Order By AnswerCount Desc;
+End
+Go
+
+Create Or Alter Procedure dbo.LMS_Report_VideoEngagement
+As
+Begin
+    Set Nocount On;
+
+    Select
+        dbo.Videos.Id,
+        dbo.Videos.Title,
+        Count(Distinct dbo.Lessons.Id) LessonUsageCount,
+        Count(dbo.StudentVideoProgress.Id) ViewerCount,
+        Cast(Isnull(Avg(dbo.StudentVideoProgress.WatchPercent), 0) As Decimal(5, 2)) AverageWatchPercent,
+        Sum(Iif(dbo.StudentVideoProgress.Completed = 1, 1, 0)) CompletedCount
+    From dbo.Videos
+    Left Join dbo.Lessons On dbo.Lessons.VideoId = dbo.Videos.Id And dbo.Lessons.IsDeleted = 0
+    Left Join dbo.StudentVideoProgress On dbo.StudentVideoProgress.VideoId = dbo.Videos.Id And dbo.StudentVideoProgress.LessonId = dbo.Lessons.Id
+    Group By
+        dbo.Videos.Id,
+        dbo.Videos.Title
+    Order By ViewerCount Desc;
+End
+Go
