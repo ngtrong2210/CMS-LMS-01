@@ -10,3 +10,36 @@
 .lms-content{width:100%;max-width:1360px;flex:1}.lms-footer{padding:1.15rem 0;border-top:1px solid var(--eduvers-bdr-color);background:var(--eduvers-white);color:var(--eduvers-gray);font-size:.7rem}.lms-footer .container{display:flex;justify-content:space-between;gap:1rem}
 @media(max-width:991px){.learning-strip{display:none}.lms-nav{min-height:66px}.navbar-collapse{padding:1rem 0}.navbar-nav{gap:.25rem}.lms-content{padding-top:1.25rem!important}.lms-footer .container{display:grid;text-align:center;justify-content:center}}
 .lms-back-row{display:flex;align-items:center;margin-bottom:1rem}
+
+/* Bảng màu thống nhất với trang bản đồ hệ thống. */
+.lms-shell { background: var(--page); }
+.learning-strip { background: var(--theme-navy); }
+.lms-nav {
+  color: #fff;
+  background: var(--theme-sidebar);
+  border-bottom: 0;
+  box-shadow: 0 7px 24px rgba(16, 47, 77, .14);
+}
+.lms-nav .brand,
+.lms-nav .brand:hover { color: #fff; }
+.lms-nav .nav-link { color: rgba(255, 255, 255, .8); }
+.lms-nav .nav-link:hover,
+.lms-nav .nav-link.router-link-active {
+  color: #fff;
+  background: rgba(255, 255, 255, .11);
+}
+.lms-nav .profile-link { color: #fff; background: rgba(255, 255, 255, .1); }
+.lms-nav .profile-link:hover { background: rgba(255, 255, 255, .17); }
+.lms-nav .profile-copy strong { color: #fff; }
+.lms-nav .profile-copy small { color: rgba(255, 255, 255, .65); }
+.lms-nav .navbar-toggler { color: #fff; }
+.lms-nav .btn-light {
+  color: var(--theme-navy);
+  background: #fff;
+  border-color: #fff;
+}
+.lms-content { background: transparent; }
+
+@media(max-width:991px) {
+  .lms-nav .navbar-collapse { border-top: 1px solid rgba(255, 255, 255, .1); }
+}

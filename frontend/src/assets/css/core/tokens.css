@@ -10,11 +10,15 @@
   --brand-red: #c62828;
   --brand-red-dark: #a71d1d;
   --brand-yellow: #ffc224;
-  --ink: #081933;
+  --brand-success: #07875a;
+  --theme-navy: #102f4d;
+  --theme-sidebar: #183b59;
+  --ink: #172636;
   --ink-soft: #243d55;
   --muted: #4d5756;
   --surface: #fff;
-  --page: #f8f4f2;
+  --page: #f3f5f7;
+  --soft-surface: #f8f4f2;
   --soft-green: rgba(0,80,153,.08);
   --soft-blue: rgba(0,80,153,.10);
   --soft-yellow: rgba(255,194,36,.16);

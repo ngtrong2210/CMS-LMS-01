@@ -6,10 +6,10 @@
         ><span class="d-none d-md-inline"><i class="bi bi-headset"></i> Hỗ trợ học viên: Bộ phận đào tạo</span>
       </div>
     </div>
-    <nav class="navbar navbar-expand-lg bg-white sticky-top lms-nav">
+    <nav class="navbar navbar-expand-lg sticky-top lms-nav">
       <div class="container py-2">
         <RouterLink class="brand" to="/lms/dashboard"
-          ><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"
+          ><img class="eduvers-logo" src="/images/eduvers/logo-1.png" alt="Eduvers"
         /></RouterLink>
         <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#lmsNav">
           <i class="bi bi-list fs-2"></i>
