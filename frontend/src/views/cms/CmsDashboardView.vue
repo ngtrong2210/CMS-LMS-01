@@ -55,10 +55,7 @@
                   <td>{{ item.lessonCount }}</td>
                   <td>{{ item.studentCount }}</td>
                   <td>
-                    <span
-                      :class="['badge', item.status === 'PUBLISHED' ? 'badge-soft-success' : 'badge-soft-warning']"
-                      >{{ item.status }}</span
-                    >
+                    <span :class="['badge', courseStatusBadgeClass(item.status)]">{{ statusLabel(item.status) }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -101,6 +98,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axiosClient from '../../api/axiosClient'
+import { courseStatusBadgeClass, statusLabel } from '../../utils/displayLabels'
 const loading = ref(true),
   error = ref(''),
   courses = ref([]),

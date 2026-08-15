@@ -117,6 +117,19 @@
   border-color: var(--brand-blue-dark);
 }
 
+.btn.btn-action-copy {
+  color: var(--theme-navy);
+  background: var(--brand-yellow);
+  border-color: var(--brand-yellow);
+}
+
+.btn.btn-action-copy:hover,
+.btn.btn-action-copy:focus {
+  color: #fff;
+  background: #d59b00;
+  border-color: #d59b00;
+}
+
 .btn.btn-action-cancel {
   color: var(--ink);
   background: #edf1f0;

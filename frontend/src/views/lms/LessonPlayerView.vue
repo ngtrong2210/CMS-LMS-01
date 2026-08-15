@@ -87,7 +87,7 @@
             ><i :class="['bi', item.answered ? 'bi-check-circle-fill' : 'bi-patch-question']"></i>
             <div>
               <strong>{{ item.label }}</strong
-              ><small>{{ item.type }} • {{ item.score }} điểm</small>
+              ><small>{{ questionTypeLabel(item.type) }} • {{ item.score }} điểm</small>
             </div>
           </button>
         </div>
@@ -102,6 +102,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { resolveApiAssetUrl } from '../../api/apiConfig'
+import { questionTypeLabel } from '../../utils/displayLabels'
 import { formatInteractionTime } from '../../utils/learningRules'
 import InteractiveVideoPlayer from '../../components/video/InteractiveVideoPlayer.vue'
 

@@ -255,6 +255,29 @@ Begin
         Convert(Nvarchar(100), @Id)
     );
 
+    Insert Into dbo.SYS_Notifications
+    (
+        RecipientUserID,
+        ActorUserID,
+        NotificationType,
+        Title,
+        Message,
+        ReferenceType,
+        ReferenceID,
+        ActionUrl
+    )
+    Select
+        @StudentId,
+        @ActorId,
+        'ENROLLMENT',
+        N'Bạn đã được ghi danh khóa học',
+        Concat(N'Bạn có thể bắt đầu học khóa “', dbo.SIM_Courses.Title, N'”.'),
+        'COURSE',
+        dbo.SIM_Courses.CourseID,
+        Concat(N'/lms/courses/', dbo.SIM_Courses.CourseID)
+    From dbo.SIM_Courses
+    Where (dbo.SIM_Courses.CourseID = @CourseId);
+
     Commit;
 
     Select

@@ -79,10 +79,8 @@
             <tr>
               <th>Video</th>
               <th>Quyền truy cập</th>
-              <th>Thời lượng</th>
-              <th>Đang sử dụng</th>
-              <th>Người tạo</th>
-              <th>Ngày tạo</th>
+              <th>Thời lượng /<br />Sử dụng</th>
+              <th>Người tạo<br />/ Ngày tạo</th>
               <th class="text-end">Thao tác</th>
             </tr>
           </thead>
@@ -104,52 +102,68 @@
                   ><i :class="['bi', accessIcon(item.accessType)]"></i>{{ accessLabel(item) }}</span
                 >
               </td>
-              <td>{{ formatTime(item.durationSeconds) }}</td>
               <td>
-                <span class="badge badge-soft-primary">{{ item.usageCount }} bài học</span>
+                <div class="video-usage-summary">
+                  <strong><i class="bi bi-clock"></i>{{ formatTime(item.durationSeconds) }}</strong>
+                  <span class="badge badge-soft-primary">{{ item.usageCount }} bài học</span>
+                </div>
               </td>
               <td>
-                <strong class="author-name">{{ item.createdByName }}</strong
-                ><small v-if="item.isOwner" class="d-block text-secondary">Tác giả: bạn</small>
+                <div class="video-creator-summary">
+                  <strong class="author-name">{{ item.createdByName }}</strong>
+                  <span><i class="bi bi-calendar3"></i>{{ formatDate(item.createdAt) }}</span>
+                </div>
               </td>
-              <td>{{ formatDate(item.createdAt) }}</td>
               <td class="text-end action-cell">
-                <button
-                  v-if="item.canEdit"
-                  class="btn btn-action-edit btn-sm edit-button"
-                  title="Sửa thông tin video"
-                  @click="openEdit(item)"
-                >
-                  <i class="bi bi-pencil-square"></i>
-                </button>
-                <RouterLink
-                  v-if="item.firstVideoId"
-                  class="btn btn-action-view btn-sm"
-                  :to="`/cms/videos/${item.firstVideoId}/editor`"
-                  title="Mở một bản đang dùng"
-                  ><i class="bi bi-sliders"></i
-                ></RouterLink>
-                <button
-                  v-if="item.canShare"
-                  class="btn btn-action-share btn-sm share-button"
-                  title="Quản lý chia sẻ"
-                  @click="openShare(item)"
-                >
-                  <i class="bi bi-share"></i>
-                </button>
-                <button
-                  v-if="item.isOwner || item.canDelete"
-                  class="btn btn-action-delete btn-sm"
-                  :disabled="!item.canDelete"
-                  :title="item.canDelete ? 'Xóa video' : 'Video đang được sử dụng nên chưa thể xóa'"
-                  @click="remove(item)"
-                >
-                  <i class="bi bi-trash"></i>
-                </button>
+                <div class="video-action-group">
+                  <button
+                    v-if="item.canEdit"
+                    class="btn btn-action-edit btn-sm edit-button"
+                    title="Sửa thông tin video"
+                    @click="openEdit(item)"
+                  >
+                    <i class="bi bi-pencil-square"></i><span>Thông tin</span>
+                  </button>
+                  <RouterLink
+                    v-if="item.firstVideoId && item.canOpenEditor"
+                    class="btn btn-action-view btn-sm"
+                    :to="`/cms/videos/${item.firstVideoId}/editor`"
+                    :title="item.canEdit ? 'Biên tập video tương tác' : 'Xem video đã khóa và nhân bản'"
+                    ><i :class="['bi', item.canEdit ? 'bi-sliders' : 'bi-eye']"></i
+                    ><span>{{ item.canEdit ? 'Soạn tương tác' : 'Xem video' }}</span></RouterLink
+                  >
+                  <button
+                    v-if="item.canDuplicate"
+                    class="btn btn-action-copy btn-sm"
+                    :disabled="duplicatingId === item.id"
+                    title="Nhân bản video"
+                    @click="duplicateVideo(item)"
+                  >
+                    <span v-if="duplicatingId === item.id" class="spinner-border spinner-border-sm"></span
+                    ><i v-else class="bi bi-copy"></i><span>Nhân bản</span>
+                  </button>
+                  <button
+                    v-if="item.canShare"
+                    class="btn btn-action-share btn-sm share-button"
+                    title="Quản lý chia sẻ"
+                    @click="openShare(item)"
+                  >
+                    <i class="bi bi-share"></i><span>Chia sẻ</span>
+                  </button>
+                  <button
+                    v-if="item.isOwner || item.canDelete"
+                    class="btn btn-action-delete btn-sm"
+                    :disabled="!item.canDelete"
+                    :title="item.canDelete ? 'Xóa video' : 'Video đang được sử dụng nên chưa thể xóa'"
+                    @click="remove(item)"
+                  >
+                    <i class="bi bi-trash"></i><span>Xóa</span>
+                  </button>
+                </div>
               </td>
             </tr>
             <tr v-if="!loading && !items.length">
-              <td colspan="7" class="text-center text-secondary py-5">
+              <td colspan="5" class="text-center text-secondary py-5">
                 <i class="bi bi-search d-block fs-2 mb-2"></i>Không có video phù hợp với bộ lọc.
               </td>
             </tr>
@@ -163,12 +177,12 @@
       <form class="app-card upload-modal" @submit.prevent="save">
         <div class="modal-heading">
           <div>
-            <small>{{ form.id ? 'QUẢN LÝ TÀI NGUYÊN VIDEO' : 'VIDEO CỦA TÔI' }}</small>
-            <h2>{{ form.id ? 'Sửa thông tin video' : 'Thêm video vào thư viện' }}</h2>
+            <small>{{ form.id ? 'CẬP NHẬT ĐỒNG BỘ VIDEO' : 'VIDEO CỦA TÔI' }}</small>
+            <h2>{{ form.id ? 'Sửa video chưa có kết quả' : 'Thêm video vào thư viện' }}</h2>
             <p>
               {{
                 form.id
-                  ? 'Mỗi lần lưu sẽ tạo một phiên bản mới. Bài học không được chọn tiếp tục dùng nguyên phiên bản cũ.'
+                  ? 'Video chưa có điểm hoặc câu trả lời nên có thể sửa trực tiếp. Tất cả bài học đang dùng sẽ được đồng bộ.'
                   : 'Video mới được đặt ở chế độ riêng tư. Bạn có thể chia sẻ sau khi lưu.'
               }}
             </p>
@@ -225,74 +239,23 @@
             ><input v-model="form.videoUrl" class="form-control" readonly required />
           </div>
         </div>
-        <section v-if="form.id" class="version-panel">
+        <section v-if="form.id" class="version-panel sync-panel">
           <div class="version-panel-heading">
             <div>
-              <span class="version-badge"><i class="bi bi-layers"></i> Phiên bản {{ currentVersionNumber }}</span>
-              <h3>Tạo phiên bản {{ currentVersionNumber + 1 }}</h3>
-              <p>Chọn chính xác các bài học sẽ chuyển sang bản mới. Những bài còn lại không thay đổi.</p>
+              <span class="version-badge"><i class="bi bi-arrow-repeat"></i> Đồng bộ an toàn</span>
+              <h3>{{ form.usageCount }} bài học sẽ nhận nội dung mới</h3>
+              <p>Tiến độ xem chưa có điểm sẽ được đặt lại để học viên bắt đầu đúng nội dung vừa cập nhật.</p>
             </div>
-            <span class="usage-total">{{ usageLessons.length }} bài đang dùng</span>
+            <span class="usage-total">Chưa có kết quả</span>
           </div>
-          <label class="form-label" for="change-summary">Nội dung thay đổi</label>
-          <textarea
-            id="change-summary"
-            v-model.trim="form.changeSummary"
-            class="form-control"
-            rows="2"
-            maxlength="1000"
-            required
-            placeholder="Ví dụ: cập nhật file bài giảng và bổ sung câu hỏi tương tác."
-          ></textarea>
-          <div v-if="usageLoading" class="version-loading">
-            <span class="spinner-border spinner-border-sm text-brand"></span> Đang tải danh sách bài học...
-          </div>
-          <template v-else-if="usageLessons.length">
-            <div class="lesson-picker-heading">
-              <strong>Bài học chuyển sang phiên bản mới</strong>
-              <button type="button" class="btn btn-link btn-sm" @click="toggleAllUsageLessons">
-                {{ allUsageLessonsSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}
-              </button>
-            </div>
-            <div class="version-lesson-list">
-              <label
-                v-for="lesson in usageLessons"
-                :key="lesson.id"
-                :class="['version-lesson-option', { disabled: !lesson.canMove }]"
-              >
-                <input v-model="form.lessonIds" type="checkbox" :value="lesson.id" :disabled="!lesson.canMove" />
-                <span class="lesson-check"><i class="bi bi-check-lg"></i></span>
-                <span>
-                  <strong>{{ lesson.lessonTitle }}</strong>
-                  <small>
-                    {{ lesson.courseTitle }} · {{ lesson.chapterTitle || 'Chưa xếp chương' }}
-                    <em v-if="!lesson.canMove">· Do giáo viên khác quản lý</em>
-                  </small>
-                </span>
-                <span class="lesson-version">v{{ lesson.versionNumber }}</span>
-              </label>
-            </div>
-            <p class="selection-note">
-              <i class="bi bi-info-circle"></i>
-              Đã chọn <strong>{{ form.lessonIds.length }}</strong
-              >/{{ usageLessons.length }} bài. Tiến độ của các bài được chuyển sẽ tính lại theo phiên bản mới; lịch sử
-              câu trả lời cũ vẫn được lưu theo phiên bản cũ.
-            </p>
-          </template>
-          <p v-else class="unused-note">
-            <i class="bi bi-check-circle"></i> Video chưa gắn vào bài học. Phiên bản mới sẽ trở thành bản mặc định cho
-            lần gắn tiếp theo.
-          </p>
         </section>
         <div class="modal-actions">
           <button type="button" class="btn btn-action-cancel" @click="uploadModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
-          ><button
-            class="btn btn-action-save"
-            :disabled="saving || uploading || usageLoading || !form.videoUrl || (form.id && !form.changeSummary)"
-          >
+          ><button class="btn btn-action-save" :disabled="saving || uploading || !form.videoUrl">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
-            ><i v-else class="bi bi-layers"></i> {{ form.id ? 'Tạo phiên bản mới' : 'Lưu vào thư viện' }}
+            ><i v-else :class="['bi', form.id ? 'bi-arrow-repeat' : 'bi-check-lg']"></i>
+            {{ form.id ? 'Lưu và đồng bộ' : 'Lưu vào thư viện' }}
           </button>
         </div>
       </form>
@@ -375,9 +338,11 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { resolveApiAssetUrl } from '../../api/apiConfig'
 import { useListViewState } from '../../composables/useListViewState'
+import { confirmDialog } from '../../utils/confirmDialog'
 import { formatInteractionTime } from '../../utils/learningRules'
 
 const items = ref([]),
@@ -390,11 +355,9 @@ const items = ref([]),
 const uploadModal = ref(false),
   uploading = ref(false),
   saving = ref(false),
-  usageLoading = ref(false),
+  duplicatingId = ref(0),
   uploadProgress = ref(0),
   metadataVideo = ref(null)
-const usageSummary = ref({}),
-  usageLessons = ref([])
 const shareModal = ref(false),
   sharingLoading = ref(false),
   sharingSaving = ref(false),
@@ -404,20 +367,12 @@ const message = ref(''),
   messageType = ref('success'),
   form = reactive(blank()),
   shareForm = reactive({ assetId: 0, title: '', shareScope: 'PRIVATE', teacherIds: [] })
+const router = useRouter()
 useListViewState('cms-videos', { search, accessFilter, sourceFilter, usageFilter, statusFilter })
 const playbackUrl = computed(() => resolveApiAssetUrl(form.videoUrl)),
   pick = (source, ...names) =>
     names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null),
   formatTime = formatInteractionTime
-const currentVersionNumber = computed(() =>
-  Number(pick(usageSummary.value, 'CurrentVersionNumber', 'currentVersionNumber') || 1)
-)
-const movableUsageLessons = computed(() => usageLessons.value.filter((lesson) => lesson.canMove))
-const allUsageLessonsSelected = computed(
-  () =>
-    movableUsageLessons.value.length > 0 &&
-    movableUsageLessons.value.every((lesson) => form.lessonIds.includes(lesson.id))
-)
 const hasFilters = computed(
   () =>
     Boolean(search.value) ||
@@ -471,7 +426,8 @@ function blank() {
     mimeType: '',
     status: 'ACTIVE',
     changeSummary: '',
-    lessonIds: []
+    lessonIds: [],
+    usageCount: 0
   }
 }
 async function load() {
@@ -506,6 +462,10 @@ async function load() {
       sharedTeacherCount: Number(pick(row, 'SharedTeacherCount', 'sharedTeacherCount') || 0),
       isOwner: Boolean(pick(row, 'IsOwner', 'isOwner')),
       canEdit: Boolean(pick(row, 'CanEdit', 'canEdit')),
+      canOpenEditor: Boolean(pick(row, 'CanOpenEditor', 'canOpenEditor')),
+      canDuplicate: Boolean(pick(row, 'CanDuplicate', 'canDuplicate')),
+      hasLearningResults: Boolean(pick(row, 'HasLearningResults', 'hasLearningResults')),
+      answerCount: Number(pick(row, 'AnswerCount', 'answerCount') || 0),
       canShare: Boolean(pick(row, 'CanShare', 'canShare')),
       canDelete: Boolean(pick(row, 'CanDelete', 'canDelete'))
     }))
@@ -549,7 +509,7 @@ function openUpload() {
   uploadProgress.value = 0
   uploadModal.value = true
 }
-async function openEdit(item) {
+function openEdit(item) {
   Object.assign(form, blank(), {
     id: item.id,
     title: item.title,
@@ -559,33 +519,11 @@ async function openEdit(item) {
     originalFileName: item.originalFileName,
     fileSize: item.fileSize,
     mimeType: item.mimeType,
-    status: item.status
+    status: item.status,
+    usageCount: item.usageCount
   })
   uploadProgress.value = 0
   uploadModal.value = true
-  usageLoading.value = true
-  usageSummary.value = {}
-  usageLessons.value = []
-  try {
-    const data = await axiosClient.get(`/video-library/${item.id}/usage`, { params: { _fresh: Date.now() } })
-    usageSummary.value = pick(data, 'Summary', 'summary') || {}
-    usageLessons.value = (pick(data, 'Lessons', 'lessons') || []).map((row) => ({
-      id: Number(pick(row, 'LessonID', 'LessonId', 'lessonID', 'lessonId')),
-      lessonTitle: pick(row, 'LessonTitle', 'lessonTitle') || '',
-      courseTitle: pick(row, 'CourseTitle', 'courseTitle') || '',
-      chapterTitle: pick(row, 'ChapterTitle', 'chapterTitle') || '',
-      versionNumber: Number(pick(row, 'VersionNumber', 'versionNumber') || 1),
-      canMove: Boolean(pick(row, 'CanMove', 'canMove'))
-    }))
-  } catch (error) {
-    uploadModal.value = false
-    show(error.message, 'danger')
-  } finally {
-    usageLoading.value = false
-  }
-}
-function toggleAllUsageLessons() {
-  form.lessonIds = allUsageLessonsSelected.value ? [] : movableUsageLessons.value.map((lesson) => lesson.id)
 }
 async function upload(event) {
   const file = event.target.files?.[0]
@@ -625,13 +563,37 @@ async function save() {
     await load()
     show(
       edited
-        ? `Đã tạo phiên bản mới và chuyển ${form.lessonIds.length} bài học đã chọn. Các bài học khác giữ nguyên.`
+        ? `Đã cập nhật video và đồng bộ ${form.usageCount} bài học đang sử dụng.`
         : 'Đã thêm video riêng tư vào thư viện. Chỉ bạn nhìn thấy cho đến khi chia sẻ.'
     )
   } catch (error) {
     show(error.message, 'danger')
   } finally {
     saving.value = false
+  }
+}
+async function duplicateVideo(item) {
+  const confirmed = await confirmDialog({
+    title: 'Nhân bản video',
+    message: `Tạo một bản độc lập từ “${item.title}”, bao gồm toàn bộ câu hỏi tương tác?`,
+    confirmText: 'Nhân bản',
+    tone: 'primary',
+    icon: 'bi-copy'
+  })
+  if (!confirmed) return
+  duplicatingId.value = item.id
+  try {
+    const result = await axiosClient.post(`/video-library/${item.id}/duplicate`, {
+      title: `${item.title} - Bản sao`
+    })
+    const videoId = Number(pick(result, 'id', 'Id'))
+    show('Đã nhân bản video và toàn bộ câu hỏi tương tác.')
+    if (videoId) await router.push(`/cms/videos/${videoId}/editor`)
+    else await load()
+  } catch (error) {
+    show(error.message, 'danger')
+  } finally {
+    duplicatingId.value = 0
   }
 }
 async function openShare(item) {
@@ -686,7 +648,14 @@ async function saveSharing() {
 }
 async function remove(item) {
   if (!item.canDelete) return
-  if (!window.confirm(`Xóa “${item.title}” khỏi thư viện?`)) return
+  const confirmed = await confirmDialog({
+    title: 'Xóa video',
+    message: `Bạn có chắc muốn xóa “${item.title}” khỏi thư viện video?`,
+    confirmText: 'Xóa video',
+    tone: 'danger',
+    icon: 'bi-trash3'
+  })
+  if (!confirmed) return
   try {
     await axiosClient.delete(`/video-library/${item.id}`)
     await load()

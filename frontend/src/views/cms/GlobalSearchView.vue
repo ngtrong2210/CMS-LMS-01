@@ -98,6 +98,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
+import { statusLabel } from '../../utils/displayLabels'
 
 const route = useRoute(),
   router = useRouter()
@@ -135,7 +136,7 @@ const guides = [
     title: 'Ngân hàng câu hỏi',
     icon: 'bi-patch-question',
     description: 'Tìm trực tiếp trong nội dung, giải thích, loại và độ khó câu hỏi.',
-    example: 'Vue Router, SINGLE_CHOICE'
+    example: 'Vue Router, câu hỏi đúng sai'
   },
   {
     title: 'Học viên',
@@ -210,20 +211,6 @@ function countByType(type) {
 }
 function typeLabel(type) {
   return types.find((item) => item.value === type)?.label || type
-}
-function statusLabel(status) {
-  return (
-    {
-      ACTIVE: 'Hoạt động',
-      INACTIVE: 'Tạm ẩn',
-      PUBLISHED: 'Đã xuất bản',
-      DRAFT: 'Bản nháp',
-      ARCHIVED: 'Lưu trữ',
-      LOCKED: 'Đã khóa'
-    }[status] ||
-    status ||
-    'Sẵn sàng'
-  )
 }
 function statusClass(status) {
   return ['ACTIVE', 'PUBLISHED'].includes(status)

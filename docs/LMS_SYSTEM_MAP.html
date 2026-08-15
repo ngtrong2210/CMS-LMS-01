@@ -34,7 +34,7 @@
         <a class="nav-link" href="#roles"><span class="nav-no">02</span>Vai trò</a>
         <a class="nav-link" href="#businessFlow"><span class="nav-no">03</span>Luồng toàn hệ thống</a>
         <a class="nav-link" href="#detailFlows"><span class="nav-no">04</span>Luồng chi tiết</a>
-        <a class="nav-link" href="#videoVersioning"><span class="nav-no">05</span>Phiên bản video</a>
+        <a class="nav-link" href="#videoVersioning"><span class="nav-no">05</span>Quy tắc sửa video</a>
         <a class="nav-link" href="#dataRelation"><span class="nav-no">06</span>Quan hệ dữ liệu</a>
         <a class="nav-link" href="#tableDictionary"><span class="nav-no">07</span>Danh mục 25 bảng</a>
         <a class="nav-link" href="#businessRules"><span class="nav-no">08</span>Quy tắc quan trọng</a>
@@ -338,7 +338,8 @@
               <tr data-search="upload file media"><td>Upload</td><td class="mono">POST /api/videos/upload</td><td>Project storage service</td><td>/Media/Video/YYYY/MM</td></tr>
               <tr data-search="library asset"><td>Tạo tài nguyên</td><td class="mono">POST /api/video-library</td><td class="mono">LMS_VideoLibrary_Create</td><td>SIM_VideoAssets, SIM_Videos</td></tr>
               <tr data-search="usage version lessons phiên bản"><td>Xem bài đang sử dụng</td><td class="mono">GET /api/video-library/{id}/usage</td><td class="mono">LMS_VideoVersion_GetUsageByVideoAsset</td><td>SIM_Lessons, SIM_VideoVersions</td></tr>
-              <tr data-search="create version phiên bản chọn bài"><td>Tạo phiên bản mới</td><td class="mono">PUT /api/video-library/{id}</td><td class="mono">LMS_VideoLibrary_Update</td><td>SIM_VideoVersions, LMS_VideoInteractions</td></tr>
+              <tr data-search="update sync sửa đồng bộ"><td>Sửa và đồng bộ khi chưa có kết quả</td><td class="mono">PUT /api/video-library/{id}</td><td class="mono">LMS_VideoLibrary_Update</td><td>SIM_VideoAssets, SIM_Videos, SIM_VideoVersions, SIM_Lessons</td></tr>
+              <tr data-search="duplicate copy nhân bản khóa kết quả"><td>Nhân bản video đã khóa</td><td class="mono">POST /api/video-library/{id}/duplicate</td><td class="mono">LMS_VideoLibrary_Duplicate</td><td>SIM_VideoAssets, SIM_Videos, SIM_VideoVersions, LMS_VideoInteractions</td></tr>
               <tr data-search="share sharing"><td>Chia sẻ</td><td class="mono">PUT /api/video-library/{id}/sharing</td><td class="mono">LMS_VideoLibrary_Sharing_Save</td><td>SIM_VideoAssetShares</td></tr>
               <tr data-search="interaction tương tác"><td>Gắn câu hỏi</td><td class="mono">POST /api/videos/{id}/interactions</td><td class="mono">LMS_VideoInteraction_Create</td><td>LMS_VideoInteractions</td></tr>
             </tbody></table></div>
@@ -356,40 +357,40 @@
         <section id="videoVersioning" aria-labelledby="videoVersioningTitle">
           <div class="section-head">
             <div>
-              <p class="kicker">Luồng phiên bản video</p>
-              <h2 id="videoVersioningTitle">Bài học cũ giữ nguyên, chỉ bài được chọn dùng bản mới</h2>
-              <p class="section-desc">Phiên bản là ảnh chụp file, cấu hình và bộ tương tác tại thời điểm xuất bản.</p>
+              <p class="kicker">Quy tắc sửa và nhân bản video</p>
+              <h2 id="videoVersioningTitle">Chưa có kết quả thì đồng bộ; đã có kết quả thì khóa sửa</h2>
+              <p class="section-desc">Một câu trả lời sai có 0 điểm vẫn là kết quả học tập và làm video bị khóa.</p>
             </div>
           </div>
-          <article class="card flow-lane" data-search="video version phiên bản bài học cũ chọn bài mới">
-            <div class="lane-head"><span class="lane-no">V</span><div><h3>Tạo và chuyển phiên bản có kiểm soát</h3><small>Không cập nhật hàng loạt ngoài ý muốn.</small></div></div>
+          <article class="card flow-lane" data-search="video sửa đồng bộ khóa kết quả nhân bản">
+            <div class="lane-head"><span class="lane-no">V</span><div><h3>Kiểm tra dữ liệu học tập trước khi cho sửa</h3><small>Áp dụng đồng nhất tại giao diện, API và stored procedure.</small></div></div>
             <div class="flow-row" style="--columns: 6">
-              <div class="flow-node"><h3>Mở sửa video</h3><p>Hệ thống đọc bản hiện tại và các bài đang dùng.</p><code>GET /usage</code></div>
-              <div class="flow-node"><h3>Chọn bài học</h3><p>Giáo viên tích một hoặc nhiều bài cần chuyển.</p><code>LessonIDs</code></div>
-              <div class="flow-node"><h3>Tạo bản N + 1</h3><p>Chụp file, tiêu đề, thời lượng và cấu hình mới.</p><code>SIM_VideoVersions</code></div>
-              <div class="flow-node"><h3>Nhân bộ tương tác</h3><p>Câu hỏi timeline được sao chép sang bản mới.</p><code>LMS_VideoInteractions</code></div>
-              <div class="flow-node"><h3>Chuyển bài đã chọn</h3><p>Chỉ cập nhật VideoVersionID của danh sách chọn.</p><code>SIM_Lessons</code></div>
-              <div class="flow-node result"><h3>Giữ nguyên bài còn lại</h3><p>Bài cũ tiếp tục phát file và câu hỏi phiên bản cũ.</p><code>Không Update</code></div>
+              <div class="flow-node"><h3>Mở video</h3><p>Hệ thống xác định video, tác giả và các bài đang dùng.</p><code>VideoID</code></div>
+              <div class="flow-node"><h3>Kiểm tra kết quả</h3><p>Tìm mọi câu trả lời và điểm bài học liên quan.</p><code>Answers + Score</code></div>
+              <div class="flow-node"><h3>Chưa có kết quả</h3><p>Cho phép sửa file, cấu hình và câu hỏi tương tác.</p><code>CanEdit = 1</code></div>
+              <div class="flow-node"><h3>Đồng bộ tất cả bài</h3><p>Mọi bài dùng chung nhận nội dung và thời lượng mới.</p><code>Update SIM_Lessons</code></div>
+              <div class="flow-node"><h3>Đã có kết quả</h3><p>Ẩn nút sửa; API và SQL từ chối mọi thao tác thay đổi.</p><code>CanEdit = 0</code></div>
+              <div class="flow-node result"><h3>Nhân bản để soạn tiếp</h3><p>Tạo video độc lập, sao chép cấu hình và tương tác nhưng không gắn bài học.</p><code>POST /duplicate</code></div>
             </div>
           </article>
           <div class="role-grid">
-            <article class="card role-card" data-search="current version latest attach">
-              <span class="role-tag">BẢN MỚI NHẤT</span>
-              <h3>Gắn bài học mới</h3>
-              <p><code>SIM_Videos.CurrentVideoVersionID</code> xác định phiên bản mặc định cho lần gắn tiếp theo.</p>
+            <article class="card role-card" data-search="unscored editable sync">
+              <span class="role-tag">CHƯA CÓ KẾT QUẢ</span>
+              <h3>Được sửa trực tiếp</h3>
+              <p>Nội dung hiện tại được cập nhật và tất cả <code>SIM_Lessons</code> đang tham chiếu video được đồng bộ.</p>
             </article>
-            <article class="card role-card" data-search="pinned lesson version">
-              <span class="role-tag teacher">BẢN ĐÃ GHIM</span>
-              <h3>Mở bài học hiện có</h3>
-              <p><code>SIM_Lessons.VideoVersionID</code> quyết định chính xác file và bộ tương tác được phát.</p>
+            <article class="card role-card" data-search="scored answer wrong locked">
+              <span class="role-tag teacher">ĐÃ CÓ KẾT QUẢ</span>
+              <h3>Khóa nội dung gốc</h3>
+              <p>Chỉ cần tồn tại <code>LMS_StudentAnswers</code> — kể cả trả lời sai 0 điểm — hoặc điểm bài học lớn hơn 0 là khóa sửa.</p>
             </article>
-            <article class="card role-card" data-search="answer progress version audit">
-              <span class="role-tag student">LỊCH SỬ HỌC</span>
-              <h3>Tiến độ và điểm</h3>
-              <p>Tiến độ, câu trả lời đúng/sai và phiên học đều lưu <code>VideoVersionID</code> để truy vết.</p>
+            <article class="card role-card" data-search="duplicate copy independent private">
+              <span class="role-tag student">VIDEO NHÂN BẢN</span>
+              <h3>Độc lập hoàn toàn</h3>
+              <p>Bản sao thuộc người tạo, mặc định riêng tư, không mang theo bài học, tiến độ hay điểm; chỉ sao chép file, cấu hình và tương tác.</p>
             </article>
           </div>
-          <div class="callout"><strong>Khi chuyển bài sang bản mới:</strong> tiến độ tổng của bài được đặt lại để học viên học đúng nội dung mới; dữ liệu chi tiết của phiên bản cũ không bị xóa và vẫn tra cứu được.</div>
+          <div class="callout"><strong>Lớp bảo vệ bắt buộc:</strong> giao diện chỉ ẩn nút để dễ dùng; API và stored procedure vẫn tự kiểm tra lại kết quả học tập trước mọi thao tác sửa, xóa hoặc sắp xếp tương tác.</div>
         </section>
 
         <section id="dataRelation" aria-labelledby="dataRelationTitle">
@@ -452,7 +453,7 @@
                 <div class="relation-card"><strong>SYS_Users 1 → N SIM_Courses</strong><span>Giảng viên sở hữu khóa qua TeacherUserID.</span></div>
                 <div class="relation-card"><strong>SIM_Courses 1 → N SIM_Chapters</strong><span>Một khóa có nhiều chương.</span></div>
                 <div class="relation-card"><strong>SIM_Chapters 1 → N SIM_Lessons</strong><span>Một chương có nhiều bài học.</span></div>
-                <div class="relation-card"><strong>SIM_Videos 1 → N SIM_VideoVersions</strong><span>Mỗi lần sửa tạo một phiên bản mới tăng dần.</span></div>
+                <div class="relation-card"><strong>SIM_Videos 1 → N SIM_VideoVersions</strong><span>Phiên bản lưu dấu nội dung đã phát sinh học tập; video chưa có kết quả được cập nhật đồng bộ tại bản hiện tại.</span></div>
                 <div class="relation-card"><strong>SIM_VideoVersions 1 → N SIM_Lessons</strong><span>Mỗi bài học ghim chính xác một phiên bản.</span></div>
                 <div class="relation-card"><strong>SIM_VideoVersions 1 → N LMS_VideoInteractions</strong><span>Mỗi phiên bản có bộ mốc tương tác riêng.</span></div>
                 <div class="relation-card"><strong>LMS_Questions 1 → N LMS_VideoInteractions</strong><span>Một câu hỏi có thể dùng ở nhiều video.</span></div>
@@ -490,7 +491,7 @@
                 <tr data-search="SIM_VideoAssets asset thư viện file media"><td>SIM_VideoAssets</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetID</span><span class="key fk">CreatedByUserID</span></td><td>SYS_Users, SIM_Videos</td><td>Metadata tài nguyên video và tác giả.</td></tr>
                 <tr data-search="SIM_VideoAssetShares share chia sẻ giáo viên"><td>SIM_VideoAssetShares</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetShareID</span><span class="key fk">VideoAssetID</span><span class="key fk">TeacherUserID</span></td><td>SIM_VideoAssets, SYS_Users</td><td>Chia sẻ video cho giáo viên được chọn.</td></tr>
                 <tr data-search="SIM_Videos video tương tác độc lập current version"><td>SIM_Videos</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoID</span><span class="key fk">VideoAssetID</span><span class="key fk">CurrentVideoVersionID</span></td><td>SIM_VideoAssets, SIM_VideoVersions</td><td>Định danh video dùng chung và con trỏ tới phiên bản mới nhất.</td></tr>
-                <tr data-search="SIM_VideoVersions version phiên bản lịch sử"><td>SIM_VideoVersions</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoVersionID</span><span class="key fk">VideoID</span><span class="key">VersionNumber</span></td><td>SIM_Videos; được bài học, tương tác và kết quả tham chiếu</td><td>Ảnh chụp bất biến của file, cấu hình và mô tả thay đổi mỗi phiên bản.</td></tr>
+                <tr data-search="SIM_VideoVersions version phiên bản lịch sử"><td>SIM_VideoVersions</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoVersionID</span><span class="key fk">VideoID</span><span class="key">VersionNumber</span></td><td>SIM_Videos; được bài học, tương tác và kết quả tham chiếu</td><td>Nội dung hiện hành; khi đã có kết quả thì được giữ bất biến để bảo toàn lịch sử học.</td></tr>
 
                 <tr data-search="LMS_Questions question câu hỏi ngân hàng"><td>LMS_Questions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionID</span><span class="key fk">CreatedByUserID</span></td><td>SYS_Users</td><td>Ngân hàng câu hỏi dùng lại.</td></tr>
                 <tr data-search="LMS_QuestionOptions option đáp án lựa chọn"><td>LMS_QuestionOptions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionOptionID</span><span class="key fk">QuestionID</span></td><td>LMS_Questions</td><td>Phương án của câu hỏi lựa chọn.</td></tr>
@@ -511,6 +512,7 @@
           <div class="section-head"><div><p class="kicker">Quy tắc không được nhầm</p><h2 id="businessRulesTitle">Các nguyên tắc chi phối dữ liệu</h2></div></div>
           <div class="rule-grid">
             <article class="card rule-card" data-search="video nhiều bài học dùng chung version"><h3>Video dùng chung, phiên bản được ghim</h3><p><code>SIM_Lessons.VideoID</code> nhận diện video; <code>VideoVersionID</code> ghim nội dung. Tiến độ tách theo <code>StudentUserID + LessonID + VideoID + VideoVersionID</code>.</p></article>
+            <article class="card rule-card" data-search="video sửa đồng bộ khóa nhân bản"><h3>Sửa đồng bộ hoặc nhân bản</h3><p>Chưa có câu trả lời/điểm: sửa và đồng bộ mọi bài đang dùng. Đã có kết quả: khóa video gốc và dùng <code>LMS_VideoLibrary_Duplicate</code> để tạo video độc lập.</p></article>
             <article class="card rule-card" data-search="trả lời sai lưu database"><h3>Trả lời sai vẫn phải lưu</h3><p>Tạo bản ghi <code>LMS_StudentAnswers</code> với <code>IsCorrect = 0</code> và <code>ScoreAwarded = 0</code>; không được bỏ qua lần làm sai.</p></article>
             <article class="card rule-card" data-search="tác giả quyền video share admin"><h3>Quyền sở hữu video</h3><p>Giáo viên thấy video mình tạo/được chia sẻ. Quản trị viên được xem và sửa toàn bộ. Chia sẻ không chuyển quyền sở hữu.</p></article>
             <article class="card rule-card" data-search="xóa mềm soft delete"><h3>Xóa mềm nội dung</h3><p>Khóa học, bài học, câu hỏi và tương tác dùng <code>IsDeleted</code> hoặc trạng thái để giữ lịch sử học tập liên quan.</p></article>

@@ -31,6 +31,12 @@ public interface ILearningService
 }
 public interface IReportService { Task<DashboardDto> GetDashboardAsync(CancellationToken cancellationToken = default); Task<IReadOnlyCollection<object>> GetReportAsync(string report, CancellationToken cancellationToken = default); }
 public interface ISearchService { Task<IReadOnlyCollection<object>> SearchAsync(string search, long actorId, bool isAdmin, int limit = 60, CancellationToken cancellationToken = default); }
+public interface INotificationService
+{
+    Task<NotificationFeedDto> GetAsync(long recipientUserId, int limit, bool unreadOnly, CancellationToken cancellationToken = default);
+    Task<bool> MarkReadAsync(long notificationId, long recipientUserId, CancellationToken cancellationToken = default);
+    Task<int> MarkAllReadAsync(long recipientUserId, CancellationToken cancellationToken = default);
+}
 public interface IContentService
 {
     Task<IReadOnlyCollection<object>> GetChaptersAsync(long courseId, long actorId, bool isAdmin, CancellationToken ct = default);
@@ -49,6 +55,7 @@ public interface IContentService
     Task<object> GetVideoUsageAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<long> CreateVideoAssetAsync(VideoAssetSaveRequest request, long actorId, CancellationToken ct = default);
     Task<bool> UpdateVideoAssetAsync(long id, VideoAssetSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<long> DuplicateVideoAssetAsync(long id, VideoDuplicateRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<bool> DeleteVideoAssetAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<object> GetVideoSharingAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
     Task SaveVideoSharingAsync(long id, VideoShareSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);

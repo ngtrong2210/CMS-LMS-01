@@ -614,6 +614,24 @@
 .question-zone {
   background: rgba(var(--eduvers-blue-rgb), 0.32);
 }
+.edit-lock-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.edit-lock-notice > i {
+  margin-top: 0.05rem;
+  color: #8a6600;
+  font-size: 1.15rem;
+}
+.edit-lock-notice > div {
+  display: grid;
+  gap: 0.18rem;
+}
+.edit-lock-notice span {
+  color: #6f5c28;
+  font-size: 0.82rem;
+}
 @media (max-width: 1000px) {
   .video-card {
     grid-template-rows: minmax(300px, 48vw) minmax(78px, auto);

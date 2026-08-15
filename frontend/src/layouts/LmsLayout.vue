@@ -21,6 +21,7 @@
             <RouterLink class="nav-link" to="/lms/results">Kết quả</RouterLink>
           </div>
           <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+            <NotificationCenter />
             <RouterLink to="/lms/profile" class="profile-link d-flex align-items-center gap-2"
               ><img
                 class="avatar user-avatar"
@@ -56,6 +57,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import NotificationCenter from '../components/feedback/NotificationCenter.vue'
 import { useAuthStore } from '../stores/authStore'
 import PageBackButton from '../components/navigation/PageBackButton.vue'
 const auth = useAuthStore()

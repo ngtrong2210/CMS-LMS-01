@@ -22,10 +22,10 @@
         <div class="col-md-3">
           <select v-model="type" class="form-select">
             <option value="">Tất cả loại</option>
-            <option>SINGLE_CHOICE</option>
-            <option>MULTIPLE_CHOICE</option>
-            <option>TRUE_FALSE</option>
-            <option>SHORT_ANSWER</option>
+            <option value="SINGLE_CHOICE">Một lựa chọn</option>
+            <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
+            <option value="TRUE_FALSE">Đúng / Sai</option>
+            <option value="SHORT_ANSWER">Trả lời ngắn</option>
           </select>
         </div>
         <div class="col-md-2">
@@ -56,7 +56,7 @@
                 ><small class="d-block text-secondary">Cập nhật {{ formatDate(q.updatedAt) }}</small>
               </td>
               <td>
-                <span class="badge badge-soft-primary">{{ q.type }}</span>
+                <span class="badge badge-soft-primary">{{ questionTypeLabel(q.type) }}</span>
               </td>
               <td>
                 <span :class="['badge', difficultyClass(q.difficulty)]">{{ difficultyLabel(q.difficulty) }}</span>
@@ -100,10 +100,10 @@
           <div class="col-md-4">
             <label class="form-label">Loại câu hỏi</label
             ><select v-model="form.questionType" class="form-select" @change="normalizeAnswers">
-              <option>SINGLE_CHOICE</option>
-              <option>MULTIPLE_CHOICE</option>
-              <option>TRUE_FALSE</option>
-              <option>SHORT_ANSWER</option>
+              <option value="SINGLE_CHOICE">Một lựa chọn</option>
+              <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
+              <option value="TRUE_FALSE">Đúng / Sai</option>
+              <option value="SHORT_ANSWER">Trả lời ngắn</option>
             </select>
           </div>
           <div class="col-md-3">
@@ -202,6 +202,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { useListViewState } from '../../composables/useListViewState'
+import { questionTypeLabel } from '../../utils/displayLabels'
 
 const route = useRoute()
 const search = ref(''),

@@ -1,28 +1,74 @@
-.progress { overflow: hidden; background: #e8edeb; border-radius: 3px; }
-.progress-bar { background: var(--brand-green); border-radius: 3px; }
-.badge { border-radius: 4px; padding: .38rem .5rem; font-size: .74rem; font-weight: 650; letter-spacing: .015em; }
-.badge-soft-success { color: #056c48; background: #dff2eb; }
-.badge-soft-primary { color: #00447f; background: #e4eff9; }
-.badge-soft-warning { color: #755f00; background: #fff7c7; }
-.badge-soft-danger { color: #a41515; background: #fbe7e7; }
+.progress {
+  overflow: hidden;
+  background: #e8edeb;
+  border-radius: 3px;
+}
+.progress-bar {
+  background: var(--brand-green);
+  border-radius: 3px;
+}
+.badge {
+  border-radius: 4px;
+  padding: 0.38rem 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.015em;
+}
+.badge-soft-success {
+  color: #056c48;
+  background: #dff2eb;
+}
+.badge-soft-primary {
+  color: #00447f;
+  background: #e4eff9;
+}
+.badge-soft-warning {
+  color: #755f00;
+  background: #fff7c7;
+}
+.badge-soft-danger {
+  color: #a41515;
+  background: #fbe7e7;
+}
 
-.table { --bs-table-bg: transparent; color: var(--ink-soft); font-size: .88rem; }
-.table > :not(caption) > * > * { padding: .82rem .8rem; border-bottom-color: var(--neutral-line); vertical-align: middle; }
+.table {
+  --bs-table-bg: transparent;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+.table > :not(caption) > * > * {
+  padding: 0.82rem 0.8rem;
+  border-bottom-color: var(--neutral-line);
+  vertical-align: middle;
+}
 .table thead th {
   color: #fff;
-  background: var(--theme-navy);
-  font-size: .76rem;
+  background: var(--eduvers-base);
+  font-size: 0.76rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .045em;
+  letter-spacing: 0.045em;
   white-space: nowrap;
 }
-.table thead th:first-child { border-top-left-radius: var(--control-radius); }
-.table thead th:last-child { border-top-right-radius: var(--control-radius); }
-.table tbody tr:last-child>* { border-bottom: 0; }
-.table tbody tr { transition: background-color .18s ease; }
-.table tbody tr:hover>* { background: rgba(var(--brand-green-rgb),.035); }
-.table-responsive { scrollbar-width: thin; scrollbar-color: #c9d1ce transparent; }
+.table thead th:first-child {
+  border-top-left-radius: var(--control-radius);
+}
+.table thead th:last-child {
+  border-top-right-radius: var(--control-radius);
+}
+.table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.table tbody tr {
+  transition: background-color 0.18s ease;
+}
+.table tbody tr:hover > * {
+  background: rgba(var(--brand-green-rgb), 0.035);
+}
+.table-responsive {
+  scrollbar-width: thin;
+  scrollbar-color: #c9d1ce transparent;
+}
 
 .avatar {
   width: 38px;

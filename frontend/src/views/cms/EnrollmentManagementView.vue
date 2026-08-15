@@ -210,6 +210,8 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { useListViewState } from '../../composables/useListViewState'
+import { confirmDialog } from '../../utils/confirmDialog'
+import { statusLabel } from '../../utils/displayLabels'
 
 const route = useRoute()
 const items = ref([])
@@ -369,7 +371,14 @@ async function saveEnrollment() {
 }
 
 async function cancelEnrollment(item) {
-  if (!window.confirm(`Hủy ghi danh “${item.studentName}” khỏi khóa học “${item.courseTitle}”?`)) return
+  const confirmed = await confirmDialog({
+    title: 'Hủy ghi danh học viên',
+    message: `Hủy ghi danh “${item.studentName}” khỏi khóa học “${item.courseTitle}”?`,
+    confirmText: 'Hủy ghi danh',
+    tone: 'warning',
+    icon: 'bi-person-dash'
+  })
+  if (!confirmed) return
   try {
     await axiosClient.delete(`/cms/enrollments/${item.id}`)
     await loadEnrollments()
@@ -394,11 +403,6 @@ function formatDate(value) {
   return value
     ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value))
     : '—'
-}
-function statusLabel(value) {
-  return (
-    { ENROLLED: 'Đã ghi danh', IN_PROGRESS: 'Đang học', COMPLETED: 'Hoàn thành', CANCELLED: 'Đã hủy' }[value] || value
-  )
 }
 function statusClass(value) {
   return (

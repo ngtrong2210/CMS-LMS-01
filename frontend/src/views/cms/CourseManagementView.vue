@@ -57,9 +57,7 @@
               <td>{{ course.studentCount }}</td>
               <td>{{ course.lessonCount }}</td>
               <td>
-                <span :class="['badge', course.status === 'PUBLISHED' ? 'badge-soft-success' : 'badge-soft-warning']">{{
-                  course.status
-                }}</span>
+                <span :class="['badge', courseStatusBadgeClass(course.status)]">{{ statusLabel(course.status) }}</span>
               </td>
               <td class="text-end text-nowrap">
                 <RouterLink
@@ -149,6 +147,8 @@
 import { onMounted, reactive, ref, watch } from 'vue'
 import axiosClient from '../../api/axiosClient'
 import { useListViewState } from '../../composables/useListViewState'
+import { confirmDialog } from '../../utils/confirmDialog'
+import { courseStatusBadgeClass, statusLabel } from '../../utils/displayLabels'
 const items = ref([]),
   search = ref(''),
   status = ref(''),
@@ -268,7 +268,14 @@ async function save() {
   }
 }
 async function remove(item) {
-  if (!window.confirm(`Xóa khóa học “${item.title}”?`)) return
+  const confirmed = await confirmDialog({
+    title: 'Xóa khóa học',
+    message: `Bạn có chắc muốn xóa khóa học “${item.title}”?`,
+    confirmText: 'Xóa khóa học',
+    tone: 'danger',
+    icon: 'bi-trash3'
+  })
+  if (!confirmed) return
   try {
     await axiosClient.delete(`/courses/${item.id}`)
     await load()

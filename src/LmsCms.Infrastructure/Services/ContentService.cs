@@ -58,6 +58,8 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
         var lessonIds=r.LessonIds.Where(x=>x>0).Distinct().ToArray();
         return Affected("dbo.LMS_VideoLibrary_Update",new{Id=id,r.Title,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.OriginalFileName,r.FileSize,r.MimeType,r.Status,LessonIdsJson=JsonSerializer.Serialize(lessonIds),r.ChangeSummary,ActorId=actorId,IsAdmin=isAdmin},ct);
     }
+    public Task<long> DuplicateVideoAssetAsync(long id,VideoDuplicateRequest r,long actorId,bool isAdmin,CancellationToken ct=default)
+        => ScalarId("dbo.LMS_VideoLibrary_Duplicate",new{Id=id,r.Title,ActorId=actorId,IsAdmin=isAdmin},ct);
     public Task<bool> DeleteVideoAssetAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_VideoLibrary_Delete",new{Id=id,ActorId=actorId,IsAdmin=isAdmin},ct);
     public async Task<object> GetVideoSharingAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)
     {

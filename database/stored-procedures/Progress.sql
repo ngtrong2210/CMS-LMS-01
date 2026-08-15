@@ -866,8 +866,85 @@ Begin
             Where (dbo.QuestionOptions.QuestionId = @QuestionId)
                 And (dbo.QuestionOptions.IsDeleted = 0);
 
+        Declare @WasLessonCompleted Bit = Isnull
+        (
+            (
+                Select
+                    dbo.LMS_StudentLessonProgress.Completed
+                From dbo.LMS_StudentLessonProgress
+                Where (dbo.LMS_StudentLessonProgress.StudentUserID = @StudentId)
+                    And (dbo.LMS_StudentLessonProgress.LessonID = @LessonId)
+            ),
+            0
+        );
+
         Exec dbo.LMS_LessonProgress_Recalculate @StudentId,
             @LessonId;
+
+        If @WasLessonCompleted = 0
+            And Exists
+            (
+                Select
+                    1
+                From dbo.LMS_StudentLessonProgress
+                Where (dbo.LMS_StudentLessonProgress.StudentUserID = @StudentId)
+                    And (dbo.LMS_StudentLessonProgress.LessonID = @LessonId)
+                    And (dbo.LMS_StudentLessonProgress.Completed = 1)
+            )
+        Begin
+            Insert Into dbo.SYS_Notifications
+            (
+                RecipientUserID,
+                ActorUserID,
+                NotificationType,
+                Title,
+                Message,
+                ReferenceType,
+                ReferenceID,
+                ActionUrl
+            )
+            Select
+                RecipientUser.UserID,
+                @StudentId,
+                'LESSON_COMPLETED',
+                N'Học viên đã hoàn thành bài học',
+                Concat(StudentUser.FullName, N' đã hoàn thành “', dbo.SIM_Lessons.Title, N'” với ', Convert(Nvarchar(30), Cast(dbo.LMS_StudentLessonProgress.Score As Decimal(8, 2))), N' điểm.'),
+                'LESSON_PROGRESS',
+                dbo.LMS_StudentLessonProgress.StudentLessonProgressID,
+                N'/cms/reports'
+            From dbo.LMS_StudentLessonProgress
+            Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.LessonID = dbo.LMS_StudentLessonProgress.LessonID
+            Inner Join dbo.SIM_Courses On dbo.SIM_Courses.CourseID = dbo.SIM_Lessons.CourseID
+            Inner Join dbo.SYS_Users As StudentUser On StudentUser.UserID = dbo.LMS_StudentLessonProgress.StudentUserID
+            Cross Join dbo.SYS_Users As RecipientUser
+            Where (dbo.LMS_StudentLessonProgress.StudentUserID = @StudentId)
+                And (dbo.LMS_StudentLessonProgress.LessonID = @LessonId)
+                And (dbo.LMS_StudentLessonProgress.Completed = 1)
+                And
+                (
+                    RecipientUser.UserID = dbo.SIM_Courses.TeacherUserID
+                    Or Exists
+                    (
+                        Select
+                            1
+                        From dbo.SYS_UserRoles
+                        Inner Join dbo.SYS_Roles On dbo.SYS_Roles.RoleID = dbo.SYS_UserRoles.RoleID
+                        Where (dbo.SYS_UserRoles.UserID = RecipientUser.UserID)
+                            And (dbo.SYS_Roles.Code = 'ADMIN')
+                    )
+                )
+                And (RecipientUser.IsDeleted = 0)
+                And Not Exists
+                (
+                    Select
+                        1
+                    From dbo.SYS_Notifications
+                    Where (dbo.SYS_Notifications.RecipientUserID = RecipientUser.UserID)
+                        And (dbo.SYS_Notifications.NotificationType = 'LESSON_COMPLETED')
+                        And (dbo.SYS_Notifications.ReferenceType = 'LESSON_PROGRESS')
+                        And (dbo.SYS_Notifications.ReferenceID = dbo.LMS_StudentLessonProgress.StudentLessonProgressID)
+                );
+        End;
 
         Select
         @AnswerId AnswerId,

@@ -7,4 +7,6 @@
 @import './components/forms.css';
 @import './components/data-display.css';
 @import './components/overlays.css';
+@import './components/confirm-dialog.css';
+@import './components/notification-center.css';
 @import './core/responsive.css';

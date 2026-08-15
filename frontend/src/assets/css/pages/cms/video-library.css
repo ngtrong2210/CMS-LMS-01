@@ -121,11 +121,99 @@
   background: #f1efed;
   color: #5d6965;
 }
-.action-cell {
+.video-usage-summary {
+  display: grid;
+  justify-items: start;
+  gap: 0.38rem;
   white-space: nowrap;
 }
-.action-cell .btn + .btn {
-  margin-left: 0.3rem;
+.video-usage-summary strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.video-usage-summary strong i {
+  color: var(--eduvers-base);
+}
+.video-creator-summary {
+  display: grid;
+  justify-items: start;
+  gap: 0.18rem;
+}
+.video-creator-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #65756f;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.video-creator-summary span i {
+  color: var(--eduvers-base);
+}
+.action-cell {
+  min-width: 370px;
+  white-space: normal;
+}
+.video-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+.video-action-group .btn {
+  display: inline-flex;
+  min-width: 88px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.32rem;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.video-action-group .btn-action-edit {
+  color: #fff;
+  background: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+.video-action-group .btn-action-edit:hover,
+.video-action-group .btn-action-edit:focus {
+  color: #fff;
+  background: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+.video-action-group .btn-action-copy {
+  color: var(--theme-navy);
+  background: var(--brand-yellow);
+  border-color: var(--brand-yellow);
+}
+.video-action-group .btn-action-copy:hover,
+.video-action-group .btn-action-copy:focus {
+  color: #fff;
+  background: #d59b00;
+  border-color: #d59b00;
+}
+.video-action-group .btn-action-delete {
+  color: var(--brand-red) !important;
+  background: #fff;
+  border-color: var(--brand-red);
+}
+.video-action-group .btn-action-delete:hover,
+.video-action-group .btn-action-delete:focus {
+  color: #fff !important;
+  background: var(--brand-red);
+  border-color: var(--brand-red);
+}
+.video-action-group .btn-action-share {
+  color: #fff;
+  background: #07875a;
+  border-color: #07875a;
+}
+.video-action-group .btn-action-share:hover,
+.video-action-group .btn-action-share:focus {
+  color: #fff;
+  background: #056b48;
+  border-color: #056b48;
 }
 .share-button {
   color: #fff;

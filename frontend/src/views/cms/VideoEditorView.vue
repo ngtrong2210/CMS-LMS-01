@@ -10,7 +10,14 @@
           <span v-if="previewLoading" class="spinner-border spinner-border-sm me-1"></span
           ><i v-else class="bi bi-eye"></i> Xem như học viên
         </button>
-        <label class="btn btn-action-upload header-upload-button mb-0" :class="{ disabled: uploading }"
+        <button class="btn btn-action-copy" :disabled="duplicating || !form.videoAssetId" @click="duplicateVideo">
+          <span v-if="duplicating" class="spinner-border spinner-border-sm me-1"></span
+          ><i v-else class="bi bi-copy"></i> Nhân bản video
+        </button>
+        <label
+          v-if="form.canEdit"
+          class="btn btn-action-upload header-upload-button mb-0"
+          :class="{ disabled: uploading }"
           ><i class="bi bi-cloud-arrow-up"></i> {{ uploading ? `Đang tải ${uploadProgress}%` : 'Upload video'
           }}<input
             class="visually-hidden"
@@ -19,7 +26,7 @@
             :disabled="uploading"
             @change="uploadVideo"
         /></label>
-        <button class="btn btn-action-save" :disabled="saving || !form.lessonId" @click="saveVideo">
+        <button v-if="form.canEdit" class="btn btn-action-save" :disabled="saving" @click="saveVideo">
           <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
           ><i v-else class="bi bi-check-lg"></i> Lưu video
         </button>
@@ -29,6 +36,14 @@
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
       <i :class="['bi', messageType === 'danger' ? 'bi-exclamation-circle' : 'bi-check-circle', 'me-2']"></i
       >{{ message }}
+    </div>
+
+    <div v-if="!form.canEdit" class="alert alert-warning edit-lock-notice">
+      <i class="bi bi-lock-fill"></i>
+      <div>
+        <strong>Video đã có kết quả học tập nên nội dung được khóa.</strong>
+        <span>Câu trả lời và điểm cũ được giữ nguyên. Hãy nhân bản video để tiếp tục chỉnh sửa.</span>
+      </div>
     </div>
 
     <div class="editor-grid">
@@ -60,7 +75,12 @@
               ><small>{{ formatBytes(uploadedFile.fileSize) }} • {{ uploadedFile.mimeType }}</small>
             </div>
           </div>
-          <button class="btn btn-blue toolbar-add-question" :disabled="!questions.length" @click="addAtCurrent">
+          <button
+            v-if="form.canEdit"
+            class="btn btn-blue toolbar-add-question"
+            :disabled="!questions.length"
+            @click="addAtCurrent"
+          >
             <i class="bi bi-plus-lg"></i> Thêm câu hỏi tại {{ formatTime(currentTime) }}
           </button>
         </div>
@@ -81,9 +101,9 @@
             <span>{{ formatTime(item.time) }}</span>
             <div class="interaction-content">
               <strong>{{ item.label }}</strong
-              ><small>{{ item.type }} • {{ item.score || 0 }} điểm</small>
+              ><small>{{ questionTypeLabel(item.type) }} • {{ item.score || 0 }} điểm</small>
             </div>
-            <div class="interaction-actions">
+            <div v-if="form.canEdit" class="interaction-actions">
               <button
                 type="button"
                 class="interaction-action edit"
@@ -191,10 +211,10 @@
             <label class="form-label"><i class="bi bi-ui-checks-grid me-1 text-brand"></i>Loại câu hỏi</label
             ><select v-model="questionTypeFilter" class="form-select">
               <option value="">Tất cả loại</option>
-              <option>SINGLE_CHOICE</option>
-              <option>MULTIPLE_CHOICE</option>
-              <option>TRUE_FALSE</option>
-              <option>SHORT_ANSWER</option>
+              <option value="SINGLE_CHOICE">Một lựa chọn</option>
+              <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
+              <option value="TRUE_FALSE">Đúng / Sai</option>
+              <option value="SHORT_ANSWER">Trả lời ngắn</option>
             </select>
           </div>
           <div class="col-md-6 question-picker-wrap">
@@ -221,7 +241,9 @@
                 />
               </div>
               <small class="picker-summary"
-                >{{ questions.length }} kết quả{{ questionTypeFilter ? ` • ${questionTypeFilter}` : '' }}</small
+                >{{ questions.length }} kết quả{{
+                  questionTypeFilter ? ` • ${questionTypeLabel(questionTypeFilter)}` : ''
+                }}</small
               ><button
                 v-for="q in questions"
                 :key="q.id"
@@ -230,7 +252,7 @@
                 @click="chooseQuestion(q)"
               >
                 <span>{{ q.text }}</span
-                ><small>{{ q.type }}</small>
+                ><small>{{ questionTypeLabel(q.type) }}</small>
               </button>
               <div v-if="!questionsLoading && !questions.length" class="picker-empty">
                 Không tìm thấy câu hỏi phù hợp.
@@ -337,10 +359,10 @@
           <div class="col-md-5">
             <label class="form-label"><i class="bi bi-ui-checks-grid me-1 text-brand"></i>Loại câu hỏi</label
             ><select v-model="quickQuestion.questionType" class="form-select" @change="normalizeQuickQuestion">
-              <option>SINGLE_CHOICE</option>
-              <option>MULTIPLE_CHOICE</option>
-              <option>TRUE_FALSE</option>
-              <option>SHORT_ANSWER</option>
+              <option value="SINGLE_CHOICE">Một lựa chọn</option>
+              <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
+              <option value="TRUE_FALSE">Đúng / Sai</option>
+              <option value="SHORT_ANSWER">Trả lời ngắn</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -464,13 +486,16 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { resolveApiAssetUrl } from '../../api/apiConfig'
+import { confirmDialog } from '../../utils/confirmDialog'
+import { questionTypeLabel } from '../../utils/displayLabels'
 import { formatInteractionTime } from '../../utils/learningRules'
 import InteractiveVideoPlayer from '../../components/video/InteractiveVideoPlayer.vue'
 
 const route = useRoute(),
+  router = useRouter(),
   videoRef = ref(null),
   items = ref([]),
   questions = ref([]),
@@ -478,6 +503,7 @@ const route = useRoute(),
   selected = ref(null)
 const uploading = ref(false),
   saving = ref(false),
+  duplicating = ref(false),
   interactionSaving = ref(false),
   previewLoading = ref(false),
   previewOpen = ref(false),
@@ -497,6 +523,7 @@ const questionTypeFilter = ref(''),
   interactionEditorOpen = ref(false)
 const form = reactive({
   id: Number(route.params.id),
+  videoAssetId: 0,
   lessonId: 0,
   title: 'Video bài giảng',
   videoUrl: '',
@@ -505,7 +532,10 @@ const form = reactive({
   allowSeek: false,
   allowSpeed: true,
   requiredWatchPercent: 80,
-  status: 'ACTIVE'
+  status: 'ACTIVE',
+  canEdit: true,
+  hasLearningResults: false,
+  answerCount: 0
 })
 const quickQuestion = reactive(blankQuickQuestion())
 const formatTime = formatInteractionTime
@@ -545,6 +575,7 @@ watch([questionSearch, questionTypeFilter], () => {
 async function loadVideo() {
   try {
     const data = await axiosClient.get(`/videos/${form.id}`, { params: { _fresh: Date.now() } })
+    form.videoAssetId = Number(pick(data, 'VideoAssetId', 'videoAssetId') || 0)
     form.lessonId = Number(pick(data, 'LessonId', 'lessonId') || 0)
     form.title = pick(data, 'Title', 'title') || form.title
     form.videoUrl = pick(data, 'VideoUrl', 'videoUrl') || ''
@@ -554,6 +585,9 @@ async function loadVideo() {
     form.allowSpeed = Boolean(pick(data, 'AllowSpeed', 'allowSpeed') ?? true)
     form.requiredWatchPercent = Number(pick(data, 'RequiredWatchPercent', 'requiredWatchPercent') || 80)
     form.status = pick(data, 'Status', 'status') || 'ACTIVE'
+    form.canEdit = Boolean(pick(data, 'CanEdit', 'canEdit'))
+    form.hasLearningResults = Boolean(pick(data, 'HasLearningResults', 'hasLearningResults'))
+    form.answerCount = Number(pick(data, 'AnswerCount', 'answerCount') || 0)
   } catch (error) {
     showMessage(error.message, 'danger')
   }
@@ -608,6 +642,7 @@ async function loadInteractions() {
     : items.value[0] || null
 }
 async function uploadVideo(event) {
+  if (!form.canEdit) return
   const file = event.target.files?.[0]
   event.target.value = ''
   if (!file) return
@@ -637,6 +672,7 @@ async function uploadVideo(event) {
   }
 }
 async function saveVideo() {
+  if (!form.canEdit) return
   saving.value = true
   message.value = ''
   try {
@@ -659,6 +695,7 @@ async function saveVideo() {
   }
 }
 async function saveInteraction() {
+  if (!form.canEdit) return false
   if (!selected.value?.questionId) return false
   interactionSaving.value = true
   message.value = ''
@@ -692,6 +729,7 @@ async function saveInteractionAndClose() {
   if (await saveInteraction()) interactionEditorOpen.value = false
 }
 async function deleteInteraction() {
+  if (!form.canEdit) return
   if (!selected.value) return
   const deleting = { id: selected.value.id, localKey: selected.value.localKey }
   if (!deleting.id) {
@@ -747,6 +785,7 @@ function chooseQuestion(q) {
   questionPickerOpen.value = false
 }
 function openQuickQuestion() {
+  if (!form.canEdit) return
   Object.assign(quickQuestion, blankQuickQuestion(questionTypeFilter.value || 'SINGLE_CHOICE'))
   quickQuestionOpen.value = true
   questionPickerOpen.value = false
@@ -848,6 +887,7 @@ function selectAndSeek(item) {
   seekTo(item.time, true)
 }
 function openInteractionEditor(item) {
+  if (!form.canEdit) return
   selectAndSeek(item)
   questionPickerOpen.value = false
   interactionEditorOpen.value = true
@@ -857,6 +897,7 @@ function closeInteractionEditor() {
   interactionEditorOpen.value = false
 }
 function requestDelete(item) {
+  if (!form.canEdit) return
   selectAndSeek(item)
   questionPickerOpen.value = false
   confirmDelete.value = true
@@ -874,6 +915,7 @@ function markerPercent(time) {
   return form.durationSeconds ? Math.min(100, (time / form.durationSeconds) * 100) : 0
 }
 function addAtCurrent() {
+  if (!form.canEdit) return
   const q = questions.value[0]
   if (!q) return
   videoRef.value?.pause()
@@ -897,6 +939,32 @@ function addAtCurrent() {
   items.value.push(item)
   items.value.sort((a, b) => a.time - b.time)
   openInteractionEditor(item)
+}
+async function duplicateVideo() {
+  if (!form.videoAssetId) return
+  const confirmed = await confirmDialog({
+    title: 'Nhân bản video',
+    message: `Tạo một bản độc lập từ “${form.title}”, bao gồm toàn bộ câu hỏi tương tác?`,
+    confirmText: 'Nhân bản',
+    tone: 'primary',
+    icon: 'bi-copy'
+  })
+  if (!confirmed) return
+  duplicating.value = true
+  message.value = ''
+  try {
+    const result = await axiosClient.post(`/video-library/${form.videoAssetId}/duplicate`, {
+      title: `${form.title} - Bản sao`
+    })
+    const videoId = Number(pick(result, 'id', 'Id'))
+    if (!videoId) throw new Error('Không nhận được ID video mới.')
+    await router.push(`/cms/videos/${videoId}/editor`)
+    window.location.reload()
+  } catch (error) {
+    showMessage(error.message, 'danger')
+  } finally {
+    duplicating.value = false
+  }
 }
 function showMessage(text, type = 'success') {
   message.value = text

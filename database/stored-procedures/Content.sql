@@ -615,14 +615,11 @@ Begin
         videoInfo.VideoId,
         videoInfo.VideoId FirstVideoId,
         Cast(Iif(dbo.VideoAssets.CreatedBy = @ActorId, 1, 0) As Bit) IsOwner,
-        Cast(
-            Iif(
-        @IsAdmin = 1
-                Or dbo.VideoAssets.CreatedBy = @ActorId,
-                1,
-                0
-    ) As Bit
-    ) CanEdit,
+        Cast(Case When (@IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId) And learningResultInfo.HasLearningResults = 0 Then 1 Else 0 End As Bit) CanEdit,
+        Cast(Case When @IsAdmin = 1 Or dbo.VideoAssets.CreatedBy = @ActorId Then 1 Else 0 End As Bit) CanOpenEditor,
+        Cast(1 As Bit) CanDuplicate,
+        learningResultInfo.HasLearningResults,
+        learningResultInfo.AnswerCount,
         Cast(
             Iif(
         @IsAdmin = 1
@@ -659,6 +656,32 @@ Begin
             From dbo.Videos
             Where (dbo.Videos.VideoAssetId = dbo.VideoAssets.Id)
     ) videoInfo
+        Outer Apply
+        (
+            Select
+                Cast(Case When Exists
+                    (
+                        Select
+                            1
+                        From dbo.StudentAnswers
+                        Where (dbo.StudentAnswers.VideoId = videoInfo.VideoId)
+                    )
+                    Or Exists
+                    (
+                        Select
+                            1
+                        From dbo.StudentLessonProgress
+                            Inner Join dbo.Lessons On dbo.Lessons.Id = dbo.StudentLessonProgress.LessonId
+                        Where (dbo.Lessons.VideoId = videoInfo.VideoId)
+                            And (dbo.StudentLessonProgress.Score > 0)
+                    ) Then 1 Else 0 End As Bit) HasLearningResults,
+                (
+                    Select
+                        Count(*)
+                    From dbo.StudentAnswers
+                    Where (dbo.StudentAnswers.VideoId = videoInfo.VideoId)
+                ) AnswerCount
+        ) learningResultInfo
         Outer Apply (
             Select
                 Cast(
@@ -1041,6 +1064,61 @@ Begin
         ShareScope = @ShareScope,
         UpdatedAt = Sysutcdatetime()
     Where (Id = @Id);
+
+    If @ShareScope In ('SELECTED', 'SCHOOL')
+    Begin
+        Insert Into dbo.SYS_Notifications
+        (
+            RecipientUserID,
+            ActorUserID,
+            NotificationType,
+            Title,
+            Message,
+            ReferenceType,
+            ReferenceID,
+            ActionUrl
+        )
+        Select
+            TeacherUser.UserID,
+            @ActorId,
+            'VIDEO_SHARED',
+            N'Video được chia sẻ với bạn',
+            Concat(ActorUser.FullName, N' đã chia sẻ video “', dbo.SIM_VideoAssets.Title, N'”.'),
+            'VIDEO_ASSET',
+            dbo.SIM_VideoAssets.VideoAssetID,
+            N'/cms/videos'
+        From dbo.SIM_VideoAssets
+        Cross Join dbo.SYS_Users As TeacherUser
+        Inner Join dbo.SYS_Users As ActorUser On ActorUser.UserID = @ActorId
+        Where (dbo.SIM_VideoAssets.VideoAssetID = @Id)
+            And (TeacherUser.TeacherCode Is Not Null)
+            And (TeacherUser.UserID <> @ActorId)
+            And (TeacherUser.IsDeleted = 0)
+            And (TeacherUser.Status = 'ACTIVE')
+            And
+            (
+                @ShareScope = 'SCHOOL'
+                Or Exists
+                (
+                    Select
+                        1
+                    From dbo.SIM_VideoAssetShares
+                    Where (dbo.SIM_VideoAssetShares.VideoAssetID = @Id)
+                        And (dbo.SIM_VideoAssetShares.TeacherUserID = TeacherUser.UserID)
+                )
+            )
+            And Not Exists
+            (
+                Select
+                    1
+                From dbo.SYS_Notifications
+                Where (dbo.SYS_Notifications.RecipientUserID = TeacherUser.UserID)
+                    And (dbo.SYS_Notifications.NotificationType = 'VIDEO_SHARED')
+                    And (dbo.SYS_Notifications.ReferenceType = 'VIDEO_ASSET')
+                    And (dbo.SYS_Notifications.ReferenceID = @Id)
+                    And (dbo.SYS_Notifications.IsRead = 0)
+            );
+    End;
 
     Insert dbo.AuditLogs (UserId, Action, Module, EntityName, EntityId, NewValuesJson)
     Values

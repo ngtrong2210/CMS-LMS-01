@@ -58,6 +58,60 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task Notifications_AdminCanViewAndMarkOwnNotificationAsRead()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var connectionFactory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = connectionFactory.CreateConnection();
+        var marker = $"QA_NOTIFICATION_{Guid.NewGuid():N}";
+        var notificationId = await connection.ExecuteScalarAsync<long>(
+            "SYS_Notification_Create",
+            new
+            {
+                RecipientUserID = 1,
+                ActorUserID = (long?)null,
+                NotificationType = "SYSTEM",
+                Title = "Kiểm thử thông báo",
+                Message = marker,
+                ReferenceType = "SYSTEM",
+                ReferenceID = (long?)null,
+                ActionUrl = "/cms/dashboard",
+                MetadataJson = (string?)null
+            },
+            commandType: CommandType.StoredProcedure);
+
+        try
+        {
+            await AuthorizeAs("admin");
+            var feedResponse = await _client.GetAsync("/api/notifications?limit=50");
+            feedResponse.EnsureSuccessStatusCode();
+            var feedJson = await feedResponse.Content.ReadFromJsonAsync<JsonElement>();
+            var feed = feedJson.GetProperty("data");
+            var notification = feed.GetProperty("items").EnumerateArray()
+                .Single(item => Int64(item, "id", "Id") == notificationId);
+
+            Assert.Equal(marker, String(notification, "message", "Message"));
+            Assert.False(Boolean(notification, "isRead", "IsRead"));
+
+            var markReadResponse = await _client.PutAsync($"/api/notifications/{notificationId}/read", null);
+            markReadResponse.EnsureSuccessStatusCode();
+
+            var unreadResponse = await _client.GetAsync("/api/notifications?limit=50&unreadOnly=true");
+            unreadResponse.EnsureSuccessStatusCode();
+            var unreadJson = await unreadResponse.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.DoesNotContain(
+                unreadJson.GetProperty("data").GetProperty("items").EnumerateArray(),
+                item => Int64(item, "id", "Id") == notificationId);
+        }
+        finally
+        {
+            await connection.ExecuteAsync(
+                "Delete From dbo.SYS_Notifications Where NotificationID = @NotificationID",
+                new { NotificationID = notificationId });
+        }
+    }
+
+    [Fact]
     public async Task Authorization_RejectsMissingInvalidAndStudentTokens()
     {
         Assert.Equal(HttpStatusCode.Unauthorized, (await _client.GetAsync("/api/cms/dashboard")).StatusCode);
@@ -175,6 +229,22 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
             Where (dbo.VideoAssets.IsDeleted = 0)
                 And (dbo.VideoAssets.CreatedBy Not In (1, 2))
                 And (dbo.VideoAssets.VideoUrl Like '/Media/Video/%')
+                And Not Exists
+                (
+                    Select
+                        1
+                    From dbo.StudentAnswers
+                    Where (dbo.StudentAnswers.VideoId = dbo.Videos.Id)
+                )
+                And Not Exists
+                (
+                    Select
+                        1
+                    From dbo.StudentLessonProgress
+                        Inner Join dbo.Lessons On dbo.Lessons.Id = dbo.StudentLessonProgress.LessonId
+                    Where (dbo.Lessons.VideoId = dbo.Videos.Id)
+                        And (dbo.StudentLessonProgress.Score > 0)
+                )
             Order By
                 dbo.VideoAssets.Id Desc
             """);
@@ -210,6 +280,7 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         {
             await connection.ExecuteAsync("UPDATE dbo.VideoAssets SET Title=@Title WHERE Id=@Id", new { asset.Title, asset.Id });
             await connection.ExecuteAsync("UPDATE dbo.Videos SET CurrentVideoVersionId=@CurrentVersionId,Title=@Title WHERE Id=@VideoId", new { asset.CurrentVersionId, asset.Title, asset.VideoId });
+            await connection.ExecuteAsync("UPDATE dbo.VideoVersions SET Title=@Title WHERE Id=@CurrentVersionId", new { asset.Title, asset.CurrentVersionId });
             await connection.ExecuteAsync("DELETE dbo.VideoInteractions WHERE VideoId=@VideoId AND VideoVersionId<>@CurrentVersionId", new { asset.VideoId, asset.CurrentVersionId });
             await connection.ExecuteAsync("DELETE dbo.AuditLogs WHERE Module='VIDEO_LIBRARY' AND EntityName='VideoVersion' AND Action='CREATE_VERSION' AND EntityId IN (SELECT CONVERT(nvarchar(100),Id) FROM dbo.VideoVersions WHERE VideoId=@VideoId AND Id<>@CurrentVersionId)", new { asset.VideoId, asset.CurrentVersionId });
             await connection.ExecuteAsync("DELETE dbo.VideoVersions WHERE VideoId=@VideoId AND Id<>@CurrentVersionId", new { asset.VideoId, asset.CurrentVersionId });
@@ -217,7 +288,7 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task CreatingVideoVersion_OnlyMovesSelectedLessons()
+    public async Task UpdatingUnscoredVideo_SynchronizesEveryLessonWithoutCreatingVersion()
     {
         await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
         var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
@@ -241,6 +312,22 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
                 Inner Join dbo.SIM_Videos On dbo.SIM_Videos.VideoAssetID = dbo.SIM_VideoAssets.VideoAssetID
                 Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.VideoID = dbo.SIM_Videos.VideoID
             Where (dbo.SIM_VideoAssets.IsDeleted = 0)
+                And Not Exists
+                (
+                    Select
+                        1
+                    From dbo.LMS_StudentAnswers
+                    Where (dbo.LMS_StudentAnswers.VideoID = dbo.SIM_Videos.VideoID)
+                )
+                And Not Exists
+                (
+                    Select
+                        1
+                    From dbo.LMS_StudentLessonProgress
+                        Inner Join dbo.SIM_Lessons progressLesson On progressLesson.LessonID = dbo.LMS_StudentLessonProgress.LessonID
+                    Where (progressLesson.VideoID = dbo.SIM_Videos.VideoID)
+                        And (dbo.LMS_StudentLessonProgress.Score > 0)
+                )
             Group By
                 dbo.SIM_VideoAssets.VideoAssetID,
                 dbo.SIM_Videos.VideoID,
@@ -270,48 +357,201 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         using var transaction = connection.BeginTransaction();
         try
         {
+            var versionCountBefore = await connection.ExecuteScalarAsync<int>(
+                "Select Count(1) From dbo.SIM_VideoVersions Where VideoID = @VideoId",
+                new { asset.VideoId },
+                transaction);
+            var updatedTitle = $"{asset.Title} [SYNC-QA]";
+            var updatedDuration = asset.DurationSeconds + 1;
+
             await connection.ExecuteScalarAsync<long>(
                 "dbo.LMS_VideoLibrary_Update",
                 new
                 {
                     asset.Id,
-                    asset.Title,
+                    Title = updatedTitle,
                     asset.VideoUrl,
                     asset.PosterUrl,
-                    asset.DurationSeconds,
+                    DurationSeconds = updatedDuration,
                     asset.OriginalFileName,
                     asset.FileSize,
                     asset.MimeType,
                     asset.Status,
                     LessonIdsJson = JsonSerializer.Serialize(new[] { lessonIds[0] }),
-                    ChangeSummary = "Kiểm thử chuyển có chọn lọc.",
+                    ChangeSummary = "Kiểm thử đồng bộ toàn bộ bài học.",
                     ActorId = 1,
                     IsAdmin = true
                 },
                 transaction,
                 commandType: CommandType.StoredProcedure);
 
-            var newVersionId = await connection.ExecuteScalarAsync<long>(
+            var currentVersionId = await connection.ExecuteScalarAsync<long>(
                 "Select CurrentVideoVersionID From dbo.SIM_Videos Where VideoID = @VideoId",
                 new { asset.VideoId },
                 transaction);
-            var lessonVersions = (await connection.QueryAsync<(long LessonId, long VersionId)>("""
+            var lessonVersions = (await connection.QueryAsync<(long LessonId, long VersionId, int DurationSeconds)>("""
                 Select
                     dbo.SIM_Lessons.LessonID LessonId,
-                    dbo.SIM_Lessons.VideoVersionID VersionId
+                    dbo.SIM_Lessons.VideoVersionID VersionId,
+                    dbo.SIM_Lessons.DurationSeconds
                 From dbo.SIM_Lessons
                 Where (dbo.SIM_Lessons.VideoID = @VideoId)
                     And (dbo.SIM_Lessons.IsDeleted = 0)
-                """, new { asset.VideoId }, transaction)).ToDictionary(row => row.LessonId, row => row.VersionId);
+                """, new { asset.VideoId }, transaction)).ToArray();
+            var versionCountAfter = await connection.ExecuteScalarAsync<int>(
+                "Select Count(1) From dbo.SIM_VideoVersions Where VideoID = @VideoId",
+                new { asset.VideoId },
+                transaction);
+            var persistedTitles = await connection.QuerySingleAsync<(string AssetTitle, string VideoTitle, string VersionTitle)>("""
+                Select
+                    dbo.SIM_VideoAssets.Title AssetTitle,
+                    dbo.SIM_Videos.Title VideoTitle,
+                    dbo.SIM_VideoVersions.Title VersionTitle
+                From dbo.SIM_VideoAssets
+                    Inner Join dbo.SIM_Videos On dbo.SIM_Videos.VideoAssetID = dbo.SIM_VideoAssets.VideoAssetID
+                    Inner Join dbo.SIM_VideoVersions On dbo.SIM_VideoVersions.VideoVersionID = dbo.SIM_Videos.CurrentVideoVersionID
+                Where (dbo.SIM_VideoAssets.VideoAssetID = @Id)
+                """, new { asset.Id }, transaction);
 
-            Assert.NotEqual(asset.CurrentVersionId, newVersionId);
-            Assert.Equal(newVersionId, lessonVersions[lessonIds[0]]);
-            Assert.All(lessonIds.Skip(1), lessonId => Assert.Equal(asset.CurrentVersionId, lessonVersions[lessonId]));
+            Assert.Equal(asset.CurrentVersionId, currentVersionId);
+            Assert.Equal(versionCountBefore, versionCountAfter);
+            Assert.Equal(lessonIds.Length, lessonVersions.Length);
+            Assert.All(lessonVersions, lesson =>
+            {
+                Assert.Equal(currentVersionId, lesson.VersionId);
+                Assert.Equal(updatedDuration, lesson.DurationSeconds);
+            });
+            Assert.Equal(updatedTitle, persistedTitles.AssetTitle);
+            Assert.Equal(updatedTitle, persistedTitles.VideoTitle);
+            Assert.Equal(updatedTitle, persistedTitles.VersionTitle);
         }
         finally
         {
             transaction.Rollback();
         }
+    }
+
+    [Fact]
+    public async Task DuplicatingVideo_CreatesIndependentPrivateCopyWithoutLessonsOrResults()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        connection.Open();
+
+        var source = await connection.QuerySingleAsync<(long AssetId, long VideoId, long CurrentVersionId, int InteractionCount)>("""
+            Select Top (1)
+                dbo.SIM_VideoAssets.VideoAssetID AssetId,
+                dbo.SIM_Videos.VideoID VideoId,
+                dbo.SIM_Videos.CurrentVideoVersionID CurrentVersionId,
+                Count(dbo.LMS_VideoInteractions.VideoInteractionID) InteractionCount
+            From dbo.SIM_VideoAssets
+                Inner Join dbo.SIM_Videos On dbo.SIM_Videos.VideoAssetID = dbo.SIM_VideoAssets.VideoAssetID
+                Left Join dbo.LMS_VideoInteractions On dbo.LMS_VideoInteractions.VideoVersionID = dbo.SIM_Videos.CurrentVideoVersionID
+                    And dbo.LMS_VideoInteractions.IsDeleted = 0
+            Where (dbo.SIM_VideoAssets.IsDeleted = 0)
+            Group By
+                dbo.SIM_VideoAssets.VideoAssetID,
+                dbo.SIM_Videos.VideoID,
+                dbo.SIM_Videos.CurrentVideoVersionID
+            Order By
+                dbo.SIM_VideoAssets.VideoAssetID Desc
+            """);
+
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            var duplicatedVideoId = await connection.ExecuteScalarAsync<long>(
+                "dbo.LMS_VideoLibrary_Duplicate",
+                new
+                {
+                    Id = source.AssetId,
+                    Title = "Bản sao kiểm thử",
+                    ActorId = 1,
+                    IsAdmin = true
+                },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+            var duplicate = await connection.QuerySingleAsync<(long AssetId, string ShareScope, int VersionNumber, int LessonCount, int AnswerCount, int InteractionCount)>("""
+                Select
+                    dbo.SIM_Videos.VideoAssetID AssetId,
+                    dbo.SIM_VideoAssets.ShareScope,
+                    dbo.SIM_VideoVersions.VersionNumber,
+                    (Select Count(1) From dbo.SIM_Lessons Where dbo.SIM_Lessons.VideoID = dbo.SIM_Videos.VideoID And dbo.SIM_Lessons.IsDeleted = 0) LessonCount,
+                    (Select Count(1) From dbo.LMS_StudentAnswers Where dbo.LMS_StudentAnswers.VideoID = dbo.SIM_Videos.VideoID) AnswerCount,
+                    (Select Count(1) From dbo.LMS_VideoInteractions Where dbo.LMS_VideoInteractions.VideoVersionID = dbo.SIM_Videos.CurrentVideoVersionID And dbo.LMS_VideoInteractions.IsDeleted = 0) InteractionCount
+                From dbo.SIM_Videos
+                    Inner Join dbo.SIM_VideoAssets On dbo.SIM_VideoAssets.VideoAssetID = dbo.SIM_Videos.VideoAssetID
+                    Inner Join dbo.SIM_VideoVersions On dbo.SIM_VideoVersions.VideoVersionID = dbo.SIM_Videos.CurrentVideoVersionID
+                Where (dbo.SIM_Videos.VideoID = @DuplicatedVideoId)
+                """, new { DuplicatedVideoId = duplicatedVideoId }, transaction);
+
+            Assert.NotEqual(source.VideoId, duplicatedVideoId);
+            Assert.NotEqual(source.AssetId, duplicate.AssetId);
+            Assert.Equal("PRIVATE", duplicate.ShareScope);
+            Assert.Equal(1, duplicate.VersionNumber);
+            Assert.Equal(0, duplicate.LessonCount);
+            Assert.Equal(0, duplicate.AnswerCount);
+            Assert.Equal(source.InteractionCount, duplicate.InteractionCount);
+        }
+        finally
+        {
+            transaction.Rollback();
+        }
+    }
+
+    [Fact]
+    public async Task VideoWithAnyStudentAnswer_IsReadOnlyAndRejectsUpdate()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var source = await connection.QuerySingleAsync<(long VideoId, long LessonId, string Title, string? VideoUrl, string? PosterUrl, int DurationSeconds, bool AllowSeek, bool AllowSpeed, decimal RequiredWatchPercent, string Status)>("""
+            Select Top (1)
+                dbo.SIM_Videos.VideoID VideoId,
+                dbo.SIM_Lessons.LessonID LessonId,
+                dbo.SIM_Videos.Title,
+                dbo.SIM_Videos.VideoUrl,
+                dbo.SIM_Videos.PosterUrl,
+                dbo.SIM_Videos.DurationSeconds,
+                dbo.SIM_Videos.AllowSeek,
+                dbo.SIM_Videos.AllowSpeed,
+                dbo.SIM_Videos.RequiredWatchPercent,
+                dbo.SIM_Videos.Status
+            From dbo.SIM_Videos
+                Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.VideoID = dbo.SIM_Videos.VideoID
+            Where Exists
+                (
+                    Select
+                        1
+                    From dbo.LMS_StudentAnswers
+                    Where (dbo.LMS_StudentAnswers.VideoID = dbo.SIM_Videos.VideoID)
+                )
+            Order By
+                dbo.SIM_Videos.VideoID
+            """);
+
+        await AuthorizeAs("admin");
+        var getResponse = await _client.GetAsync($"/api/videos/{source.VideoId}");
+        getResponse.EnsureSuccessStatusCode();
+        var data = (await getResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data");
+        Assert.True(Boolean(data, "HasLearningResults", "hasLearningResults"));
+        Assert.False(Boolean(data, "CanEdit", "canEdit"));
+        Assert.True(Boolean(data, "CanDuplicate", "canDuplicate"));
+
+        var updateResponse = await _client.PutAsJsonAsync($"/api/videos/{source.VideoId}", new
+        {
+            source.LessonId,
+            source.Title,
+            source.VideoUrl,
+            source.PosterUrl,
+            source.DurationSeconds,
+            source.AllowSeek,
+            source.AllowSpeed,
+            source.RequiredWatchPercent,
+            source.Status
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
     }
 
     [Fact]
@@ -665,8 +905,43 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task QuestionAndInteractionUpdates_AreImmediatelyVisibleToPreviewQueries()
     {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var videoId = await connection.ExecuteScalarAsync<long>("""
+            Select Top (1)
+                dbo.SIM_Videos.VideoID
+            From dbo.SIM_Videos
+            Where Exists
+                (
+                    Select
+                        1
+                    From dbo.LMS_VideoInteractions
+                    Where (dbo.LMS_VideoInteractions.VideoVersionID = dbo.SIM_Videos.CurrentVideoVersionID)
+                        And (dbo.LMS_VideoInteractions.IsDeleted = 0)
+                )
+                And Not Exists
+                (
+                    Select
+                        1
+                    From dbo.LMS_StudentAnswers
+                    Where (dbo.LMS_StudentAnswers.VideoID = dbo.SIM_Videos.VideoID)
+                )
+                And Not Exists
+                (
+                    Select
+                        1
+                    From dbo.LMS_StudentLessonProgress
+                        Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.LessonID = dbo.LMS_StudentLessonProgress.LessonID
+                    Where (dbo.SIM_Lessons.VideoID = dbo.SIM_Videos.VideoID)
+                        And (dbo.LMS_StudentLessonProgress.Score > 0)
+                )
+            Order By
+                dbo.SIM_Videos.VideoID
+            """);
+
         await AuthorizeAs("admin");
-        var interactionsResponse = await _client.GetAsync("/api/videos/1/interactions");
+        var interactionsResponse = await _client.GetAsync($"/api/videos/{videoId}/interactions");
         interactionsResponse.EnsureSuccessStatusCode();
         var interactions = (await interactionsResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data").EnumerateArray().ToArray();
         var interaction = interactions.First();
@@ -730,13 +1005,13 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
             var freshQuestion = await _client.GetFromJsonAsync<JsonElement>($"/api/questions/{questionId}?_fresh=1");
             Assert.Equal(marker, String(Property(freshQuestion.GetProperty("data"), "question", "Question"), "QuestionText", "questionText"));
 
-            var preview = await _client.GetFromJsonAsync<JsonElement>("/api/videos/1/interactions?_fresh=1");
+            var preview = await _client.GetFromJsonAsync<JsonElement>($"/api/videos/{videoId}/interactions?_fresh=1");
             var previewInteraction = preview.GetProperty("data").EnumerateArray().First(x => Int64(x, "Id", "id") == interactionId);
             Assert.Equal(marker, String(previewInteraction, "QuestionText", "questionText"));
 
             var changedScore = originalScore + 1;
             (await _client.PutAsJsonAsync($"/api/video-interactions/{interactionId}", InteractionPayload(changedScore))).EnsureSuccessStatusCode();
-            preview = await _client.GetFromJsonAsync<JsonElement>("/api/videos/1/interactions?_fresh=2");
+            preview = await _client.GetFromJsonAsync<JsonElement>($"/api/videos/{videoId}/interactions?_fresh=2");
             previewInteraction = preview.GetProperty("data").EnumerateArray().First(x => Int64(x, "Id", "id") == interactionId);
             Assert.Equal(changedScore, Decimal(previewInteraction, "Score", "score"));
         }

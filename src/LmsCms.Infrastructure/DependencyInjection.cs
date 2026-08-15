@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<ILearningService, LearningService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ISearchService, SearchService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IContentService, ContentService>();
         services.AddScoped<IQuestionService, QuestionService>();
         services.AddScoped<IStudentService, StudentService>();

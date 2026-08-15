@@ -61,7 +61,7 @@
           </form>
           <RouterLink class="icon-button d-xl-none" to="/cms/search" aria-label="Tìm kiếm"
             ><i class="bi bi-search"></i></RouterLink
-          ><button class="icon-button" aria-label="Thông báo"><i class="bi bi-bell"></i><span></span></button>
+          ><NotificationCenter />
           <div class="d-none d-sm-flex align-items-center gap-2 user-summary">
             <img class="avatar user-avatar" :src="avatarUrl" :alt="`Ảnh đại diện ${auth.user?.fullName || ''}`" />
             <div>
@@ -107,6 +107,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import NotificationCenter from '../components/feedback/NotificationCenter.vue'
 import { useAuthStore } from '../stores/authStore'
 const route = useRoute(),
   router = useRouter(),

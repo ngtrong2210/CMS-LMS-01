@@ -22,6 +22,22 @@ public sealed class CourseListItemDto
     public DateTime CreatedAt { get; init; }
 }
 public sealed record DashboardDto(int TotalCourses, int TotalStudents, int TotalTeachers, int TotalLessons, int TotalVideos, int TotalQuestions, decimal CompletionRate, decimal AverageScore);
+public sealed class NotificationListItemDto
+{
+    public long Id { get; init; }
+    public string NotificationType { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string Message { get; init; } = "";
+    public string? ReferenceType { get; init; }
+    public long? ReferenceId { get; init; }
+    public string? ActionUrl { get; init; }
+    public bool IsRead { get; init; }
+    public DateTime? ReadAt { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public string? ActorName { get; init; }
+    public string? ActorAvatarUrl { get; init; }
+}
+public sealed record NotificationFeedDto(IReadOnlyCollection<NotificationListItemDto> Items, int UnreadCount);
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0290")]
 public sealed class CourseSaveRequest
 {
@@ -85,6 +101,10 @@ public sealed class VideoAssetSaveRequest
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
     [StringLength(1000)] public string? ChangeSummary { get; init; }
     public IReadOnlyCollection<long> LessonIds { get; init; } = [];
+}
+public sealed class VideoDuplicateRequest
+{
+    [StringLength(500)] public string? Title { get; init; }
 }
 public sealed class VideoShareSaveRequest
 {
