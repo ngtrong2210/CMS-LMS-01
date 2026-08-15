@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Sơ đồ tra cứu luồng nghiệp vụ toàn hệ thống và quan hệ dữ liệu chính của Elearning LMS/CMS."
+    />
+    <title>Elearning — Luồng nghiệp vụ & Quan hệ dữ liệu</title>
+    <link rel="stylesheet" href="assets/lms-system-map.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#overview" aria-label="Về đầu trang">
+        <img src="../frontend/public/images/eduvers/logo-1.png" alt="Eduvers" />
+      </a>
+      <div class="brand-copy">
+        <strong>Bản đồ hệ thống Elearning</strong>
+        <small>BUSINESS FLOW & DATA RELATIONSHIP</small>
+      </div>
+      <label class="global-search">
+        <span>⌕</span>
+        <input id="globalSearch" type="search" placeholder="Tìm bảng, khóa, nghiệp vụ, API..." autocomplete="off" />
+      </label>
+      <span id="searchCount" class="search-count"></span>
+      <button class="print-button" type="button" onclick="window.print()">In / Lưu PDF</button>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" aria-label="Mục lục">
+        <p class="sidebar-label">Mục lục nhanh</p>
+        <a class="nav-link active" href="#overview"><span class="nav-no">01</span>Tổng quan</a>
+        <a class="nav-link" href="#roles"><span class="nav-no">02</span>Vai trò</a>
+        <a class="nav-link" href="#businessFlow"><span class="nav-no">03</span>Luồng toàn hệ thống</a>
+        <a class="nav-link" href="#detailFlows"><span class="nav-no">04</span>Luồng chi tiết</a>
+        <a class="nav-link" href="#dataRelation"><span class="nav-no">05</span>Quan hệ dữ liệu</a>
+        <a class="nav-link" href="#tableDictionary"><span class="nav-no">06</span>Danh mục 24 bảng</a>
+        <a class="nav-link" href="#businessRules"><span class="nav-no">07</span>Quy tắc quan trọng</a>
+        <div class="side-legend">
+          <strong>Quy ước schema</strong>
+          <span><b>SYS_</b> — tài khoản, vai trò, quyền</span>
+          <span><b>SIM_</b> — khóa học, bài học, học liệu</span>
+          <span><b>LMS_</b> — học tập, tương tác, điểm</span>
+        </div>
+      </aside>
+
+      <main>
+        <div id="overview" class="hero">
+          <p class="eyebrow">ELEARNING LMS / CMS • TÀI LIỆU TRA CỨU</p>
+          <h1>Luồng nghiệp vụ toàn hệ thống & quan hệ dữ liệu chính</h1>
+          <p>
+            Theo dõi từ lúc đăng nhập, tạo khóa học, soạn video tương tác, ghi danh học viên đến khi lưu câu trả
+            lời, tính điểm và tổng hợp báo cáo. Nội dung phản ánh schema vật lý đã chuẩn hóa của project hiện tại.
+          </p>
+          <div class="hero-meta">
+            <span class="pill">Vue.js CMS/LMS</span>
+            <span class="pill">ASP.NET Core API</span>
+            <span class="pill">SQL Server</span>
+            <span class="pill">24 bảng vật lý</span>
+            <span class="pill">Cập nhật 15/08/2026</span>
+          </div>
+        </div>
+
+        <section aria-labelledby="architectureTitle">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Kiến trúc xử lý</p>
+              <h2 id="architectureTitle">Một yêu cầu đi qua hệ thống như thế nào?</h2>
+              <p class="section-desc">Các tầng xử lý thống nhất cho cả CMS của giáo viên và LMS của học viên.</p>
+            </div>
+          </div>
+          <div class="card architecture">
+            <article class="architecture-node" data-search="vue frontend cms lms giao diện">
+              <span class="node-icon">1</span>
+              <h3>Vue.js</h3>
+              <p>Form, danh sách, trình biên tập và player tương tác.</p>
+            </article>
+            <article class="architecture-node" data-search="jwt axios api request">
+              <span class="node-icon">2</span>
+              <h3>Axios + JWT</h3>
+              <p>Gửi request kèm Access Token và nhận ApiResponse.</p>
+            </article>
+            <article class="architecture-node" data-search="controller api asp.net authorize">
+              <span class="node-icon">3</span>
+              <h3>API Controller</h3>
+              <p>Authorize vai trò, kiểm tra route và chuyển DTO.</p>
+            </article>
+            <article class="architecture-node" data-search="service business nghiệp vụ dapper">
+              <span class="node-icon">4</span>
+              <h3>Service</h3>
+              <p>Áp dụng quyền tác giả, transaction và quy tắc nghiệp vụ.</p>
+            </article>
+            <article class="architecture-node" data-search="stored procedure sql sp">
+              <span class="node-icon">5</span>
+              <h3>Stored Procedure</h3>
+              <p>Đọc/ghi dữ liệu, tính tiến độ, chấm điểm và báo cáo.</p>
+            </article>
+            <article class="architecture-node" data-search="database media file video sql server">
+              <span class="node-icon">6</span>
+              <h3>SQL + Media</h3>
+              <p>Metadata trong SQL; file vật lý ở <code>/Media/*</code>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="roles" aria-labelledby="rolesTitle">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Phân quyền nghiệp vụ</p>
+              <h2 id="rolesTitle">Ba nhóm người dùng chính</h2>
+            </div>
+          </div>
+          <div class="role-grid">
+            <article class="card role-card" data-search="admin quản trị viên tất cả video khóa học báo cáo phân quyền">
+              <span class="role-tag">ADMIN</span>
+              <h3>Quản trị viên</h3>
+              <ul>
+                <li>Quản lý toàn bộ khóa học, video, câu hỏi và người dùng.</li>
+                <li>Có thể sửa video của mọi tác giả và xem toàn bộ báo cáo.</li>
+                <li>Quản lý vai trò, quyền, cấu hình và nhật ký hệ thống.</li>
+              </ul>
+            </article>
+            <article class="card role-card" data-search="teacher giáo viên tác giả chia sẻ video khóa học câu hỏi">
+              <span class="role-tag">TEACHER</span>
+              <h3>Giáo viên</h3>
+              <ul>
+                <li>Tạo khóa học, chương, bài học và ngân hàng câu hỏi.</li>
+                <li>Chỉ thấy video của mình hoặc video được chia sẻ.</li>
+                <li>Chia sẻ video cho giáo viên được chọn hoặc toàn trường.</li>
+              </ul>
+            </article>
+            <article class="card role-card" data-search="student học viên ghi danh học video trả lời điểm tiến độ">
+              <span class="role-tag">STUDENT</span>
+              <h3>Học viên</h3>
+              <ul>
+                <li>Chỉ truy cập khóa học đã được ghi danh và còn hiệu lực.</li>
+                <li>Xem video, trả lời câu hỏi và tiếp tục từ vị trí cũ.</li>
+                <li>Xem tiến độ, điểm bài học và kết quả khóa học.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section id="businessFlow" aria-labelledby="businessFlowTitle">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Luồng nghiệp vụ toàn hệ thống</p>
+              <h2 id="businessFlowTitle">Từ đăng nhập đến báo cáo kết quả</h2>
+              <p class="section-desc">Năm làn nghiệp vụ ghép thành một vòng đời đào tạo hoàn chỉnh.</p>
+            </div>
+          </div>
+          <div class="flow-stack">
+            <article class="card flow-lane" data-search="đăng nhập jwt role permission token auth">
+              <div class="lane-head"><span class="lane-no">01</span><div><h3>Xác thực và phân quyền</h3><small>Ai được đi vào CMS hoặc LMS?</small></div></div>
+              <div class="flow-row" style="--columns: 5">
+                <div class="flow-node"><h3>Nhập tài khoản</h3><p>Username + password.</p><code>POST /api/auth/login</code></div>
+                <div class="flow-node"><h3>Kiểm tra người dùng</h3><p>Trạng thái, mật khẩu, lần đăng nhập.</p><code>SYS_Users</code></div>
+                <div class="flow-node"><h3>Nạp vai trò & quyền</h3><p>ADMIN, TEACHER hoặc STUDENT.</p><code>SYS_UserRoles</code></div>
+                <div class="flow-node"><h3>Phát token</h3><p>Access Token và Refresh Token.</p><code>SYS_RefreshTokens</code></div>
+                <div class="flow-node result"><h3>Điều hướng</h3><p>CMS cho quản trị/giáo viên; LMS cho học viên.</p><code>/cms hoặc /lms</code></div>
+              </div>
+            </article>
+
+            <article class="card flow-lane" data-search="tạo khóa học chương bài học video lesson course chapter content">
+              <div class="lane-head"><span class="lane-no">02</span><div><h3>Xây dựng khóa học</h3><small>Cấu trúc học tập và học liệu độc lập.</small></div></div>
+              <div class="flow-row" style="--columns: 5">
+                <div class="flow-node"><h3>Tạo khóa học</h3><p>Mã, tên, giảng viên, danh mục.</p><code>SIM_Courses</code></div>
+                <div class="flow-node"><h3>Tạo chương</h3><p>Sắp xếp nội dung theo chủ đề.</p><code>SIM_Chapters</code></div>
+                <div class="flow-node"><h3>Tạo bài học</h3><p>VIDEO, QUIZ, DOCUMENT...</p><code>SIM_Lessons</code></div>
+                <div class="flow-node"><h3>Soạn video riêng</h3><p>Video độc lập, chưa phụ thuộc bài học.</p><code>SIM_Videos</code></div>
+                <div class="flow-node result"><h3>Gắn video</h3><p>Bài học chỉ tham chiếu VideoID.</p><code>SIM_Lessons.VideoID</code></div>
+              </div>
+              <div class="callout"><strong>Điểm quan trọng:</strong> không tạo bản sao video khi gắn bài học; nhiều bài học có thể cùng tham chiếu một <code>VideoID</code>.</div>
+            </article>
+
+            <article class="card flow-lane" data-search="upload thư viện video share chia sẻ tương tác câu hỏi question interaction media">
+              <div class="lane-head"><span class="lane-no">03</span><div><h3>Thư viện video và tương tác</h3><small>Tệp, quyền chia sẻ, câu hỏi theo timeline.</small></div></div>
+              <div class="flow-row" style="--columns: 6">
+                <div class="flow-node"><h3>Upload file</h3><p>Lưu theo năm/tháng trong project.</p><code>/Media/Video</code></div>
+                <div class="flow-node"><h3>Lưu metadata</h3><p>URL, MIME, dung lượng, tác giả.</p><code>SIM_VideoAssets</code></div>
+                <div class="flow-node"><h3>Chia sẻ</h3><p>PRIVATE, SELECTED hoặc SCHOOL.</p><code>SIM_VideoAssetShares</code></div>
+                <div class="flow-node"><h3>Tạo video tương tác</h3><p>Cấu hình seek, speed, % bắt buộc.</p><code>SIM_Videos</code></div>
+                <div class="flow-node"><h3>Chọn/tạo câu hỏi</h3><p>Câu hỏi và tập đáp án dùng lại.</p><code>LMS_Questions</code></div>
+                <div class="flow-node result"><h3>Đặt lên timeline</h3><p>Thời điểm, điểm, số lần làm.</p><code>LMS_VideoInteractions</code></div>
+              </div>
+            </article>
+
+            <article class="card flow-lane" data-search="ghi danh nhiều học viên enrollment student học khóa học">
+              <div class="lane-head"><span class="lane-no">04</span><div><h3>Ghi danh và học tập</h3><small>Phân học viên vào khóa rồi phát nội dung.</small></div></div>
+              <div class="flow-row" style="--columns: 5">
+                <div class="flow-node"><h3>Chọn khóa học</h3><p>Khóa được phép ghi danh.</p><code>SIM_Courses</code></div>
+                <div class="flow-node"><h3>Chọn nhiều học viên</h3><p>Tích chọn danh sách cùng lúc.</p><code>SYS_Users</code></div>
+                <div class="flow-node"><h3>Tạo ghi danh</h3><p>Mỗi học viên + khóa là duy nhất.</p><code>LMS_Enrollments</code></div>
+                <div class="flow-node"><h3>Mở bài học</h3><p>Kiểm tra ghi danh và LessonID.</p><code>GET /lms/lessons/{id}/player</code></div>
+                <div class="flow-node result"><h3>Tải video & tương tác</h3><p>Đọc VideoID rồi nạp toàn bộ câu hỏi.</p><code>SIM_Lessons → SIM_Videos</code></div>
+              </div>
+            </article>
+
+            <article class="card flow-lane" data-search="trả lời đúng sai lưu database điểm score progress report dashboard">
+              <div class="lane-head"><span class="lane-no">05</span><div><h3>Trả lời, chấm điểm và báo cáo</h3><small>Mọi lần trả lời đều được lưu, kể cả trả lời sai.</small></div></div>
+              <div class="flow-row" style="--columns: 6">
+                <div class="flow-node"><h3>Dừng tại câu hỏi</h3><p>Player mở tương tác theo TimeSeconds.</p><code>LMS_VideoInteractions</code></div>
+                <div class="flow-node"><h3>Gửi câu trả lời</h3><p>LessonID + VideoID + InteractionID.</p><code>POST /api/lms/answers</code></div>
+                <div class="flow-node decision"><h3>Chấm đúng/sai</h3><p>So khớp option hoặc answer key.</p><code>IsCorrect / ScoreAwarded</code></div>
+                <div class="flow-node"><h3>Lưu câu trả lời</h3><p>Sai vẫn lưu với điểm 0.</p><code>LMS_StudentAnswers</code></div>
+                <div class="flow-node"><h3>Cập nhật tiến độ</h3><p>Vị trí xem, % xem, điểm bài học.</p><code>LMS_Student*Progress</code></div>
+                <div class="flow-node result"><h3>Tổng hợp báo cáo</h3><p>Tiến độ, tỷ lệ đúng, tương tác video.</p><code>LMS_Report_*</code></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="detailFlows" aria-labelledby="detailFlowsTitle" data-tabs>
+          <div class="section-head">
+            <div>
+              <p class="kicker">Tra cứu theo nghiệp vụ</p>
+              <h2 id="detailFlowsTitle">API, Stored Procedure và bảng được tác động</h2>
+            </div>
+          </div>
+          <div class="tabs" role="tablist">
+            <button class="tab-button active" data-tab="tabAuth" type="button">Đăng nhập</button>
+            <button class="tab-button" data-tab="tabContent" type="button">Nội dung</button>
+            <button class="tab-button" data-tab="tabVideo" type="button">Video</button>
+            <button class="tab-button" data-tab="tabLearning" type="button">Học & điểm</button>
+          </div>
+          <div id="tabAuth" class="tab-panel active">
+            <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng chính</th></tr></thead><tbody>
+              <tr data-search="auth login"><td>Đăng nhập</td><td class="mono">POST /api/auth/login</td><td class="mono">LMS_Auth_GetUserByUsername</td><td>SYS_Users, SYS_UserRoles, SYS_Roles</td></tr>
+              <tr data-search="permission quyền"><td>Lấy quyền</td><td class="mono">POST /api/auth/login</td><td class="mono">LMS_Auth_GetUserPermissions</td><td>SYS_RolePermissions, SYS_Permissions</td></tr>
+              <tr data-search="token refresh"><td>Tạo phiên</td><td class="mono">POST /api/auth/login</td><td class="mono">LMS_RefreshToken_Create</td><td>SYS_RefreshTokens</td></tr>
+            </tbody></table></div>
+          </div>
+          <div id="tabContent" class="tab-panel">
+            <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng chính</th></tr></thead><tbody>
+              <tr data-search="course khóa học"><td>Tạo khóa học</td><td class="mono">POST /api/courses</td><td class="mono">LMS_Course_Create</td><td>SIM_Courses</td></tr>
+              <tr data-search="chapter chương"><td>Tạo chương</td><td class="mono">POST /api/courses/{id}/chapters</td><td class="mono">LMS_Chapter_Create</td><td>SIM_Chapters</td></tr>
+              <tr data-search="lesson bài học"><td>Tạo bài học</td><td class="mono">POST /api/chapters/{id}/lessons</td><td class="mono">LMS_Lesson_Create</td><td>SIM_Lessons</td></tr>
+              <tr data-search="attach video gắn"><td>Gắn video có sẵn</td><td class="mono">PUT /api/lessons/{lessonId}/video/{videoId}</td><td class="mono">LMS_Video_AttachToLesson</td><td>SIM_Lessons.VideoID</td></tr>
+            </tbody></table></div>
+          </div>
+          <div id="tabVideo" class="tab-panel">
+            <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng / File</th></tr></thead><tbody>
+              <tr data-search="upload file media"><td>Upload</td><td class="mono">POST /api/videos/upload</td><td>Project storage service</td><td>/Media/Video/YYYY/MM</td></tr>
+              <tr data-search="library asset"><td>Tạo tài nguyên</td><td class="mono">POST /api/video-library</td><td class="mono">LMS_VideoLibrary_Create</td><td>SIM_VideoAssets, SIM_Videos</td></tr>
+              <tr data-search="share sharing"><td>Chia sẻ</td><td class="mono">PUT /api/video-library/{id}/sharing</td><td class="mono">LMS_VideoLibrary_Sharing_Save</td><td>SIM_VideoAssetShares</td></tr>
+              <tr data-search="interaction tương tác"><td>Gắn câu hỏi</td><td class="mono">POST /api/videos/{id}/interactions</td><td class="mono">LMS_VideoInteraction_Create</td><td>LMS_VideoInteractions</td></tr>
+            </tbody></table></div>
+          </div>
+          <div id="tabLearning" class="tab-panel">
+            <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng chính</th></tr></thead><tbody>
+              <tr data-search="enrollment ghi danh"><td>Ghi danh</td><td class="mono">POST /api/cms/enrollments</td><td class="mono">LMS_Enrollment_Create</td><td>LMS_Enrollments</td></tr>
+              <tr data-search="player bài học"><td>Mở player</td><td class="mono">GET /api/lms/lessons/{id}/player</td><td class="mono">LMS_LessonPlayer_GetData</td><td>SIM_Lessons, SIM_Videos, LMS_VideoInteractions</td></tr>
+              <tr data-search="progress tiến độ"><td>Lưu tiến độ</td><td class="mono">POST /api/lms/progress/video</td><td class="mono">LMS_StudentVideoProgress_Save</td><td>LMS_StudentVideoProgress</td></tr>
+              <tr data-search="answer trả lời điểm"><td>Nộp đáp án</td><td class="mono">POST /api/lms/answers</td><td class="mono">LMS_StudentAnswer_Submit</td><td>LMS_StudentAnswers, LMS_StudentAnswerOptions</td></tr>
+            </tbody></table></div>
+          </div>
+        </section>
+
+        <section id="dataRelation" aria-labelledby="dataRelationTitle">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Quan hệ dữ liệu chính</p>
+              <h2 id="dataRelationTitle">Sơ đồ theo ba phân hệ</h2>
+              <p class="section-desc">Bấm vào tên bảng để lọc nhanh bảng đó trong danh mục chi tiết bên dưới.</p>
+            </div>
+          </div>
+          <div class="erd-toolbar">
+            <div class="legend"><span>PK = khóa chính</span><span>FK = khóa ngoại</span><span>1 → N = một-nhiều</span><span>N ↔ N = nhiều-nhiều qua bảng nối</span></div>
+            <div class="zoom-actions"><button data-zoom="out" title="Thu nhỏ">−</button><button data-zoom="reset" id="zoomValue">100%</button><button data-zoom="in" title="Phóng to">+</button></div>
+          </div>
+          <div class="erd-viewport">
+            <div id="erdCanvas" class="erd-canvas">
+              <div class="erd-columns">
+                <div class="module sys">
+                  <div class="module-title"><h3>Tài khoản & quyền</h3><span>SYS_</span></div>
+                  <div class="entity-list">
+                    <button class="entity" data-table="SYS_Users"><strong>SYS_Users</strong><small>UserID • tài khoản chung</small></button>
+                    <button class="entity" data-table="SYS_Roles"><strong>SYS_Roles</strong><small>RoleID • vai trò</small></button>
+                    <button class="entity" data-table="SYS_UserRoles"><strong>SYS_UserRoles</strong><small>UserID + RoleID</small></button>
+                    <button class="entity" data-table="SYS_Permissions"><strong>SYS_Permissions</strong><small>PermissionID • quyền</small></button>
+                    <button class="entity" data-table="SYS_RolePermissions"><strong>SYS_RolePermissions</strong><small>RoleID + PermissionID</small></button>
+                    <button class="entity" data-table="SYS_RefreshTokens"><strong>SYS_RefreshTokens</strong><small>UserID • phiên xác thực</small></button>
+                    <button class="entity" data-table="SYS_AuditLogs"><strong>SYS_AuditLogs</strong><small>UserID • nhật ký</small></button>
+                  </div>
+                </div>
+                <div class="module sim">
+                  <div class="module-title"><h3>Nội dung & học liệu</h3><span>SIM_</span></div>
+                  <div class="entity-list">
+                    <button class="entity" data-table="SIM_CourseCategories"><strong>SIM_CourseCategories</strong><small>CourseCategoryID</small></button>
+                    <button class="entity" data-table="SIM_Courses"><strong>SIM_Courses</strong><small>CourseID • TeacherUserID</small></button>
+                    <button class="entity" data-table="SIM_Chapters"><strong>SIM_Chapters</strong><small>ChapterID • CourseID</small></button>
+                    <button class="entity" data-table="SIM_Lessons"><strong>SIM_Lessons</strong><small>LessonID • ChapterID • VideoID</small></button>
+                    <button class="entity" data-table="SIM_VideoAssets"><strong>SIM_VideoAssets</strong><small>VideoAssetID • file thư viện</small></button>
+                    <button class="entity" data-table="SIM_VideoAssetShares"><strong>SIM_VideoAssetShares</strong><small>VideoAssetID • TeacherUserID</small></button>
+                    <button class="entity" data-table="SIM_Videos"><strong>SIM_Videos</strong><small>VideoID • video tương tác độc lập</small></button>
+                  </div>
+                </div>
+                <div class="module lms">
+                  <div class="module-title"><h3>Học tập & kết quả</h3><span>LMS_</span></div>
+                  <div class="entity-list">
+                    <button class="entity" data-table="LMS_Enrollments"><strong>LMS_Enrollments</strong><small>StudentUserID + CourseID</small></button>
+                    <button class="entity" data-table="LMS_Questions"><strong>LMS_Questions</strong><small>QuestionID • ngân hàng câu hỏi</small></button>
+                    <button class="entity" data-table="LMS_QuestionOptions"><strong>LMS_QuestionOptions</strong><small>QuestionOptionID • QuestionID</small></button>
+                    <button class="entity" data-table="LMS_QuestionAnswerKeys"><strong>LMS_QuestionAnswerKeys</strong><small>QuestionAnswerKeyID • QuestionID</small></button>
+                    <button class="entity" data-table="LMS_VideoInteractions"><strong>LMS_VideoInteractions</strong><small>VideoID + QuestionID + TimeSeconds</small></button>
+                    <button class="entity" data-table="LMS_StudentVideoProgress"><strong>LMS_StudentVideoProgress</strong><small>StudentUserID + LessonID + VideoID</small></button>
+                    <button class="entity" data-table="LMS_StudentLessonProgress"><strong>LMS_StudentLessonProgress</strong><small>StudentUserID + LessonID</small></button>
+                    <button class="entity" data-table="LMS_StudentAnswers"><strong>LMS_StudentAnswers</strong><small>LessonID + VideoID + InteractionID</small></button>
+                    <button class="entity" data-table="LMS_StudentAnswerOptions"><strong>LMS_StudentAnswerOptions</strong><small>StudentAnswerID + QuestionOptionID</small></button>
+                    <button class="entity" data-table="LMS_LearningSessions"><strong>LMS_LearningSessions</strong><small>SessionID • hành vi xem</small></button>
+                  </div>
+                </div>
+              </div>
+              <div class="relationship-summary">
+                <div class="relation-card"><strong>SYS_Users 1 → N SIM_Courses</strong><span>Giảng viên sở hữu khóa qua TeacherUserID.</span></div>
+                <div class="relation-card"><strong>SIM_Courses 1 → N SIM_Chapters</strong><span>Một khóa có nhiều chương.</span></div>
+                <div class="relation-card"><strong>SIM_Chapters 1 → N SIM_Lessons</strong><span>Một chương có nhiều bài học.</span></div>
+                <div class="relation-card"><strong>SIM_Videos 1 → N SIM_Lessons</strong><span>Nhiều bài học dùng chung video qua VideoID.</span></div>
+                <div class="relation-card"><strong>SIM_Videos 1 → N LMS_VideoInteractions</strong><span>Một video có nhiều mốc tương tác.</span></div>
+                <div class="relation-card"><strong>LMS_Questions 1 → N LMS_VideoInteractions</strong><span>Một câu hỏi có thể dùng ở nhiều video.</span></div>
+                <div class="relation-card"><strong>SYS_Users N ↔ N SIM_Courses</strong><span>Học viên và khóa nối qua LMS_Enrollments.</span></div>
+                <div class="relation-card"><strong>LMS_StudentAnswers → Progress</strong><span>Điểm câu trả lời tổng hợp theo LessonID.</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tableDictionary" aria-labelledby="tableDictionaryTitle">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Từ điển dữ liệu</p>
+              <h2 id="tableDictionaryTitle">24 bảng vật lý đang sử dụng</h2>
+              <p class="section-desc">Tên cũ chỉ tồn tại dưới dạng compatibility view; phát triển mới dùng tên có prefix bên dưới.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bảng</th><th>Nhóm</th><th>Khóa chính / khóa quan trọng</th><th>Liên kết chính</th><th>Ý nghĩa</th></tr></thead>
+              <tbody>
+                <tr data-search="SYS_Users user tài khoản admin teacher student"><td>SYS_Users</td><td><span class="module-badge">SYS</span></td><td><span class="key">PK UserID</span></td><td>Được tham chiếu bởi vai trò, khóa học, ghi danh, câu trả lời</td><td>Tài khoản quản trị viên, giáo viên và học viên.</td></tr>
+                <tr data-search="SYS_Roles role vai trò"><td>SYS_Roles</td><td><span class="module-badge">SYS</span></td><td><span class="key">PK RoleID</span></td><td>SYS_UserRoles, SYS_RolePermissions</td><td>Danh mục vai trò.</td></tr>
+                <tr data-search="SYS_UserRoles user role"><td>SYS_UserRoles</td><td><span class="module-badge">SYS</span></td><td><span class="key fk">UserID</span><span class="key fk">RoleID</span></td><td>SYS_Users ↔ SYS_Roles</td><td>Bảng nối tài khoản và vai trò.</td></tr>
+                <tr data-search="SYS_Permissions permission quyền"><td>SYS_Permissions</td><td><span class="module-badge">SYS</span></td><td><span class="key">PK PermissionID</span></td><td>SYS_RolePermissions</td><td>Danh mục quyền theo module.</td></tr>
+                <tr data-search="SYS_RolePermissions role permission"><td>SYS_RolePermissions</td><td><span class="module-badge">SYS</span></td><td><span class="key fk">RoleID</span><span class="key fk">PermissionID</span></td><td>SYS_Roles ↔ SYS_Permissions</td><td>Quyền được cấp cho từng vai trò.</td></tr>
+                <tr data-search="SYS_RefreshTokens refresh token jwt"><td>SYS_RefreshTokens</td><td><span class="module-badge">SYS</span></td><td><span class="key">PK RefreshTokenID</span><span class="key fk">UserID</span></td><td>SYS_Users</td><td>Gia hạn và thu hồi phiên đăng nhập.</td></tr>
+                <tr data-search="SYS_AuditLogs audit log nhật ký"><td>SYS_AuditLogs</td><td><span class="module-badge">SYS</span></td><td><span class="key">PK AuditLogID</span><span class="key fk">UserID</span></td><td>SYS_Users</td><td>Nhật ký thao tác và thay đổi dữ liệu.</td></tr>
+
+                <tr data-search="SIM_CourseCategories category danh mục"><td>SIM_CourseCategories</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK CourseCategoryID</span></td><td>SIM_Courses</td><td>Danh mục phân loại khóa học.</td></tr>
+                <tr data-search="SIM_Courses course khóa học teacher"><td>SIM_Courses</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK CourseID</span><span class="key fk">TeacherUserID</span></td><td>SYS_Users, SIM_CourseCategories</td><td>Thông tin và trạng thái xuất bản khóa học.</td></tr>
+                <tr data-search="SIM_Chapters chapter chương"><td>SIM_Chapters</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK ChapterID</span><span class="key fk">CourseID</span></td><td>SIM_Courses</td><td>Chương nội dung thuộc khóa học.</td></tr>
+                <tr data-search="SIM_Lessons lesson bài học video"><td>SIM_Lessons</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK LessonID</span><span class="key fk">CourseID</span><span class="key fk">ChapterID</span><span class="key fk">VideoID</span></td><td>SIM_Courses, SIM_Chapters, SIM_Videos</td><td>Bài học; tham chiếu video tương tác đã soạn.</td></tr>
+                <tr data-search="SIM_VideoAssets asset thư viện file media"><td>SIM_VideoAssets</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetID</span><span class="key fk">CreatedByUserID</span></td><td>SYS_Users, SIM_Videos</td><td>Metadata tài nguyên video và tác giả.</td></tr>
+                <tr data-search="SIM_VideoAssetShares share chia sẻ giáo viên"><td>SIM_VideoAssetShares</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetShareID</span><span class="key fk">VideoAssetID</span><span class="key fk">TeacherUserID</span></td><td>SIM_VideoAssets, SYS_Users</td><td>Chia sẻ video cho giáo viên được chọn.</td></tr>
+                <tr data-search="SIM_Videos video tương tác độc lập"><td>SIM_Videos</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoID</span><span class="key fk">VideoAssetID</span></td><td>SIM_VideoAssets; được SIM_Lessons tham chiếu</td><td>Video tương tác độc lập dùng chung cho nhiều bài học.</td></tr>
+
+                <tr data-search="LMS_Questions question câu hỏi ngân hàng"><td>LMS_Questions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionID</span><span class="key fk">CreatedByUserID</span></td><td>SYS_Users</td><td>Ngân hàng câu hỏi dùng lại.</td></tr>
+                <tr data-search="LMS_QuestionOptions option đáp án lựa chọn"><td>LMS_QuestionOptions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionOptionID</span><span class="key fk">QuestionID</span></td><td>LMS_Questions</td><td>Phương án của câu hỏi lựa chọn.</td></tr>
+                <tr data-search="LMS_QuestionAnswerKeys answer key trả lời ngắn"><td>LMS_QuestionAnswerKeys</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK QuestionAnswerKeyID</span><span class="key fk">QuestionID</span></td><td>LMS_Questions</td><td>Đáp án chữ được chấp nhận.</td></tr>
+                <tr data-search="LMS_VideoInteractions interaction timeline mốc"><td>LMS_VideoInteractions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK VideoInteractionID</span><span class="key fk">VideoID</span><span class="key fk">QuestionID</span></td><td>SIM_Videos, LMS_Questions</td><td>Mốc câu hỏi trong video, điểm và số lần làm.</td></tr>
+                <tr data-search="LMS_Enrollments enrollment ghi danh"><td>LMS_Enrollments</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK EnrollmentID</span><span class="key fk">CourseID</span><span class="key fk">StudentUserID</span></td><td>SIM_Courses, SYS_Users</td><td>Học viên được phân vào khóa học.</td></tr>
+                <tr data-search="LMS_StudentLessonProgress lesson progress điểm bài"><td>LMS_StudentLessonProgress</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentLessonProgressID</span><span class="key fk">LessonID</span></td><td>SYS_Users, SIM_Courses, SIM_Lessons</td><td>Tiến độ và điểm tổng theo bài học.</td></tr>
+                <tr data-search="LMS_StudentVideoProgress video progress xem"><td>LMS_StudentVideoProgress</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentVideoProgressID</span><span class="key fk">LessonID</span><span class="key fk">VideoID</span></td><td>SYS_Users, SIM_Lessons, SIM_Videos</td><td>Vị trí xem, thời lượng và % hoàn thành video.</td></tr>
+                <tr data-search="LMS_StudentAnswers answer sai đúng score điểm"><td>LMS_StudentAnswers</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentAnswerID</span><span class="key fk">VideoInteractionID</span><span class="key fk">QuestionID</span></td><td>Học viên, khóa, bài, video, tương tác, câu hỏi</td><td>Mọi lần trả lời, đúng/sai, điểm và trạng thái chấm.</td></tr>
+                <tr data-search="LMS_StudentAnswerOptions selected option"><td>LMS_StudentAnswerOptions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key fk">StudentAnswerID</span><span class="key fk">QuestionOptionID</span></td><td>LMS_StudentAnswers, LMS_QuestionOptions</td><td>Các lựa chọn học viên đã chọn.</td></tr>
+                <tr data-search="LMS_LearningSessions session học pause seek"><td>LMS_LearningSessions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK LearningSessionID</span><span class="key">SessionID</span></td><td>Học viên, khóa, bài học, video</td><td>Phiên học, thời lượng xem, seek/pause/tương tác.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="businessRules" aria-labelledby="businessRulesTitle">
+          <div class="section-head"><div><p class="kicker">Quy tắc không được nhầm</p><h2 id="businessRulesTitle">Các nguyên tắc chi phối dữ liệu</h2></div></div>
+          <div class="rule-grid">
+            <article class="card rule-card" data-search="video nhiều bài học dùng chung"><h3>Video dùng chung, kết quả tách riêng</h3><p><code>SIM_Lessons.VideoID</code> cho phép nhiều bài học dùng cùng video. Tiến độ có khóa duy nhất theo <code>StudentUserID + LessonID + VideoID</code>.</p></article>
+            <article class="card rule-card" data-search="trả lời sai lưu database"><h3>Trả lời sai vẫn phải lưu</h3><p>Tạo bản ghi <code>LMS_StudentAnswers</code> với <code>IsCorrect = 0</code> và <code>ScoreAwarded = 0</code>; không được bỏ qua lần làm sai.</p></article>
+            <article class="card rule-card" data-search="tác giả quyền video share admin"><h3>Quyền sở hữu video</h3><p>Giáo viên thấy video mình tạo/được chia sẻ. Quản trị viên được xem và sửa toàn bộ. Chia sẻ không chuyển quyền sở hữu.</p></article>
+            <article class="card rule-card" data-search="xóa mềm soft delete"><h3>Xóa mềm nội dung</h3><p>Khóa học, bài học, câu hỏi và tương tác dùng <code>IsDeleted</code> hoặc trạng thái để giữ lịch sử học tập liên quan.</p></article>
+            <article class="card rule-card" data-search="media video image file storage"><h3>File nằm gọn trong project</h3><p>Video ở <code>/Media/Video</code>, ảnh ở <code>/Media/Image</code>, file ở <code>/Media/File</code>, thumbnail ở <code>/Media/Thumbnail</code>.</p></article>
+            <article class="card rule-card" data-search="description cột sql"><h3>Schema tự mô tả</h3><p>Tất cả bảng/cột vật lý dùng tên ID rõ nghĩa và có <code>MS_Description</code>; tên cũ chỉ là view tương thích.</p></article>
+          </div>
+        </section>
+
+        <footer>Tài liệu được tạo từ schema, migration, controller và service hiện tại của project CMS-LMS-VueJS.</footer>
+      </main>
+    </div>
+    <script src="assets/lms-system-map.js"></script>
+  </body>
+</html>
