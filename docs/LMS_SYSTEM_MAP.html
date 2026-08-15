@@ -215,16 +215,109 @@
           <div class="section-head">
             <div>
               <p class="kicker">Tra cứu theo nghiệp vụ</p>
-              <h2 id="detailFlowsTitle">API, Stored Procedure và bảng được tác động</h2>
+              <h2 id="detailFlowsTitle">Sơ đồ luồng, API và dữ liệu được tác động</h2>
             </div>
           </div>
           <div class="tabs" role="tablist">
-            <button class="tab-button active" data-tab="tabAuth" type="button">Đăng nhập</button>
+            <button class="tab-button active" data-tab="tabDiagram" type="button">Sơ đồ luồng</button>
+            <button class="tab-button" data-tab="tabAuth" type="button">Đăng nhập</button>
             <button class="tab-button" data-tab="tabContent" type="button">Nội dung</button>
             <button class="tab-button" data-tab="tabVideo" type="button">Video</button>
             <button class="tab-button" data-tab="tabLearning" type="button">Học & điểm</button>
           </div>
-          <div id="tabAuth" class="tab-panel active">
+          <div id="tabDiagram" class="tab-panel active">
+            <div
+              class="system-flow-map"
+              role="img"
+              aria-label="Sơ đồ luồng từ đăng nhập, tạo khóa học và video tương tác đến học tập, lưu điểm và báo cáo"
+            >
+              <div class="flow-map-legend">
+                <span><i class="legend-dot action"></i>Thao tác nghiệp vụ</span>
+                <span><i class="legend-dot data"></i>Dữ liệu được đọc hoặc ghi</span>
+                <span><i class="legend-dot result"></i>Kết quả đầu ra</span>
+              </div>
+              <div class="flow-map-scroll">
+                <div class="flow-map-track">
+                  <article class="flow-map-stage auth" data-search="sơ đồ đăng nhập xác thực jwt role quyền">
+                    <span class="stage-number">01</span>
+                    <small>XÁC THỰC</small>
+                    <h3>Đăng nhập</h3>
+                    <p>Kiểm tra tài khoản, vai trò và quyền truy cập.</p>
+                    <div class="stage-data"><b>SYS_Users</b><span>SYS_UserRoles · SYS_Roles</span></div>
+                    <strong class="stage-output">JWT → CMS / LMS</strong>
+                  </article>
+
+                  <article class="flow-map-stage content" data-search="sơ đồ tạo khóa học chương bài học course chapter lesson">
+                    <span class="stage-number">02</span>
+                    <small>GIÁO VIÊN / ADMIN</small>
+                    <h3>Tạo khóa học</h3>
+                    <p>Tạo khóa học, chương và khung bài học.</p>
+                    <div class="stage-data"><b>SIM_Courses</b><span>SIM_Chapters · SIM_Lessons</span></div>
+                    <strong class="stage-output">CourseID · LessonID</strong>
+                  </article>
+
+                  <article class="flow-map-stage video" data-search="sơ đồ upload tài nguyên video thư viện media share">
+                    <span class="stage-number">03</span>
+                    <small>THƯ VIỆN VIDEO</small>
+                    <h3>Upload hoặc chọn video</h3>
+                    <p>Lưu file, metadata, tác giả và phạm vi chia sẻ.</p>
+                    <div class="stage-data"><b>/Media/Video</b><span>SIM_VideoAssets · Shares</span></div>
+                    <strong class="stage-output">VideoAssetID</strong>
+                  </article>
+
+                  <article class="flow-map-stage interaction" data-search="sơ đồ soạn video câu hỏi tương tác timeline question">
+                    <span class="stage-number">04</span>
+                    <small>BIÊN TẬP TƯƠNG TÁC</small>
+                    <h3>Soạn video & câu hỏi</h3>
+                    <p>Chọn câu hỏi, thời điểm dừng, điểm và số lần làm.</p>
+                    <div class="stage-data"><b>SIM_Videos</b><span>LMS_Questions · LMS_VideoInteractions</span></div>
+                    <strong class="stage-output">VideoID hoàn chỉnh</strong>
+                  </article>
+
+                  <article class="flow-map-stage attach" data-search="sơ đồ gắn video vào bài học tham chiếu videoid">
+                    <span class="stage-number">05</span>
+                    <small>LIÊN KẾT NỘI DUNG</small>
+                    <h3>Gắn vào bài học</h3>
+                    <p>Bài học tham chiếu video đã soạn, không sao chép file.</p>
+                    <div class="stage-data"><b>SIM_Lessons.VideoID</b><span>Nhiều bài học dùng chung một video</span></div>
+                    <strong class="stage-output">LessonID + VideoID</strong>
+                  </article>
+
+                  <article class="flow-map-stage enrollment" data-search="sơ đồ ghi danh phân học viên khóa học enrollment">
+                    <span class="stage-number">06</span>
+                    <small>PHÂN HỌC VIÊN</small>
+                    <h3>Ghi danh khóa học</h3>
+                    <p>Chọn một hoặc nhiều học viên để cấp quyền học.</p>
+                    <div class="stage-data"><b>LMS_Enrollments</b><span>StudentUserID + CourseID</span></div>
+                    <strong class="stage-output">Quyền mở bài học</strong>
+                  </article>
+
+                  <article class="flow-map-stage learning" data-search="sơ đồ học viên xem video trả lời đúng sai lưu điểm progress">
+                    <span class="stage-number">07</span>
+                    <small>HỌC VIÊN</small>
+                    <h3>Học & trả lời</h3>
+                    <p>Player nạp video, dừng tại mốc và chấm mọi lần trả lời.</p>
+                    <div class="stage-data"><b>LMS_StudentAnswers</b><span>Sai vẫn lưu điểm 0 · StudentProgress</span></div>
+                    <strong class="stage-output">Điểm theo LessonID</strong>
+                  </article>
+
+                  <article class="flow-map-stage report" data-search="sơ đồ báo cáo thống kê dashboard điểm tiến độ">
+                    <span class="stage-number">08</span>
+                    <small>KẾT QUẢ</small>
+                    <h3>Tiến độ & báo cáo</h3>
+                    <p>Tổng hợp tỷ lệ hoàn thành, điểm và hành vi tương tác.</p>
+                    <div class="stage-data"><b>LMS_Student*Progress</b><span>LMS_LearningSessions · LMS_Report_*</span></div>
+                    <strong class="stage-output">Dashboard / Xuất báo cáo</strong>
+                  </article>
+                </div>
+              </div>
+              <div class="flow-map-note">
+                <strong>Luồng dữ liệu chấm điểm:</strong>
+                <span>StudentUserID + CourseID + LessonID + VideoID + VideoInteractionID → LMS_StudentAnswers → LMS_StudentLessonProgress → Báo cáo.</span>
+              </div>
+            </div>
+          </div>
+          <div id="tabAuth" class="tab-panel">
             <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng chính</th></tr></thead><tbody>
               <tr data-search="auth login"><td>Đăng nhập</td><td class="mono">POST /api/auth/login</td><td class="mono">LMS_Auth_GetUserByUsername</td><td>SYS_Users, SYS_UserRoles, SYS_Roles</td></tr>
               <tr data-search="permission quyền"><td>Lấy quyền</td><td class="mono">POST /api/auth/login</td><td class="mono">LMS_Auth_GetUserPermissions</td><td>SYS_RolePermissions, SYS_Permissions</td></tr>

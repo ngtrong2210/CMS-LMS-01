@@ -140,6 +140,31 @@ h3 { margin: 0; color: var(--navy); font-size: 1rem; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
+.system-flow-map { padding: 22px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
+.flow-map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 17px; color: var(--muted); font-size: 0.72rem; }
+.flow-map-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.legend-dot.action { background: var(--brand); }
+.legend-dot.data { background: var(--blue); }
+.legend-dot.result { background: var(--green); }
+.flow-map-scroll { overflow-x: auto; padding: 4px 4px 18px; }
+.flow-map-track { display: grid; grid-template-columns: repeat(8, minmax(210px, 1fr)); gap: 30px; min-width: 1900px; }
+.flow-map-stage { position: relative; min-height: 286px; padding: 18px; background: var(--soft); border-radius: 13px; }
+.flow-map-stage:not(:last-child)::after { position: absolute; z-index: 2; top: 50%; right: -24px; content: "→"; color: var(--brand); font-size: 1.35rem; font-weight: 900; transform: translateY(-50%); }
+.stage-number { display: grid; width: 34px; height: 34px; margin-bottom: 16px; place-items: center; color: #fff; background: var(--brand); border-radius: 10px; font-size: 0.72rem; font-weight: 800; }
+.flow-map-stage > small { color: var(--brand); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; }
+.flow-map-stage h3 { margin-top: 5px; font-size: 1.02rem; }
+.flow-map-stage > p { min-height: 58px; margin: 9px 0 14px; color: var(--muted); font-size: 0.75rem; }
+.stage-data { display: grid; gap: 4px; min-height: 70px; padding: 12px; color: #fff; background: var(--blue); border-radius: 10px; }
+.stage-data b { font: 800 0.72rem Consolas, monospace; }
+.stage-data span { color: rgba(255, 255, 255, 0.78); font-size: 0.65rem; }
+.stage-output { display: block; margin-top: 13px; color: var(--green); font-size: 0.7rem; }
+.flow-map-stage.report { background: #edf8f4; }
+.flow-map-stage.report .stage-number { background: var(--green); }
+.flow-map-stage.report > small { color: var(--green); }
+.flow-map-note { display: flex; gap: 8px; padding: 13px 15px; color: #315061; background: #eaf2f8; border-radius: 10px; font-size: 0.75rem; }
+.flow-map-note strong { flex: 0 0 auto; color: var(--blue); }
+
 .erd-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
 .legend { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 0.69rem; }
 .legend span { padding: 5px 8px; background: #fff; border-radius: 6px; }
@@ -209,6 +234,8 @@ footer { padding: 40px 0 10px; color: #7a8993; text-align: center; font-size: 0.
   main { padding-left: 12px; padding-right: 12px; }
   .hero { margin-left: -12px; margin-right: -12px; }
   .section-head, .erd-toolbar { align-items: flex-start; flex-direction: column; }
+  .system-flow-map { padding: 14px; }
+  .flow-map-note { flex-direction: column; }
 }
 @media print {
   .topbar, .sidebar, .tabs, .zoom-actions { display: none !important; }
