@@ -1,1 +1,14 @@
-<template><main class="error-page"><div><strong>{{ code }}</strong><h1>{{ title }}</h1><p>Nội dung bạn tìm kiếm không tồn tại hoặc tài khoản hiện tại chưa được cấp quyền.</p><RouterLink to="/login" class="btn btn-brand">Về trang đăng nhập</RouterLink></div></main></template><script setup>defineProps({code:String,title:String})</script><style scoped src="../../assets/css/pages/errors/error.css"></style>
+<template>
+  <main class="error-page">
+    <div>
+      <strong>{{ code }}</strong>
+      <h1>{{ title }}</h1>
+      <p>Nội dung bạn tìm kiếm không tồn tại hoặc tài khoản hiện tại chưa được cấp quyền.</p>
+      <RouterLink to="/login" class="btn btn-brand">Về trang đăng nhập</RouterLink>
+    </div>
+  </main>
+</template>
+<script setup>
+defineProps({ code: String, title: String })
+</script>
+<style scoped src="../../assets/css/pages/errors/error.css"></style>

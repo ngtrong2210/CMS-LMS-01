@@ -1,3 +1,81 @@
-<template><section><header class="d-flex justify-content-between align-items-end mb-4"><div><h1 class="page-title mb-1">Danh sách học viên</h1><p class="page-subtitle mb-0">Theo dõi hồ sơ và tiến độ học tập.</p></div><button class="btn btn-brand"><i class="bi bi-person-plus"></i> Thêm học viên</button></header><div class="app-card p-3 mb-3"><input v-model="search" class="form-control" placeholder="Tìm theo tên, mã học viên hoặc email..."></div><div class="app-card p-2"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Học viên</th><th>Mã HV</th><th>Khóa học</th><th>Tiến độ</th><th>Điểm TB</th><th>Trạng thái</th><th></th></tr></thead><tbody><tr v-for="student in filtered" :key="student.id"><td><div class="d-flex align-items-center gap-2"><span class="avatar">{{ initials(student.name) }}</span><div><strong>{{ student.name }}</strong><small class="d-block text-secondary">{{ student.email }}</small></div></div></td><td>{{ student.code }}</td><td>{{ student.courses }}</td><td><div class="d-flex align-items-center gap-2"><div class="progress student-progress"><div class="progress-bar" :style="{width:student.progress+'%'}"></div></div><small>{{ student.progress }}%</small></div></td><td><b>{{ student.score }}</b></td><td><span :class="['badge',student.status==='Hoàn thành'?'badge-soft-primary':'badge-soft-success']">{{ student.status }}</span></td><td><button class="btn btn-light btn-sm"><i class="bi bi-chevron-right"></i></button></td></tr></tbody></table></div></div></section></template>
-<script setup>import { computed,ref } from 'vue';import { students } from '../../data/demo';const search=ref('');const filtered=computed(()=>students.filter(s=>`${s.name} ${s.code} ${s.email}`.toLowerCase().includes(search.value.toLowerCase())));const initials=name=>name.split(' ').slice(-2).map(x=>x[0]).join('')</script>
+<template>
+  <section>
+    <header class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <h1 class="page-title mb-1">Danh sách học viên</h1>
+        <p class="page-subtitle mb-0">Theo dõi hồ sơ và tiến độ học tập.</p>
+      </div>
+      <button class="btn btn-brand"><i class="bi bi-person-plus"></i> Thêm học viên</button>
+    </header>
+    <div class="app-card p-3 mb-3">
+      <input v-model="search" class="form-control" placeholder="Tìm theo tên, mã học viên hoặc email..." />
+    </div>
+    <div class="app-card p-2">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Học viên</th>
+              <th>Mã HV</th>
+              <th>Khóa học</th>
+              <th>Tiến độ</th>
+              <th>Điểm TB</th>
+              <th>Trạng thái</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="student in filtered" :key="student.id">
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar">{{ initials(student.name) }}</span>
+                  <div>
+                    <strong>{{ student.name }}</strong
+                    ><small class="d-block text-secondary">{{ student.email }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>{{ student.code }}</td>
+              <td>{{ student.courses }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress student-progress">
+                    <div class="progress-bar" :style="{ width: student.progress + '%' }"></div>
+                  </div>
+                  <small>{{ student.progress }}%</small>
+                </div>
+              </td>
+              <td>
+                <b>{{ student.score }}</b>
+              </td>
+              <td>
+                <span
+                  :class="['badge', student.status === 'Hoàn thành' ? 'badge-soft-primary' : 'badge-soft-success']"
+                  >{{ student.status }}</span
+                >
+              </td>
+              <td>
+                <button class="btn btn-light btn-sm"><i class="bi bi-chevron-right"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</template>
+<script setup>
+import { computed, ref } from 'vue'
+import { students } from '../../data/demo'
+const search = ref('')
+const filtered = computed(() =>
+  students.filter((s) => `${s.name} ${s.code} ${s.email}`.toLowerCase().includes(search.value.toLowerCase()))
+)
+const initials = (name) =>
+  name
+    .split(' ')
+    .slice(-2)
+    .map((x) => x[0])
+    .join('')
+</script>
 <style scoped src="../../assets/css/pages/cms/students.css"></style>

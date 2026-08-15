@@ -1,3 +1,58 @@
-<template><section><header class="mb-4"><h1 class="page-title">Kết quả học tập</h1><p class="page-subtitle">Điểm số và tiến độ được tính trực tiếp từ dữ liệu học tập.</p></header><div v-if="loading" class="app-card p-5 text-center"><span class="spinner-border text-success"></span></div><div v-else-if="error" class="alert alert-danger">{{ error }}</div><div v-else-if="!courses.length" class="app-card p-5 text-center text-secondary">Chưa có kết quả học tập.</div><div v-else class="row g-4"><div v-for="course in courses" :key="course.id" class="col-lg-6"><article class="app-card p-4"><div class="d-flex justify-content-between gap-3"><div><span class="badge badge-soft-primary">{{ course.code }}</span><h2 class="h5 fw-bold mt-2">{{ course.title }}</h2></div><strong class="result-score">{{ course.finalScore ?? '—' }}</strong></div><div class="d-flex justify-content-between small mt-3"><span>Tiến độ</span><b>{{ course.progress }}%</b></div><div class="progress result-progress my-2"><div class="progress-bar" :style="{width:course.progress+'%'}"></div></div><div class="small text-secondary">{{ course.correct }}/{{ course.answers }} câu trả lời đúng</div></article></div></div></section></template>
-<script setup>import{onMounted,ref}from'vue';import axiosClient from'../../api/axiosClient';const loading=ref(true),error=ref(''),courses=ref([]),pick=(s,...n)=>n.map(x=>s?.[x]).find(v=>v!==undefined&&v!==null);onMounted(async()=>{try{const data=await axiosClient.get('/lms/results',{params:{_fresh:Date.now()}});courses.value=(pick(data,'courses','Courses')||[]).map(r=>({id:Number(pick(r,'CourseId','courseId')),code:pick(r,'Code','code'),title:pick(r,'Title','title'),progress:Number(pick(r,'ProgressPercent','progressPercent')||0),finalScore:pick(r,'FinalScore','finalScore'),answers:Number(pick(r,'AnswerCount','answerCount')||0),correct:Number(pick(r,'CorrectCount','correctCount')||0)}))}catch(e){error.value=e.message}finally{loading.value=false}})</script>
+<template>
+  <section>
+    <header class="mb-4">
+      <h1 class="page-title">Kết quả học tập</h1>
+      <p class="page-subtitle">Điểm số và tiến độ được tính trực tiếp từ dữ liệu học tập.</p>
+    </header>
+    <div v-if="loading" class="app-card p-5 text-center"><span class="spinner-border text-success"></span></div>
+    <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+    <div v-else-if="!courses.length" class="app-card p-5 text-center text-secondary">Chưa có kết quả học tập.</div>
+    <div v-else class="row g-4">
+      <div v-for="course in courses" :key="course.id" class="col-lg-6">
+        <article class="app-card p-4">
+          <div class="d-flex justify-content-between gap-3">
+            <div>
+              <span class="badge badge-soft-primary">{{ course.code }}</span>
+              <h2 class="h5 fw-bold mt-2">{{ course.title }}</h2>
+            </div>
+            <strong class="result-score">{{ course.finalScore ?? '—' }}</strong>
+          </div>
+          <div class="d-flex justify-content-between small mt-3">
+            <span>Tiến độ</span><b>{{ course.progress }}%</b>
+          </div>
+          <div class="progress result-progress my-2">
+            <div class="progress-bar" :style="{ width: course.progress + '%' }"></div>
+          </div>
+          <div class="small text-secondary">{{ course.correct }}/{{ course.answers }} câu trả lời đúng</div>
+        </article>
+      </div>
+    </div>
+  </section>
+</template>
+<script setup>
+import { onMounted, ref } from 'vue'
+import axiosClient from '../../api/axiosClient'
+const loading = ref(true),
+  error = ref(''),
+  courses = ref([]),
+  pick = (s, ...n) => n.map((x) => s?.[x]).find((v) => v !== undefined && v !== null)
+onMounted(async () => {
+  try {
+    const data = await axiosClient.get('/lms/results', { params: { _fresh: Date.now() } })
+    courses.value = (pick(data, 'courses', 'Courses') || []).map((r) => ({
+      id: Number(pick(r, 'CourseId', 'courseId')),
+      code: pick(r, 'Code', 'code'),
+      title: pick(r, 'Title', 'title'),
+      progress: Number(pick(r, 'ProgressPercent', 'progressPercent') || 0),
+      finalScore: pick(r, 'FinalScore', 'finalScore'),
+      answers: Number(pick(r, 'AnswerCount', 'answerCount') || 0),
+      correct: Number(pick(r, 'CorrectCount', 'correctCount') || 0)
+    }))
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+})
+</script>
 <style scoped src="../../assets/css/pages/lms/results.css"></style>

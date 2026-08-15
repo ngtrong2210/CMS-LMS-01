@@ -7,10 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "format": "prettier --write \"src/**/*.vue\"",
+    "format:check": "prettier --check \"src/**/*.vue\""
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.8",
+    "prettier": "3.6.2",
     "vite": "^8.2.1",
     "vitest": "^3.2.7"
   },

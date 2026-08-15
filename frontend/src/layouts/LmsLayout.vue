@@ -1,10 +1,19 @@
 <template>
   <div class="lms-shell">
-    <div class="learning-strip"><div class="container"><span><i class="bi bi-mortarboard"></i> Hệ thống học tập trực tuyến LearnHub</span><span class="d-none d-md-inline"><i class="bi bi-headset"></i> Hỗ trợ học viên: Bộ phận đào tạo</span></div></div>
+    <div class="learning-strip">
+      <div class="container">
+        <span><i class="bi bi-mortarboard"></i> Hệ thống học tập trực tuyến LearnHub</span
+        ><span class="d-none d-md-inline"><i class="bi bi-headset"></i> Hỗ trợ học viên: Bộ phận đào tạo</span>
+      </div>
+    </div>
     <nav class="navbar navbar-expand-lg bg-white sticky-top lms-nav">
       <div class="container py-2">
-        <RouterLink class="brand" to="/lms/dashboard"><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"></RouterLink>
-        <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#lmsNav"><i class="bi bi-list fs-2"></i></button>
+        <RouterLink class="brand" to="/lms/dashboard"
+          ><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"
+        /></RouterLink>
+        <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#lmsNav">
+          <i class="bi bi-list fs-2"></i>
+        </button>
         <div id="lmsNav" class="collapse navbar-collapse">
           <div class="navbar-nav mx-auto gap-lg-2">
             <RouterLink class="nav-link" to="/lms/dashboard">Tổng quan</RouterLink>
@@ -12,22 +21,48 @@
             <RouterLink class="nav-link" to="/lms/results">Kết quả</RouterLink>
           </div>
           <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
-            <RouterLink to="/lms/profile" class="profile-link d-flex align-items-center gap-2"><img class="avatar user-avatar" :src="avatarUrl" :alt="`Ảnh đại diện ${auth.user?.fullName || ''}`"><span class="profile-copy d-none d-xl-grid"><strong>{{ auth.user?.fullName }}</strong><small>Học viên</small></span></RouterLink>
-            <button class="btn btn-light btn-sm" title="Đăng xuất" @click="signOut"><i class="bi bi-box-arrow-right"></i></button>
+            <RouterLink to="/lms/profile" class="profile-link d-flex align-items-center gap-2"
+              ><img
+                class="avatar user-avatar"
+                :src="avatarUrl"
+                :alt="`Ảnh đại diện ${auth.user?.fullName || ''}`"
+              /><span class="profile-copy d-none d-xl-grid"
+                ><strong>{{ auth.user?.fullName }}</strong
+                ><small>Học viên</small></span
+              ></RouterLink
+            >
+            <button class="btn btn-light btn-sm" title="Đăng xuất" @click="signOut">
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
           </div>
         </div>
       </div>
     </nav>
     <main class="container py-4 py-lg-5 lms-content"><RouterView /></main>
-    <footer class="lms-footer"><div class="container"><span>© 2026 LearnHub · Hệ thống quản lý học tập</span><span>Hỗ trợ · Quy định học tập · Bảo mật</span></div></footer>
+    <footer class="lms-footer">
+      <div class="container">
+        <span>© 2026 LearnHub · Hệ thống quản lý học tập</span><span>Hỗ trợ · Quy định học tập · Bảo mật</span>
+      </div>
+    </footer>
   </div>
 </template>
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
-const auth = useAuthStore(); const router = useRouter()
-const avatarUrl=computed(()=>({ADMIN:'/images/avatar-admin.jpg',TEACHER:'/images/avatar-teacher.jpg',STUDENT:'/images/avatar-student.jpg'})[auth.user?.role] || '/images/avatar-student.jpg')
-function signOut() { auth.logout(); router.push('/login') }
+const auth = useAuthStore()
+const router = useRouter()
+const avatarUrl = computed(
+  () =>
+    ({
+      ADMIN: '/images/avatar-admin.jpg',
+      TEACHER: '/images/avatar-teacher.jpg',
+      STUDENT: '/images/avatar-student.jpg'
+    })[auth.user?.role] || '/images/avatar-student.jpg'
+)
+function signOut() {
+  auth.logout()
+  router.push('/login')
+}
 </script>
 <style scoped src="../assets/css/layouts/lms-layout.css"></style>
