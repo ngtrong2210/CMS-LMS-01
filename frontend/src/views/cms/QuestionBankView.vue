@@ -5,7 +5,9 @@
         <h1 class="page-title mb-1">Ngân hàng câu hỏi</h1>
         <p class="page-subtitle mb-0">Quản lý câu hỏi dùng trong video và bài kiểm tra.</p>
       </div>
-      <button class="btn btn-brand" @click="createQuestion"><i class="bi bi-plus-lg"></i> Thêm câu hỏi</button>
+      <CmsPageActions>
+        <button class="btn btn-brand" @click="createQuestion"><i class="bi bi-plus-lg"></i> Thêm câu hỏi</button>
+      </CmsPageActions>
     </header>
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
       {{ message }}

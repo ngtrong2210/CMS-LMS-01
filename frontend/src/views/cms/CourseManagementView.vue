@@ -5,7 +5,9 @@
         <h1 class="page-title mb-1">Quản lý khóa học</h1>
         <p class="page-subtitle mb-0">Tạo, cập nhật và quản lý nội dung đào tạo từ SQL Server.</p>
       </div>
-      <button class="btn btn-brand" @click="openForm()"><i class="bi bi-plus-lg me-1"></i> Thêm khóa học</button>
+      <CmsPageActions>
+        <button class="btn btn-brand" @click="openForm()"><i class="bi bi-plus-lg me-1"></i> Thêm khóa học</button>
+      </CmsPageActions>
     </header>
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
       {{ message }}

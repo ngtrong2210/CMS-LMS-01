@@ -7,7 +7,9 @@
           Video mặc định chỉ tác giả nhìn thấy; có thể chia sẻ cho giáo viên khác hoặc toàn trường.
         </p>
       </div>
-      <button class="btn btn-brand" @click="openUpload"><i class="bi bi-cloud-arrow-up"></i> Thêm video</button>
+      <CmsPageActions>
+        <button class="btn btn-brand" @click="openUpload"><i class="bi bi-cloud-arrow-up"></i> Thêm video</button>
+      </CmsPageActions>
     </header>
 
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">

@@ -5,9 +5,11 @@
         <h1 class="page-title mb-1">Tổng quan hệ thống</h1>
         <p class="page-subtitle mb-0">Số liệu mới nhất được tổng hợp trực tiếp từ SQL Server.</p>
       </div>
-      <button class="btn btn-action-view" :disabled="loading" @click="load">
-        <i class="bi bi-arrow-clockwise"></i> Làm mới
-      </button>
+      <CmsPageActions>
+        <button class="btn btn-action-view" :disabled="loading" @click="load">
+          <i class="bi bi-arrow-clockwise"></i> Làm mới
+        </button>
+      </CmsPageActions>
     </header>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
     <div class="row g-3 mb-4">

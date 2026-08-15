@@ -1,10 +1,13 @@
 <template>
   <section>
     <header class="search-page-header mb-4">
-      <div>
-        <span class="search-kicker"><i class="bi bi-stars"></i> TÌM KIẾM TOÀN HỆ THỐNG</span>
-        <h1 class="page-title mb-1">Tìm nhanh dữ liệu quản trị</h1>
-        <p class="page-subtitle mb-0">Tra cứu khóa học, bài học, video, câu hỏi và học viên từ một nơi.</p>
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+          <span class="search-kicker"><i class="bi bi-stars"></i> TÌM KIẾM TOÀN HỆ THỐNG</span>
+          <h1 class="page-title mb-1">Tìm nhanh dữ liệu quản trị</h1>
+          <p class="page-subtitle mb-0">Tra cứu khóa học, bài học, video, câu hỏi và học viên từ một nơi.</p>
+        </div>
+        <CmsPageActions />
       </div>
       <form class="page-search" @submit.prevent="submitSearch">
         <i class="bi bi-search"></i>

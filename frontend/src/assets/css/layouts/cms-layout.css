@@ -74,7 +74,6 @@
 .mobile-sidebar { color: #fff; background: var(--theme-sidebar); }
 .mobile-sidebar .offcanvas-header { border-bottom-color: rgba(255, 255, 255, .09); }
 .mobile-sidebar .btn-close { filter: invert(1) grayscale(1); }
-.cms-back-row { display: flex; align-items: center; margin-bottom: 1rem; }
 
 @media(max-width:991px) {
   .topbar { background: var(--theme-navy); }

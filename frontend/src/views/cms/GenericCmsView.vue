@@ -1,5 +1,6 @@
 <template>
   <section>
+    <CmsPageActions class="mb-3" />
     <div class="app-card empty">
       <i :class="['bi', info.icon]"></i>
       <h1 class="page-title">{{ info.title }}</h1>

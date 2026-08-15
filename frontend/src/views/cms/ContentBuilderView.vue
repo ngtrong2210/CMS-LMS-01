@@ -2,17 +2,14 @@
   <section>
     <header class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
       <div>
-        <RouterLink to="/cms/courses" class="small text-secondary"
-          ><i class="bi bi-arrow-left"></i> Danh sách khóa học</RouterLink
-        >
-        <h1 class="page-title mt-2">Nội dung: {{ course.title }}</h1>
+        <h1 class="page-title">Nội dung: {{ course.title }}</h1>
         <p class="page-subtitle mb-0">Thêm, sửa, xóa chương/bài học và chọn video dùng chung từ thư viện.</p>
       </div>
-      <div class="d-flex gap-2">
+      <CmsPageActions>
         <RouterLink class="btn btn-action-view" to="/cms/videos"
           ><i class="bi bi-collection-play"></i> Thư viện video</RouterLink
         ><button class="btn btn-brand" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
-      </div>
+      </CmsPageActions>
     </header>
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
       {{ message }}

@@ -5,7 +5,9 @@
         <h1 class="page-title mb-1">Báo cáo đào tạo</h1>
         <p class="page-subtitle mb-0">Phân tích hiệu quả học tập theo nhiều góc nhìn.</p>
       </div>
-      <button class="btn btn-brand"><i class="bi bi-download"></i> Xuất Excel</button>
+      <CmsPageActions>
+        <button class="btn btn-brand"><i class="bi bi-download"></i> Xuất Excel</button>
+      </CmsPageActions>
     </header>
     <div class="row g-3 mb-4">
       <div v-for="item in reports" :key="item.title" class="col-md-6 col-xl">

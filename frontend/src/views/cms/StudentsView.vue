@@ -5,7 +5,9 @@
         <h1 class="page-title mb-1">Danh sách học viên</h1>
         <p class="page-subtitle mb-0">Theo dõi hồ sơ và tiến độ học tập.</p>
       </div>
-      <button class="btn btn-brand"><i class="bi bi-person-plus"></i> Thêm học viên</button>
+      <CmsPageActions>
+        <button class="btn btn-brand"><i class="bi bi-person-plus"></i> Thêm học viên</button>
+      </CmsPageActions>
     </header>
     <div class="app-card p-3 mb-3">
       <input v-model="search" class="form-control" placeholder="Tìm theo tên, mã học viên hoặc email..." />

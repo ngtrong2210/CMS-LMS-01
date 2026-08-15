@@ -75,7 +75,6 @@
         </div>
       </header>
       <main class="p-3 p-lg-4 page-content">
-        <div v-if="!route.meta.hideBack" class="cms-back-row"><PageBackButton /></div>
         <RouterView v-slot="{ Component }">
           <KeepAlive :include="cachedPages" :max="12">
             <component :is="Component" />
@@ -109,7 +108,6 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
-import PageBackButton from '../components/navigation/PageBackButton.vue'
 const route = useRoute(),
   router = useRouter(),
   auth = useAuthStore()

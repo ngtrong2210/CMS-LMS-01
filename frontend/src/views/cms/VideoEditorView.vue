@@ -5,7 +5,7 @@
         <h1 class="page-title video-editor-title mb-1">Biên tập video tương tác</h1>
         <p class="page-subtitle mb-0">{{ form.title }} • Thời lượng {{ formatTime(form.durationSeconds) }}</p>
       </div>
-      <div class="video-header-actions d-flex flex-wrap gap-2">
+      <CmsPageActions class="video-header-actions">
         <button class="btn header-preview-button" :disabled="previewLoading" @click="openPreview">
           <span v-if="previewLoading" class="spinner-border spinner-border-sm me-1"></span
           ><i v-else class="bi bi-eye"></i> Xem như học viên
@@ -23,7 +23,7 @@
           <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
           ><i v-else class="bi bi-check-lg"></i> Lưu video
         </button>
-      </div>
+      </CmsPageActions>
     </header>
 
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">

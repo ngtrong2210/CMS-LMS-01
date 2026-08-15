@@ -5,7 +5,9 @@
         <h1 class="page-title mb-1">Phân học viên vào khóa học</h1>
         <p class="page-subtitle mb-0">Ghi danh học viên để cấp quyền truy cập khóa học và theo dõi tiến độ.</p>
       </div>
-      <button class="btn btn-brand" @click="openForm"><i class="bi bi-person-plus me-1"></i> Phân học viên</button>
+      <CmsPageActions>
+        <button class="btn btn-brand" @click="openForm"><i class="bi bi-person-plus me-1"></i> Phân học viên</button>
+      </CmsPageActions>
     </header>
 
     <div v-if="message" :class="['alert', messageType === 'danger' ? 'alert-danger' : 'alert-success']">
