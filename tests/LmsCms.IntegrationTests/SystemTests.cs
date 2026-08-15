@@ -77,9 +77,8 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         var otherVideoId = await connection.ExecuteScalarAsync<long>("""
             SELECT TOP(1) v.Id
             FROM dbo.Videos v
-            JOIN dbo.Lessons l ON l.Id=v.LessonId
-            JOIN dbo.Courses c ON c.Id=l.CourseId
-            WHERE c.TeacherId<>2 AND l.IsDeleted=0 AND c.IsDeleted=0
+            JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId
+            WHERE a.CreatedBy<>2 AND a.IsDeleted=0
             ORDER BY v.Id
             """);
 
@@ -98,45 +97,105 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
 
         var libraryResponse = await _client.GetAsync("/api/video-library");
         libraryResponse.EnsureSuccessStatusCode();
-        var editableVideoIds = (await libraryResponse.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("data").EnumerateArray()
+        var libraryAssets = (await libraryResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("data").EnumerateArray().ToArray();
+        var libraryAssetIds = libraryAssets
+            .Select(asset => Int64(asset, "Id", "id")).ToArray();
+        var unauthorizedAssetCount = await connection.ExecuteScalarAsync<int>("""
+            SELECT COUNT(*)
+            FROM dbo.VideoAssets a
+            WHERE a.Id IN @Ids
+              AND a.CreatedBy<>2
+              AND a.ShareScope<>'SCHOOL'
+              AND NOT EXISTS(SELECT 1 FROM dbo.VideoAssetShares s WHERE s.VideoAssetId=a.Id AND s.TeacherId=2)
+            """, new { Ids = libraryAssetIds });
+        Assert.Equal(0, unauthorizedAssetCount);
+
+        var editableVideoIds = libraryAssets
+            .Where(asset => asset.TryGetProperty("CanEdit", out var canEdit) ? canEdit.GetBoolean() : asset.GetProperty("canEdit").GetBoolean())
             .Select(asset => asset.TryGetProperty("FirstVideoId", out var id) ? id : asset.GetProperty("firstVideoId"))
             .Where(id => id.ValueKind is not JsonValueKind.Null)
             .Select(id => id.GetInt64()).ToArray();
-        Assert.NotEmpty(editableVideoIds);
         var unauthorizedLibraryLinkCount = await connection.ExecuteScalarAsync<int>("""
             SELECT COUNT(*)
             FROM dbo.Videos v
-            JOIN dbo.Lessons l ON l.Id=v.LessonId
-            JOIN dbo.Courses c ON c.Id=l.CourseId
-            WHERE v.Id IN @Ids AND c.TeacherId<>2
+            JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId
+            WHERE v.Id IN @Ids AND a.CreatedBy<>2
             """, new { Ids = editableVideoIds });
         Assert.Equal(0, unauthorizedLibraryLinkCount);
 
-        var interactionsResponse = await _client.GetAsync("/api/videos/1/interactions");
-        interactionsResponse.EnsureSuccessStatusCode();
-        var interaction = (await interactionsResponse.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("data").EnumerateArray().First();
-        var interactionId = Int64(interaction, "Id", "id");
+        var ownedVideoId = editableVideoIds.First();
         var payload = new Dictionary<string, object?>
         {
-            ["questionId"] = Int64(interaction, "QuestionId", "questionId"),
-            ["timeSeconds"] = Int32(interaction, "TimeSeconds", "timeSeconds"),
-            ["endTimeSeconds"] = NullableInt32(interaction, "EndTimeSeconds", "endTimeSeconds"),
-            ["interactionType"] = String(interaction, "InteractionType", "interactionType"),
-            ["required"] = Boolean(interaction, "Required", "required"),
-            ["pauseVideo"] = Boolean(interaction, "PauseVideo", "pauseVideo"),
-            ["allowSkip"] = Boolean(interaction, "AllowSkip", "allowSkip"),
-            ["score"] = Decimal(interaction, "Score", "score"),
-            ["attemptLimit"] = Int32(interaction, "AttemptLimit", "attemptLimit", 1),
-            ["sortOrder"] = Int32(interaction, "SortOrder", "sortOrder", 1),
-            ["status"] = String(interaction, "Status", "status")
+            ["questionId"] = 1,
+            ["timeSeconds"] = 1,
+            ["endTimeSeconds"] = null,
+            ["interactionType"] = "QUESTION",
+            ["required"] = true,
+            ["pauseVideo"] = true,
+            ["allowSkip"] = false,
+            ["score"] = 10,
+            ["attemptLimit"] = 1,
+            ["sortOrder"] = 99,
+            ["status"] = "ACTIVE"
         };
+        var createResponse = await _client.PostAsJsonAsync($"/api/videos/{ownedVideoId}/interactions", payload);
+        createResponse.EnsureSuccessStatusCode();
+        var interactionId = Int64((await createResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data"), "id", "Id");
         var saveResponse = await _client.PutAsJsonAsync($"/api/video-interactions/{interactionId}", payload);
         Assert.True(saveResponse.IsSuccessStatusCode, await saveResponse.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.Forbidden, (await _client.GetAsync($"/api/videos/{otherVideoId}")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await _client.GetAsync($"/api/videos/{otherVideoId}/interactions")).StatusCode);
+        (await _client.DeleteAsync($"/api/video-interactions/{interactionId}")).EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Admin_CanEditEveryVideoAsset_WhileTeacherCannotEditAnotherAuthorsAsset()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var asset = await connection.QuerySingleAsync<(long Id, string Title, string VideoUrl, string? PosterUrl, int DurationSeconds, string? OriginalFileName, long? FileSize, string? MimeType, string Status)>("""
+            SELECT TOP(1) Id,Title,VideoUrl,PosterUrl,DurationSeconds,OriginalFileName,FileSize,MimeType,Status
+            FROM dbo.VideoAssets
+            WHERE IsDeleted=0 AND CreatedBy NOT IN(1,2) AND VideoUrl LIKE '/Media/Video/%'
+            ORDER BY Id DESC
+            """);
+        var updatedTitle = $"{asset.Title} [ADMIN-QA]";
+        var payload = new
+        {
+            title = updatedTitle,
+            asset.VideoUrl,
+            asset.PosterUrl,
+            asset.DurationSeconds,
+            asset.OriginalFileName,
+            asset.FileSize,
+            asset.MimeType,
+            asset.Status
+        };
+
+        try
+        {
+            await AuthorizeAs("admin");
+            var adminResponse = await _client.PutAsJsonAsync($"/api/video-library/{asset.Id}", payload);
+            Assert.True(adminResponse.IsSuccessStatusCode, await adminResponse.Content.ReadAsStringAsync());
+            Assert.Equal(updatedTitle, await connection.ExecuteScalarAsync<string>("SELECT Title FROM dbo.VideoAssets WHERE Id=@Id", new { asset.Id }));
+
+            var library = await _client.GetFromJsonAsync<JsonElement>("/api/video-library?pageSize=100");
+            var row = library.GetProperty("data").EnumerateArray().Single(item => Int64(item, "Id", "id") == asset.Id);
+            Assert.True(Boolean(row, "CanEdit", "canEdit"));
+
+            await AuthorizeAs("teacher");
+            var teacherResponse = await _client.PutAsJsonAsync($"/api/video-library/{asset.Id}", payload);
+            Assert.Equal(HttpStatusCode.Forbidden, teacherResponse.StatusCode);
+        }
+        finally
+        {
+            await connection.ExecuteAsync("UPDATE dbo.VideoAssets SET Title=@Title WHERE Id=@Id", new { asset.Title, asset.Id });
+            await connection.ExecuteAsync("UPDATE dbo.Videos SET Title=@Title WHERE VideoAssetId=@Id", new { asset.Title, asset.Id });
+            await connection.ExecuteAsync("DELETE dbo.AuditLogs WHERE Module='VIDEO_LIBRARY' AND EntityId=@EntityId AND Action='UPDATE'", new { EntityId = asset.Id.ToString() });
+        }
     }
 
     [Fact]
@@ -210,19 +269,16 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Progress_RejectsVideoFromNonEnrolledCourse()
     {
-        await AuthorizeAs("admin");
-        long videoId = 0, lessonId = 0;
-        for (var id = 1; id <= 50 && videoId == 0; id++)
-        {
-            var candidateResponse = await _client.GetAsync($"/api/videos/{id}");
-            if (!candidateResponse.IsSuccessStatusCode) continue;
-            var video = await candidateResponse.Content.ReadFromJsonAsync<JsonElement>();
-            var candidateLesson = video.GetProperty("data").GetProperty("LessonId").GetInt64();
-            if (candidateLesson >= 16) { videoId = id; lessonId = candidateLesson; }
-        }
-        Assert.True(videoId > 0, "No video outside the student's enrolled course was found.");
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var candidate = await connection.QuerySingleAsync<(long LessonId,long VideoId)>("""
+            SELECT TOP(1) l.Id LessonId,l.VideoId
+            FROM dbo.Lessons l
+            WHERE l.VideoId IS NOT NULL AND l.CourseId<>1 AND l.IsDeleted=0
+            ORDER BY l.Id
+            """);
         await AuthorizeAs("student");
-        var response = await _client.PostAsJsonAsync("/api/lms/progress/video", new { lessonId, videoId, currentTime = 10, maxWatchedTime = 10, watchPercent = 2 });
+        var response = await _client.PostAsJsonAsync("/api/lms/progress/video", new { lessonId=candidate.LessonId, videoId=candidate.VideoId, currentTime = 10, maxWatchedTime = 10, watchPercent = 2 });
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
@@ -276,16 +332,44 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task DatabaseSchemaAndDemoSeed_HaveRequiredIntegrity()
     {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
         var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
         using var connection = factory.CreateConnection();
         var requiredTables = new[]
         {
-            "Users", "Roles", "UserRoles", "Courses", "CourseCategories", "Chapters", "Lessons", "Videos",
-            "Questions", "QuestionOptions", "QuestionAnswerKeys", "VideoAssets", "VideoInteractions", "Enrollments",
-            "StudentVideoProgress", "StudentLessonProgress", "StudentAnswers", "StudentAnswerOptions", "LearningSessions", "AuditLogs"
+            "SYS_Users", "SYS_Roles", "SYS_UserRoles", "SYS_Permissions", "SYS_RolePermissions", "SYS_RefreshTokens", "SYS_AuditLogs",
+            "SIM_Courses", "SIM_CourseCategories", "SIM_Chapters", "SIM_Lessons", "SIM_Videos", "SIM_VideoAssets", "SIM_VideoAssetShares",
+            "LMS_Questions", "LMS_QuestionOptions", "LMS_QuestionAnswerKeys", "LMS_VideoInteractions", "LMS_Enrollments",
+            "LMS_StudentVideoProgress", "LMS_StudentLessonProgress", "LMS_StudentAnswers", "LMS_StudentAnswerOptions", "LMS_LearningSessions"
         };
         var existingTables = (await connection.QueryAsync<string>("SELECT name FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo')")).ToHashSet(StringComparer.OrdinalIgnoreCase);
         Assert.Empty(requiredTables.Where(table => !existingTables.Contains(table)));
+        Assert.Empty(existingTables.Where(table => !table.StartsWith("SYS_", StringComparison.OrdinalIgnoreCase)
+                                                   && !table.StartsWith("SIM_", StringComparison.OrdinalIgnoreCase)
+                                                   && !table.StartsWith("LMS_", StringComparison.OrdinalIgnoreCase)));
+
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("""
+            SELECT COUNT(*) FROM sys.tables t
+            JOIN sys.schemas s ON s.schema_id=t.schema_id
+            JOIN sys.columns c ON c.object_id=t.object_id
+            WHERE s.name='dbo' AND c.name='Id'
+            """));
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("""
+            SELECT COUNT(*) FROM sys.tables t
+            JOIN sys.schemas s ON s.schema_id=t.schema_id
+            JOIN sys.columns c ON c.object_id=t.object_id
+            LEFT JOIN sys.extended_properties ep
+              ON ep.class=1 AND ep.major_id=t.object_id AND ep.minor_id=c.column_id AND ep.name='MS_Description'
+            WHERE s.name='dbo' AND ep.value IS NULL
+            """));
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("""
+            SELECT COUNT(*) FROM sys.tables t
+            JOIN sys.schemas s ON s.schema_id=t.schema_id
+            LEFT JOIN sys.extended_properties ep
+              ON ep.class=1 AND ep.major_id=t.object_id AND ep.minor_id=0 AND ep.name='MS_Description'
+            WHERE s.name='dbo' AND ep.value IS NULL
+            """));
+        Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM sys.views WHERE schema_id=SCHEMA_ID('dbo') AND name IN ('Users','Courses','Questions','StudentAnswers')") == 4);
 
         Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM sys.foreign_keys") >= 15);
         Assert.True(await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM sys.indexes WHERE is_primary_key=0 AND name IS NOT NULL") >= 8);
@@ -309,6 +393,7 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
             var library = await _client.GetFromJsonAsync<JsonElement>("/api/video-library");
             var asset = library.GetProperty("data").EnumerateArray().First();
             var assetId = Int64(asset, "Id", "id");
+            var reusableVideoId = Int64(asset, "VideoId", "videoId");
 
             var chapterResponse = await _client.PostAsJsonAsync("/api/courses/1/chapters", new { title = marker, description = "CRUD chapter", sortOrder = 99, status = "ACTIVE" });
             chapterResponse.EnsureSuccessStatusCode();
@@ -326,12 +411,14 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
 
             async Task<long> Attach(long lessonId)
             {
-                var response = await _client.PostAsJsonAsync($"/api/lessons/{lessonId}/video-library/{assetId}", new { allowSeek = false, allowSpeed = true, requiredWatchPercent = 80 });
+                var response = await _client.PutAsync($"/api/lessons/{lessonId}/video/{reusableVideoId}", null);
                 response.EnsureSuccessStatusCode();
                 return Int64((await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data"), "id", "Id");
             }
             video1 = await Attach(lesson1);
             video2 = await Attach(lesson2);
+            Assert.Equal(video1, video2);
+            Assert.Equal(reusableVideoId, video1);
 
             var firstVideo = await _client.GetFromJsonAsync<JsonElement>($"/api/videos/{video1}");
             var secondVideo = await _client.GetFromJsonAsync<JsonElement>($"/api/videos/{video2}");
@@ -344,7 +431,6 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         finally
         {
             using var connection = factory.CreateConnection();
-            if (video1 > 0 || video2 > 0) await connection.ExecuteAsync("DELETE dbo.Videos WHERE Id IN @ids", new { ids = new[] { video1, video2 }.Where(x => x > 0).ToArray() });
             if (lesson1 > 0 || lesson2 > 0) await connection.ExecuteAsync("DELETE dbo.Lessons WHERE Id IN @ids", new { ids = new[] { lesson1, lesson2 }.Where(x => x > 0).ToArray() });
             if (chapterId > 0) await connection.ExecuteAsync("DELETE dbo.Chapters WHERE Id=@chapterId", new { chapterId });
             await connection.ExecuteAsync("DELETE dbo.AuditLogs WHERE EntityId IN @ids", new { ids = new[] { chapterId, lesson1, lesson2, video1, video2 }.Where(x => x > 0).Select(x => x.ToString()).ToArray() });
@@ -375,13 +461,13 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         var videoUrl = json.GetProperty("data").GetProperty("videoUrl").GetString()!;
-        Assert.StartsWith("/uploads/videos/", videoUrl, StringComparison.Ordinal);
+        Assert.StartsWith("/Media/Video/", videoUrl, StringComparison.Ordinal);
         Assert.DoesNotContain(":", videoUrl, StringComparison.Ordinal);
 
         var environment = _factory.Services.GetRequiredService<IWebHostEnvironment>();
         var webRoot = environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot");
         var physicalPath = Path.GetFullPath(Path.Combine(webRoot, videoUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
-        var uploadRoot = Path.GetFullPath(Path.Combine(webRoot, "uploads", "videos")) + Path.DirectorySeparatorChar;
+        var uploadRoot = Path.GetFullPath(Path.Combine(webRoot, "Media", "Video")) + Path.DirectorySeparatorChar;
         Assert.StartsWith(uploadRoot, physicalPath, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         Assert.True(File.Exists(physicalPath));
         var storage = _factory.Services.GetRequiredService<LmsCms.Application.Interfaces.IVideoStorageService>();
@@ -405,8 +491,8 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         var invalidUrls = new[]
         {
             string.Concat("G:", Path.DirectorySeparatorChar, "Videos", Path.DirectorySeparatorChar, "lecture.mp4"),
-            "/uploads/videos/../../lecture.mp4",
-            "/uploads/videos/2099/01/missing.mp4"
+            "/Media/Video/../../lecture.mp4",
+            "/Media/Video/2099/01/missing.mp4"
         };
         foreach (var videoUrl in invalidUrls)
         {

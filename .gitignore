@@ -13,15 +13,17 @@ appsettings.Local.json
 PROMPT_BACKEND_LMS_API.md
 PROMPT_FRONTEND_LMS_CMS.md
 
-# Keep the project upload directory, but never commit uploaded videos.
-src/LmsCms.Api/wwwroot/uploads/videos/*
-!src/LmsCms.Api/wwwroot/uploads/videos/.gitkeep
-src/LmsCms.Api/wwwroot/uploads/images/*
-!src/LmsCms.Api/wwwroot/uploads/images/.gitkeep
-src/LmsCms.Api/wwwroot/uploads/thumbnails/*
-!src/LmsCms.Api/wwwroot/uploads/thumbnails/.gitkeep
-src/LmsCms.Api/wwwroot/uploads/documents/*
-!src/LmsCms.Api/wwwroot/uploads/documents/.gitkeep
+# Keep the categorized project media directories, but never commit uploaded files.
+src/LmsCms.Api/wwwroot/Media/Video/*
+!src/LmsCms.Api/wwwroot/Media/Video/.gitkeep
+src/LmsCms.Api/wwwroot/Media/Image/*
+!src/LmsCms.Api/wwwroot/Media/Image/.gitkeep
+src/LmsCms.Api/wwwroot/Media/File/*
+!src/LmsCms.Api/wwwroot/Media/File/.gitkeep
+src/LmsCms.Api/wwwroot/Media/Thumbnail/*
+!src/LmsCms.Api/wwwroot/Media/Thumbnail/.gitkeep
+src/LmsCms.Api/wwwroot/Media/Audio/*
+!src/LmsCms.Api/wwwroot/Media/Audio/.gitkeep
 src/LmsCms.Api/storage/cache/*
 !src/LmsCms.Api/storage/cache/.gitkeep
 src/LmsCms.Api/storage/temp/*

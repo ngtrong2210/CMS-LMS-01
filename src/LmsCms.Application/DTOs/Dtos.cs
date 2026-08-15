@@ -82,6 +82,12 @@ public sealed class VideoAssetSaveRequest
     [StringLength(500)] public string? OriginalFileName { get; init; }
     [Range(0, long.MaxValue)] public long? FileSize { get; init; }
     [StringLength(150)] public string? MimeType { get; init; }
+    [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
+}
+public sealed class VideoShareSaveRequest
+{
+    [RegularExpression("PRIVATE|SELECTED|SCHOOL")] public string ShareScope { get; init; } = "PRIVATE";
+    public IReadOnlyCollection<long> TeacherIds { get; init; } = [];
 }
 public sealed class VideoAttachRequest
 {

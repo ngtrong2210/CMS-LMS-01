@@ -16,5 +16,5 @@ CREATE OR ALTER PROCEDURE dbo.LMS_Report_QuestionPerformance AS
 BEGIN SET NOCOUNT ON; SELECT q.Id,q.QuestionText,q.QuestionType,COUNT(a.Id) AnswerCount,SUM(IIF(a.IsCorrect=1,1,0)) CorrectCount,SUM(IIF(a.IsCorrect=0,1,0)) WrongCount,CAST(ISNULL(AVG(a.ScoreAwarded),0) AS DECIMAL(8,2)) AverageScore FROM dbo.Questions q LEFT JOIN dbo.StudentAnswers a ON a.QuestionId=q.Id WHERE q.IsDeleted=0 GROUP BY q.Id,q.QuestionText,q.QuestionType ORDER BY AnswerCount DESC; END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Report_VideoEngagement AS
-BEGIN SET NOCOUNT ON; SELECT v.Id,v.Title,c.Code CourseCode,COUNT(p.Id) ViewerCount,CAST(ISNULL(AVG(p.WatchPercent),0) AS DECIMAL(5,2)) AverageWatchPercent,SUM(IIF(p.Completed=1,1,0)) CompletedCount FROM dbo.Videos v JOIN dbo.Lessons l ON l.Id=v.LessonId JOIN dbo.Courses c ON c.Id=l.CourseId LEFT JOIN dbo.StudentVideoProgress p ON p.VideoId=v.Id GROUP BY v.Id,v.Title,c.Code ORDER BY ViewerCount DESC; END
+BEGIN SET NOCOUNT ON; SELECT v.Id,v.Title,COUNT(DISTINCT l.Id) LessonUsageCount,COUNT(p.Id) ViewerCount,CAST(ISNULL(AVG(p.WatchPercent),0) AS DECIMAL(5,2)) AverageWatchPercent,SUM(IIF(p.Completed=1,1,0)) CompletedCount FROM dbo.Videos v LEFT JOIN dbo.Lessons l ON l.VideoId=v.Id AND l.IsDeleted=0 LEFT JOIN dbo.StudentVideoProgress p ON p.VideoId=v.Id AND p.LessonId=l.Id GROUP BY v.Id,v.Title ORDER BY ViewerCount DESC; END
 GO

@@ -59,12 +59,12 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM dbo.Lessons l JOIN dbo.Courses c ON c.Id=l.CourseId JOIN dbo.Enrollments e ON e.CourseId=c.Id AND e.StudentId=@StudentId WHERE l.Id=@LessonId AND l.IsDeleted=0 AND c.Status='PUBLISHED' AND c.IsDeleted=0 AND e.Status<>'CANCELLED') RETURN;
  SELECT l.Id,l.CourseId,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.PassingScore FROM dbo.Lessons l WHERE l.Id=@LessonId AND l.IsDeleted=0;
  SELECT c.Id,c.Code,c.Title,c.Slug,u.FullName TeacherName FROM dbo.Courses c JOIN dbo.Lessons l ON l.CourseId=c.Id JOIN dbo.Users u ON u.Id=c.TeacherId WHERE l.Id=@LessonId;
- SELECT v.Id,v.LessonId,v.Title,v.VideoUrl,v.PosterUrl,v.DurationSeconds,v.AllowSeek,v.AllowSpeed,v.RequiredWatchPercent FROM dbo.Videos v WHERE v.LessonId=@LessonId AND v.Status='ACTIVE';
- SELECT p.Id,p.CurrentTimeSeconds,p.MaxWatchedTimeSeconds,p.WatchedSeconds,p.WatchPercent,p.Completed FROM dbo.StudentVideoProgress p JOIN dbo.Videos v ON v.Id=p.VideoId WHERE v.LessonId=@LessonId AND p.StudentId=@StudentId;
+ SELECT v.Id,@LessonId LessonId,v.Title,v.VideoUrl,v.PosterUrl,v.DurationSeconds,v.AllowSeek,v.AllowSpeed,v.RequiredWatchPercent FROM dbo.Lessons l JOIN dbo.Videos v ON v.Id=l.VideoId WHERE l.Id=@LessonId AND v.Status='ACTIVE';
+ SELECT p.Id,p.CurrentTimeSeconds,p.MaxWatchedTimeSeconds,p.WatchedSeconds,p.WatchPercent,p.Completed FROM dbo.StudentVideoProgress p WHERE p.LessonId=@LessonId AND p.StudentId=@StudentId;
  SELECT vi.Id,vi.VideoId,vi.QuestionId,vi.TimeSeconds,vi.EndTimeSeconds,vi.InteractionType,vi.Required,vi.PauseVideo,vi.AllowSkip,vi.Score,vi.AttemptLimit,vi.SortOrder,q.QuestionType,q.QuestionText,q.Description,q.Difficulty,
   (SELECT o.Id,o.OptionCode,o.OptionText,o.SortOrder FROM dbo.QuestionOptions o WHERE o.QuestionId=q.Id AND o.IsDeleted=0 ORDER BY o.SortOrder FOR JSON PATH) Options
- FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId JOIN dbo.Questions q ON q.Id=vi.QuestionId
- WHERE v.LessonId=@LessonId AND vi.IsDeleted=0 AND vi.Status='ACTIVE' AND q.IsDeleted=0 ORDER BY vi.TimeSeconds;
+ FROM dbo.Lessons l JOIN dbo.VideoInteractions vi ON vi.VideoId=l.VideoId JOIN dbo.Questions q ON q.Id=vi.QuestionId
+ WHERE l.Id=@LessonId AND vi.IsDeleted=0 AND vi.Status='ACTIVE' AND q.IsDeleted=0 ORDER BY vi.TimeSeconds;
  /* Deliberately omit IsCorrect and answer keys from the player payload. */
  SELECT sa.InteractionId,sa.QuestionId,sa.ScoreAwarded,sa.ReviewStatus,sa.AttemptNumber,sa.AnswerText,sa.AnsweredAt
  FROM dbo.StudentAnswers sa WHERE sa.StudentId=@StudentId AND sa.LessonId=@LessonId;
@@ -89,17 +89,18 @@ CREATE OR ALTER PROCEDURE dbo.LMS_LessonProgress_Recalculate @StudentId BIGINT,@
 BEGIN
  SET NOCOUNT ON;
  DECLARE @CourseId BIGINT,@PassingScore DECIMAL(8,2),@VideoCount INT,@WatchPercent DECIMAL(5,2),@WatchSatisfied BIT,@InteractionsSatisfied BIT,@LessonScore DECIMAL(8,2),@Completed BIT;
- SELECT @CourseId=CourseId,@PassingScore=ISNULL(PassingScore,0) FROM dbo.Lessons WHERE Id=@LessonId AND IsDeleted=0;
+ DECLARE @VideoId BIGINT;
+ SELECT @CourseId=CourseId,@PassingScore=ISNULL(PassingScore,0),@VideoId=VideoId FROM dbo.Lessons WHERE Id=@LessonId AND IsDeleted=0;
  IF @CourseId IS NULL RETURN;
- SELECT @VideoCount=COUNT(*) FROM dbo.Videos WHERE LessonId=@LessonId AND Status='ACTIVE';
+ SELECT @VideoCount=COUNT(*) FROM dbo.Videos WHERE Id=@VideoId AND Status='ACTIVE';
  SELECT @WatchPercent=ISNULL(AVG(ISNULL(p.WatchPercent,0)),0),
         @WatchSatisfied=IIF(COUNT(*)=SUM(IIF(ISNULL(p.WatchPercent,0)>=v.RequiredWatchPercent,1,0)),1,0)
- FROM dbo.Videos v LEFT JOIN dbo.StudentVideoProgress p ON p.VideoId=v.Id AND p.StudentId=@StudentId WHERE v.LessonId=@LessonId AND v.Status='ACTIVE';
+ FROM dbo.Videos v LEFT JOIN dbo.StudentVideoProgress p ON p.VideoId=v.Id AND p.StudentId=@StudentId AND p.LessonId=@LessonId WHERE v.Id=@VideoId AND v.Status='ACTIVE';
  IF @VideoCount=0 BEGIN SET @WatchPercent=100; SET @WatchSatisfied=1; END;
  SET @InteractionsSatisfied=IIF(NOT EXISTS(
-   SELECT 1 FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId
-   WHERE v.LessonId=@LessonId AND vi.Required=1 AND vi.IsDeleted=0 AND vi.Status='ACTIVE'
-     AND NOT EXISTS(SELECT 1 FROM dbo.StudentAnswers a WHERE a.StudentId=@StudentId AND a.InteractionId=vi.Id)
+   SELECT 1 FROM dbo.VideoInteractions vi
+   WHERE vi.VideoId=@VideoId AND vi.Required=1 AND vi.IsDeleted=0 AND vi.Status='ACTIVE'
+     AND NOT EXISTS(SELECT 1 FROM dbo.StudentAnswers a WHERE a.StudentId=@StudentId AND a.LessonId=@LessonId AND a.VideoId=@VideoId AND a.InteractionId=vi.Id)
  ),1,0);
  SELECT @LessonScore=ISNULL(SUM(x.BestScore),0) FROM (
    SELECT MAX(a.ScoreAwarded) BestScore FROM dbo.StudentAnswers a WHERE a.StudentId=@StudentId AND a.LessonId=@LessonId GROUP BY ISNULL(a.InteractionId,-a.QuestionId)
@@ -118,7 +119,7 @@ BEGIN
  SET NOCOUNT ON;
  SET XACT_ABORT ON;
  DECLARE @CourseId BIGINT,@Duration INT;
- SELECT @CourseId=l.CourseId,@Duration=v.DurationSeconds FROM dbo.Videos v JOIN dbo.Lessons l ON l.Id=v.LessonId WHERE v.Id=@VideoId AND l.Id=@LessonId AND l.IsDeleted=0 AND v.Status='ACTIVE';
+ SELECT @CourseId=l.CourseId,@Duration=v.DurationSeconds FROM dbo.Lessons l JOIN dbo.Videos v ON v.Id=l.VideoId WHERE v.Id=@VideoId AND l.Id=@LessonId AND l.IsDeleted=0 AND v.Status='ACTIVE';
  IF @CourseId IS NULL THROW 50001,N'Video hoặc bài học không hợp lệ.',1;
  IF NOT EXISTS(SELECT 1 FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId WHERE e.StudentId=@StudentId AND e.CourseId=@CourseId AND e.Status<>'CANCELLED' AND c.Status='PUBLISHED' AND c.IsDeleted=0) THROW 50003,N'Bạn chưa được ghi danh vào khóa học này.',1;
  SET @CurrentTimeSeconds=CASE WHEN @CurrentTimeSeconds<0 THEN 0 WHEN @CurrentTimeSeconds>@Duration THEN @Duration ELSE @CurrentTimeSeconds END;
@@ -129,11 +130,11 @@ BEGIN
   WatchedSeconds=CASE WHEN WatchedSeconds>@MaxWatchedTimeSeconds THEN WatchedSeconds ELSE @MaxWatchedTimeSeconds END,
   WatchPercent=CASE WHEN WatchPercent>ROUND(@MaxWatchedTimeSeconds*100.0/NULLIF(@Duration,0),2) THEN WatchPercent ELSE ROUND(@MaxWatchedTimeSeconds*100.0/NULLIF(@Duration,0),2) END,
   LastAccessAt=SYSUTCDATETIME(),UpdatedAt=SYSUTCDATETIME()
- WHERE StudentId=@StudentId AND VideoId=@VideoId;
+ WHERE StudentId=@StudentId AND LessonId=@LessonId AND VideoId=@VideoId;
  IF @@ROWCOUNT=0 INSERT dbo.StudentVideoProgress(StudentId,CourseId,LessonId,VideoId,CurrentTimeSeconds,MaxWatchedTimeSeconds,WatchedSeconds,WatchPercent,Completed,LastAccessAt)
   VALUES(@StudentId,@CourseId,@LessonId,@VideoId,@CurrentTimeSeconds,@MaxWatchedTimeSeconds,@MaxWatchedTimeSeconds,ROUND(@MaxWatchedTimeSeconds*100.0/NULLIF(@Duration,0),2),0,SYSUTCDATETIME());
  DECLARE @Required DECIMAL(5,2)=(SELECT RequiredWatchPercent FROM dbo.Videos WHERE Id=@VideoId);
- UPDATE dbo.StudentVideoProgress SET Completed=IIF(WatchPercent>=@Required,1,0),CompletedAt=IIF(WatchPercent>=@Required,COALESCE(CompletedAt,SYSUTCDATETIME()),NULL) WHERE StudentId=@StudentId AND VideoId=@VideoId;
+ UPDATE dbo.StudentVideoProgress SET Completed=IIF(WatchPercent>=@Required,1,0),CompletedAt=IIF(WatchPercent>=@Required,COALESCE(CompletedAt,SYSUTCDATETIME()),NULL) WHERE StudentId=@StudentId AND LessonId=@LessonId AND VideoId=@VideoId;
  EXEC dbo.LMS_LessonProgress_Recalculate @StudentId,@LessonId;
  COMMIT TRANSACTION;
 END
@@ -148,20 +149,20 @@ BEGIN
  SELECT @Type=QuestionType,@Mode=ShortAnswerMode,@Score=DefaultScore FROM dbo.Questions WHERE Id=@QuestionId AND IsDeleted=0 AND Status='ACTIVE';
  IF @CourseId IS NULL OR @Type IS NULL THROW 50002,N'Câu hỏi hoặc bài học không hợp lệ.',1;
  IF NOT EXISTS(SELECT 1 FROM dbo.Enrollments e JOIN dbo.Courses c ON c.Id=e.CourseId WHERE e.StudentId=@StudentId AND e.CourseId=@CourseId AND e.Status<>'CANCELLED' AND c.Status='PUBLISHED' AND c.IsDeleted=0) THROW 50003,N'Bạn chưa được ghi danh vào khóa học này.',1;
- IF @VideoId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Videos WHERE Id=@VideoId AND LessonId=@LessonId AND Status='ACTIVE') THROW 50005,N'Video không thuộc bài học này.',1;
- IF @InteractionId IS NULL AND EXISTS(SELECT 1 FROM dbo.Videos WHERE LessonId=@LessonId AND Status='ACTIVE') THROW 50005,N'Bài học video yêu cầu một tương tác câu hỏi hợp lệ.',1;
+ IF @VideoId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Lessons l JOIN dbo.Videos v ON v.Id=l.VideoId WHERE l.Id=@LessonId AND v.Id=@VideoId AND v.Status='ACTIVE') THROW 50005,N'Video không thuộc bài học này.',1;
+ IF @InteractionId IS NULL AND EXISTS(SELECT 1 FROM dbo.Lessons l JOIN dbo.Videos v ON v.Id=l.VideoId WHERE l.Id=@LessonId AND v.Status='ACTIVE') THROW 50005,N'Bài học video yêu cầu một tương tác câu hỏi hợp lệ.',1;
  IF @InteractionId IS NOT NULL
  BEGIN
-   SELECT @AttemptLimit=vi.AttemptLimit,@Score=vi.Score FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId WHERE vi.Id=@InteractionId AND vi.QuestionId=@QuestionId AND v.LessonId=@LessonId AND (@VideoId IS NULL OR v.Id=@VideoId) AND vi.IsDeleted=0 AND vi.Status='ACTIVE';
+   SELECT @AttemptLimit=vi.AttemptLimit,@Score=vi.Score FROM dbo.VideoInteractions vi JOIN dbo.Lessons l ON l.VideoId=vi.VideoId WHERE vi.Id=@InteractionId AND vi.QuestionId=@QuestionId AND l.Id=@LessonId AND (@VideoId IS NULL OR vi.VideoId=@VideoId) AND vi.IsDeleted=0 AND vi.Status='ACTIVE';
    IF @@ROWCOUNT=0 OR @AttemptLimit IS NULL THROW 50005,N'Câu hỏi không thuộc tương tác của bài học này.',1;
  END
  BEGIN TRY
    BEGIN TRANSACTION;
    DECLARE @LockResult INT;
-   DECLARE @LockResource NVARCHAR(255)=CONCAT('LMS:Answer:',@StudentId,':',@QuestionId,':',ISNULL(@InteractionId,0));
+   DECLARE @LockResource NVARCHAR(255)=CONCAT('LMS:Answer:',@StudentId,':',@LessonId,':',@QuestionId,':',ISNULL(@InteractionId,0));
    EXEC @LockResult=sys.sp_getapplock @Resource=@LockResource,@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=10000;
    IF @LockResult<0 THROW 50004,N'Không thể khóa lượt trả lời. Vui lòng thử lại.',1;
-   SELECT @Attempt=COUNT(*)+1 FROM dbo.StudentAnswers WITH(UPDLOCK,HOLDLOCK) WHERE StudentId=@StudentId AND QuestionId=@QuestionId AND ISNULL(InteractionId,0)=ISNULL(@InteractionId,0);
+   SELECT @Attempt=COUNT(*)+1 FROM dbo.StudentAnswers WITH(UPDLOCK,HOLDLOCK) WHERE StudentId=@StudentId AND LessonId=@LessonId AND QuestionId=@QuestionId AND ISNULL(InteractionId,0)=ISNULL(@InteractionId,0);
    IF @Attempt>@AttemptLimit THROW 50004,N'Bạn đã sử dụng hết số lần trả lời cho câu hỏi này.',1;
  IF @Type IN('SINGLE_CHOICE','TRUE_FALSE','MULTIPLE_CHOICE')
  BEGIN

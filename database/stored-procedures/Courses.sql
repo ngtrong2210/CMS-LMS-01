@@ -12,7 +12,7 @@ CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetById @Id BIGINT,@ActorId BIGINT,@IsA
 BEGIN SET NOCOUNT ON; IF EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0) AND NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@Id AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT c.*,u.FullName TeacherName,cc.Name CategoryName FROM dbo.Courses c JOIN dbo.Users u ON u.Id=c.TeacherId LEFT JOIN dbo.CourseCategories cc ON cc.Id=c.CategoryId WHERE c.Id=@Id AND c.IsDeleted=0 AND (@IsAdmin=1 OR c.TeacherId=@ActorId); END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Course_GetContent @CourseId BIGINT,@ActorId BIGINT,@IsAdmin BIT=0 AS
-BEGIN SET NOCOUNT ON; IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder; SELECT l.Id,l.CourseId,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.SortOrder,l.IsRequired,l.PassingScore,l.Status,v.Id VideoId,v.VideoAssetId,v.Title VideoTitle,v.VideoUrl FROM dbo.Lessons l LEFT JOIN dbo.Videos v ON v.LessonId=l.Id WHERE l.CourseId=@CourseId AND l.IsDeleted=0 ORDER BY l.ChapterId,l.SortOrder; END
+BEGIN SET NOCOUNT ON; IF NOT EXISTS(SELECT 1 FROM dbo.Courses WHERE Id=@CourseId AND IsDeleted=0 AND (@IsAdmin=1 OR TeacherId=@ActorId)) THROW 50003,N'Bạn không có quyền quản lý khóa học này.',1; SELECT Id,CourseId,Title,Description,SortOrder,Status FROM dbo.Chapters WHERE CourseId=@CourseId AND IsDeleted=0 ORDER BY SortOrder; SELECT l.Id,l.CourseId,l.ChapterId,l.Title,l.Description,l.LessonType,l.DurationSeconds,l.SortOrder,l.IsRequired,l.PassingScore,l.Status,l.VideoId,v.VideoAssetId,v.Title VideoTitle,v.VideoUrl,CAST(IIF(@IsAdmin=1 OR a.CreatedBy=@ActorId,1,0) AS BIT) CanEditVideo FROM dbo.Lessons l LEFT JOIN dbo.Videos v ON v.Id=l.VideoId LEFT JOIN dbo.VideoAssets a ON a.Id=v.VideoAssetId WHERE l.CourseId=@CourseId AND l.IsDeleted=0 ORDER BY l.ChapterId,l.SortOrder; END
 GO
 CREATE OR ALTER PROCEDURE dbo.LMS_Course_Create
  @Code NVARCHAR(100),@Title NVARCHAR(500),@Slug NVARCHAR(500)=NULL,@ThumbnailUrl NVARCHAR(1000)=NULL,@ShortDescription NVARCHAR(1000)=NULL,@Description NVARCHAR(MAX)=NULL,
@@ -75,7 +75,6 @@ BEGIN
  UPDATE dbo.Courses SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME(),UpdatedBy=@ActorId WHERE Id=@Id;
  UPDATE dbo.Chapters SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE CourseId=@Id;
  UPDATE dbo.Lessons SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() WHERE CourseId=@Id;
- UPDATE vi SET IsDeleted=1,UpdatedAt=SYSUTCDATETIME() FROM dbo.VideoInteractions vi JOIN dbo.Videos v ON v.Id=vi.VideoId JOIN dbo.Lessons l ON l.Id=v.LessonId WHERE l.CourseId=@Id;
  INSERT dbo.AuditLogs(UserId,Action,Module,EntityName,EntityId,NewValuesJson,CreatedAt) VALUES(@ActorId,'DELETE','COURSE','Course',CONVERT(NVARCHAR(100),@Id),N'{"isDeleted":true}',SYSUTCDATETIME());
  COMMIT TRANSACTION; SELECT 1;
 END

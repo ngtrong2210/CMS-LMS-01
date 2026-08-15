@@ -21,11 +21,11 @@ DECLARE @DemoFiles TABLE(
 );
 
 INSERT @DemoFiles(FileOrder,FileName,VideoUrl,Title) VALUES
-(1,N'z3.mp4', N'/uploads/videos/demo/z3.mp4', N'Video mẫu 03'),
-(2,N'z5.mp4', N'/uploads/videos/demo/z5.mp4', N'Video mẫu 05'),
-(3,N'z6.mp4', N'/uploads/videos/demo/z6.mp4', N'Video mẫu 06'),
-(4,N'z7.mp4', N'/uploads/videos/demo/z7.mp4', N'Video mẫu 07'),
-(5,N'z22.mp4',N'/uploads/videos/demo/z22.mp4',N'Video mẫu 22');
+(1,N'z3.mp4', N'/Media/Video/demo/z3.mp4', N'Video mẫu 03'),
+(2,N'z5.mp4', N'/Media/Video/demo/z5.mp4', N'Video mẫu 05'),
+(3,N'z6.mp4', N'/Media/Video/demo/z6.mp4', N'Video mẫu 06'),
+(4,N'z7.mp4', N'/Media/Video/demo/z7.mp4', N'Video mẫu 07'),
+(5,N'z22.mp4',N'/Media/Video/demo/z22.mp4',N'Video mẫu 22');
 
 /* Keep five reusable entries in the video library. */
 INSERT dbo.VideoAssets(Title,VideoUrl,DurationSeconds,OriginalFileName,FileSize,MimeType,CreatedBy,Status)

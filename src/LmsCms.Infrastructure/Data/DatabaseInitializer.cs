@@ -10,16 +10,31 @@ namespace LmsCms.Infrastructure.Data;
 
 public sealed class DatabaseInitializer(IConfiguration configuration, IWebHostEnvironment environment) : IDatabaseInitializer
 {
+    private static readonly SemaphoreSlim InitializationLock = new(1, 1);
+
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
+        await InitializationLock.WaitAsync(cancellationToken);
+        try
+        {
         var bootstrap = configuration.GetConnectionString("BootstrapConnection")
             ?? throw new InvalidOperationException("ConnectionStrings:BootstrapConnection is not configured.");
         var application = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
         var databaseRoot = ResolveDatabaseRoot();
         await ExecuteFolderAsync(bootstrap, Path.Combine(databaseRoot, "bootstrap"), cancellationToken);
-        foreach (var folder in new[] { "tables", "indexes", "stored-procedures", "seed" })
-            await ExecuteFolderAsync(application, Path.Combine(databaseRoot, folder), cancellationToken);
+
+        var normalizedSchemaExists = await TableExistsAsync(application, "dbo.SYS_Users", cancellationToken);
+        if (!normalizedSchemaExists)
+        {
+            // Dựng dữ liệu theo schema cũ trước để các migration có thể chuyển đổi an toàn.
+            foreach (var folder in new[] { "tables", "indexes", "seed" })
+                await ExecuteFolderAsync(application, Path.Combine(databaseRoot, folder), cancellationToken);
+        }
+
+        // Migration phải chạy trước stored procedure vì procedure mới phụ thuộc schema mới nhất.
+        await ExecuteFolderAsync(application, Path.Combine(databaseRoot, "migrations"), cancellationToken);
+        await ExecuteFolderAsync(application, Path.Combine(databaseRoot, "stored-procedures"), cancellationToken);
 
         await using var connection = new SqlConnection(application);
         await connection.OpenAsync(cancellationToken);
@@ -34,6 +49,20 @@ public sealed class DatabaseInitializer(IConfiguration configuration, IWebHostEn
                 "UPDATE dbo.Users SET PasswordHash=@hash WHERE Username=@username",
                 new { hash, username }, cancellationToken: cancellationToken));
         }
+        }
+        finally
+        {
+            InitializationLock.Release();
+        }
+    }
+
+    private static async Task<bool> TableExistsAsync(string connectionString, string qualifiedTableName, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            "SELECT CASE WHEN OBJECT_ID(@tableName, 'U') IS NULL THEN 0 ELSE 1 END",
+            new { tableName = qualifiedTableName }, cancellationToken: cancellationToken)) == 1;
     }
 
     private static async Task ExecuteFolderAsync(string connectionString, string folder, CancellationToken cancellationToken)

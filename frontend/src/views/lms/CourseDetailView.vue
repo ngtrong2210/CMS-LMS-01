@@ -61,7 +61,7 @@
 
         <aside class="col-xl-4 col-lg-5">
           <div class="course-details__right">
-            <div class="course-details__info-box sticky-lg-top" style="top:100px">
+            <div class="course-details__info-box">
               <div class="course-details__video-link">
                 <div class="course-details__video-link-bg" :style="{backgroundImage:`url(${courseDetailsImage})`}"></div>
                 <RouterLink v-if="continueLessonId" :to="`/lms/courses/${course.id}/lessons/${continueLessonId}`" class="course-details__video-icon"><i class="bi bi-play-fill"></i><span class="ripple"></span></RouterLink>

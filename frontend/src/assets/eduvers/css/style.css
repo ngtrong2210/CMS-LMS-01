@@ -55,20 +55,20 @@
 # Common
 --------------------------------------------------------------*/
 :root {
-  --eduvers-font: "DM Sans", sans-serif;
-  --eduvers-font-two: "Montserrat Alternates", sans-serif;
+  --eduvers-font: "DM Sans", "Segoe UI", Arial, sans-serif;
+  --eduvers-font-two: "DM Sans", "Segoe UI", Arial, sans-serif;
   --eduvers-gray: #4D5756;
   --eduvers-gray-rgb: 77, 87, 86;
-  --eduvers-base: #d3224d;
-  --eduvers-base-rgb: 211, 34, 77;
+  --eduvers-base: #005099;
+  --eduvers-base-rgb: 0, 80, 153;
   --eduvers-secondary: #ff5543;
   --eduvers-secondary-rgb: 255, 85, 67;
   --eduvers-blue: #005099;
   --eduvers-blue-rgb: 0, 80, 153;
   --eduvers-black: #0d2944;
   --eduvers-black-rgb: 13, 41, 68;
-  --eduvers-primary: #f8f4f2;
-  --eduvers-primary-rgb: 248, 244, 242;
+  --eduvers-primary: #f4f6f8;
+  --eduvers-primary-rgb: 244, 246, 248;
   --eduvers-white: #ffffff;
   --eduvers-white-rgb: 255, 255, 255;
   --eduvers-bdr-color: #ede8e6;
@@ -4982,7 +4982,7 @@ xs sidebar
   position: relative;
   display: block;
   padding: 200px 0 120px;
-  background-color: #f8f4f2;
+  background-color: var(--eduvers-primary);
   z-index: 2;
 }
 
@@ -19685,8 +19685,14 @@ Privacy Policy Page
 }
 
 .course-details__right {
-  position: relative;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 100px;
   display: block;
+  align-self: flex-start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .course-details__info-box {

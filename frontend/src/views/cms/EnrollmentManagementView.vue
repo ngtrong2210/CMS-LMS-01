@@ -86,8 +86,10 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 
+const route = useRoute()
 const items = ref([])
 const students = ref([])
 const courses = ref([])
@@ -127,6 +129,9 @@ watch(() => form.courseId, () => {
 
 onMounted(async () => {
   await Promise.all([loadEnrollments(), loadOptions()])
+  const studentId = Number(route.query.studentId || 0)
+  const student = students.value.find(item => item.id === studentId)
+  if (student) search.value = student.code || student.name
 })
 
 async function loadEnrollments() {

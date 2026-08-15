@@ -1276,6 +1276,9 @@
     }
 
     .course-details__right {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
         max-width: 600px;
         margin: 50px auto 0;
     }
@@ -2645,6 +2648,9 @@
     }
 
     .course-details__right {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
         margin-top: 60px;
     }
 

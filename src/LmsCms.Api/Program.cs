@@ -11,9 +11,9 @@ using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
-builder.Services.Configure<VideoUploadOptions>(builder.Configuration.GetSection(VideoUploadOptions.SectionName));
+builder.Services.Configure<MediaStorageOptions>(builder.Configuration.GetSection(MediaStorageOptions.SectionName));
 builder.Services.Configure<ProjectStorageOptions>(builder.Configuration.GetSection(ProjectStorageOptions.SectionName));
-var maxVideoFileSize = builder.Configuration.GetValue<long>($"{VideoUploadOptions.SectionName}:MaxFileSizeMB", 500) * 1024L * 1024L;
+var maxVideoFileSize = builder.Configuration.GetValue<long>($"{MediaStorageOptions.SectionName}:MaxVideoFileSizeMB", 500) * 1024L * 1024L;
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxVideoFileSize);
 builder.Services.AddControllers();
 builder.Services.AddInfrastructure();

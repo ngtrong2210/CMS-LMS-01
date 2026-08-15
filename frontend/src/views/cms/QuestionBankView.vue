@@ -34,13 +34,15 @@
 
 <script setup>
 import { onMounted,reactive,ref } from 'vue'
+import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 
+const route=useRoute()
 const search=ref(''),type=ref(''),questions=ref([]),loading=ref(false),saving=ref(false),editorOpen=ref(false),editingId=ref(0),message=ref(''),messageType=ref('success'),shortAnswer=ref('')
 const pick=(source,...names)=>names.map(name=>source?.[name]).find(value=>value!==undefined&&value!==null)
 const form=reactive(blankQuestion())
 
-onMounted(loadQuestions)
+onMounted(async()=>{await loadQuestions();const editId=Number(route.query.edit||0);if(editId>0)await editQuestion(editId)})
 function blankQuestion(){return{questionType:'SINGLE_CHOICE',questionText:'',description:'',explanation:'',difficulty:'EASY',defaultScore:10,shortAnswerMode:null,status:'ACTIVE',options:[newOption('A','',true,1),newOption('B','',false,2)],answerKeys:[]}}
 function newOption(code,text,isCorrect,sortOrder){return{localKey:`${Date.now()}-${Math.random()}`,optionCode:code,optionText:text,isCorrect,sortOrder}}
 async function loadQuestions(){loading.value=true;message.value='';try{const data=await axiosClient.get('/questions',{params:{search:search.value||undefined,type:type.value||undefined,pageSize:100,_fresh:Date.now()}});const rows=pick(data,'items','Items')||[];questions.value=rows.map(row=>({id:Number(pick(row,'Id','id')),text:pick(row,'QuestionText','questionText')||'',type:pick(row,'QuestionType','questionType')||'',difficulty:pick(row,'Difficulty','difficulty')||'EASY',score:Number(pick(row,'DefaultScore','defaultScore')||0),status:pick(row,'Status','status')||'ACTIVE',updatedAt:pick(row,'UpdatedAt','updatedAt','CreatedAt','createdAt')}))}catch(error){showMessage(error.message,'danger')}finally{loading.value=false}}

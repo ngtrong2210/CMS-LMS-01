@@ -13,18 +13,23 @@ public sealed class LocalVideoStorageService : IVideoStorageService
     private readonly string _relativeRoot;
     private readonly long _maxFileSize;
 
-    public LocalVideoStorageService(IWebHostEnvironment environment, IOptions<VideoUploadOptions> options)
+    public LocalVideoStorageService(IWebHostEnvironment environment, IOptions<MediaStorageOptions> options)
     {
         var settings = options.Value;
-        if (string.IsNullOrWhiteSpace(settings.RootFolder) || Path.IsPathRooted(settings.RootFolder) || settings.RootFolder.Split('/', '\\').Any(x => x == ".."))
-            throw new InvalidOperationException("VideoUpload:RootFolder phải là đường dẫn tương đối an toàn.");
-        if (settings.MaxFileSizeMB <= 0) throw new InvalidOperationException("VideoUpload:MaxFileSizeMB phải lớn hơn 0.");
+        if (settings.MaxVideoFileSizeMB <= 0) throw new InvalidOperationException("Media:MaxVideoFileSizeMB phải lớn hơn 0.");
 
         _webRoot = Path.GetFullPath(environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot"));
-        _relativeRoot = settings.RootFolder.Replace('\\', '/').Trim('/');
+        var mediaFolders = new[] { settings.VideoPath, settings.ImagePath, settings.FilePath, settings.ThumbnailPath, settings.AudioPath };
+        foreach (var configuredPath in mediaFolders)
+        {
+            var physicalDirectory = ResolveMediaDirectory(configuredPath);
+            Directory.CreateDirectory(physicalDirectory);
+        }
+
+        _relativeRoot = settings.VideoPath.Replace('\\', '/').Trim('/');
         _storageRoot = Path.GetFullPath(Path.Combine(_webRoot, _relativeRoot.Replace('/', Path.DirectorySeparatorChar)));
         if (!IsInside(_storageRoot, _webRoot)) throw new InvalidOperationException("Thư mục video phải nằm trong wwwroot.");
-        _maxFileSize = checked(settings.MaxFileSizeMB * 1024L * 1024L);
+        _maxFileSize = checked(settings.MaxVideoFileSizeMB * 1024L * 1024L);
         Directory.CreateDirectory(_storageRoot);
     }
 
@@ -72,6 +77,18 @@ public sealed class LocalVideoStorageService : IVideoStorageService
 
     public bool Exists(string videoUrl) => File.Exists(ResolvePhysicalPath(videoUrl));
     public string GetUrl(string videoUrl) { _ = ResolvePhysicalPath(videoUrl); return videoUrl; }
+
+    private string ResolveMediaDirectory(string configuredPath)
+    {
+        if (string.IsNullOrWhiteSpace(configuredPath) || Path.IsPathRooted(configuredPath) || configuredPath.Split('/', '\\').Any(x => x == ".."))
+            throw new InvalidOperationException("Các đường dẫn Media phải là đường dẫn tương đối an toàn.");
+        var normalized = configuredPath.Replace('\\', '/').Trim('/');
+        if (!normalized.StartsWith("Media/", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Tài nguyên public phải nằm trong thư mục Media theo danh mục.");
+        var physicalPath = Path.GetFullPath(Path.Combine(_webRoot, normalized.Replace('/', Path.DirectorySeparatorChar)));
+        if (!IsInside(physicalPath, _webRoot)) throw new InvalidOperationException("Thư mục Media phải nằm trong wwwroot.");
+        return physicalPath;
+    }
 
     private string ResolvePhysicalPath(string videoUrl)
     {

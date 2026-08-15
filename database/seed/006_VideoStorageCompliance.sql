@@ -2,4 +2,4 @@
 UPDATE dbo.Videos
 SET VideoUrl = NULL, UpdatedAt = SYSUTCDATETIME()
 WHERE VideoUrl IS NOT NULL
-  AND VideoUrl NOT LIKE '/uploads/videos/%';
+  AND VideoUrl NOT LIKE '/Media/Video/%';
