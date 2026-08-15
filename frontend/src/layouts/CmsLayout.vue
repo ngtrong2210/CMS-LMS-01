@@ -2,7 +2,7 @@
   <div :class="['cms-shell', 'cms-theme', { 'sidebar-collapsed': sidebarCollapsed }]">
     <aside class="sidebar d-none d-lg-flex flex-column">
       <RouterLink class="brand px-4" to="/cms/dashboard"
-        ><img class="eduvers-logo" src="/images/eduvers/logo-1.png" alt="Eduvers"
+        ><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"
       /></RouterLink>
       <nav :class="['px-3', 'overflow-auto', { scrolling: sidebarScrolling }]" @scroll="showSidebarScrollbar">
         <template v-for="group in menu" :key="group.label">
@@ -85,7 +85,7 @@
     <div id="mobileMenu" class="offcanvas offcanvas-start mobile-sidebar">
       <div class="offcanvas-header">
         <RouterLink class="brand" to="/cms/dashboard" data-bs-dismiss="offcanvas"
-          ><img class="eduvers-logo" src="/images/eduvers/logo-1.png" alt="Eduvers" /></RouterLink
+          ><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers" /></RouterLink
         ><button class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>
       </div>
       <div class="offcanvas-body">

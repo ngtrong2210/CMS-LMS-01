@@ -16,65 +16,71 @@
 .sidebar,.cms-main{transition:width .22s ease,margin-left .22s ease}.sidebar-toggle{width:38px;height:38px;place-items:center;padding:0;border:0;border-radius:10px;color:var(--eduvers-base);background:rgba(var(--eduvers-base-rgb),.1)}.sidebar-toggle:hover{color:#fff;background:var(--eduvers-base)}.sidebar-toggle-icon{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}.sidebar-collapsed .sidebar{width:82px}.sidebar-collapsed .cms-main{margin-left:82px}.sidebar-collapsed .sidebar .brand{justify-content:flex-start;overflow:hidden;padding-left:18px!important;padding-right:0!important}.sidebar-collapsed .sidebar .eduvers-logo{width:150px;max-width:none;flex:0 0 150px;clip-path:inset(0 105px 0 0)}.sidebar-collapsed .sidebar nav{padding-left:12px!important;padding-right:12px!important}.sidebar-collapsed .sidebar .menu-label{height:12px;margin:.75rem 0 .35rem;overflow:hidden;color:transparent;font-size:0}.sidebar-collapsed .sidebar .side-link{justify-content:center;gap:0;padding:.6rem}.sidebar-collapsed .sidebar .side-link span{display:none}.sidebar-collapsed .sidebar .side-link i{width:34px;height:34px;flex:0 0 34px}
 @media(max-width:991px){.cms-main,.sidebar-collapsed .cms-main{margin-left:0}.page-content{padding:1.15rem!important}.topbar{height:68px}.topbar-heading small{display:none}}
 
-/* Bảng màu thống nhất với trang bản đồ hệ thống. */
+/* Giữ nền nội dung mới, khôi phục hai vùng điều hướng CMS về giao diện sáng. */
 .cms-shell { background: var(--page); }
 .sidebar {
-  color: #fff;
-  background: var(--theme-sidebar);
-  border-right: 0;
-  box-shadow: 8px 0 30px rgba(16, 47, 77, .12);
+  color: var(--ink);
+  background: var(--surface);
+  border-right: 1px solid var(--eduvers-bdr-color);
+  box-shadow: 10px 0 35px rgba(16, 47, 77, .045);
 }
 .cms-main { background: var(--page); }
 .brand,
-.brand:hover { color: #fff; }
-.brand { border-bottom-color: rgba(255, 255, 255, .09); }
-.menu-label { color: rgba(255, 255, 255, .55); }
-.side-link { color: rgba(255, 255, 255, .82); }
-.side-link:hover,
+.brand:hover { color: var(--eduvers-black); }
+.brand { border-bottom-color: var(--eduvers-bdr-color); }
+.menu-label { color: #9a9f9d; }
+.side-link { color: #56635f; }
+.side-link:hover {
+  color: var(--eduvers-black);
+  background: var(--eduvers-primary);
+}
 .side-link.router-link-active {
-  color: #fff;
-  background: rgba(255, 255, 255, .11);
+  color: var(--eduvers-base);
+  background: rgba(var(--eduvers-base-rgb), .1);
 }
-.side-link i,
+.side-link i {
+  color: var(--eduvers-gray);
+  background: var(--eduvers-primary);
+}
 .side-link.router-link-active i {
-  color: #fff;
-  background: rgba(255, 255, 255, .09);
+  color: var(--eduvers-base);
+  background: var(--eduvers-white);
 }
-.sidebar nav.scrolling { scrollbar-color: rgba(255, 255, 255, .34) transparent; }
-.sidebar nav.scrolling::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .34); }
+.sidebar nav.scrolling { scrollbar-color: rgba(var(--eduvers-base-rgb), .55) transparent; }
+.sidebar nav.scrolling::-webkit-scrollbar-thumb { background: rgba(var(--eduvers-base-rgb), .55); }
 .topbar {
-  color: #fff;
-  background: var(--theme-navy);
-  border-bottom: 0;
-  box-shadow: 0 7px 24px rgba(16, 47, 77, .16);
+  color: var(--ink);
+  background: var(--surface);
+  border-bottom: 1px solid var(--eduvers-bdr-color);
+  box-shadow: none;
 }
-.topbar-heading small { color: rgba(255, 255, 255, .6); }
-.topbar-heading div > div { color: #fff; }
-.top-search { color: #5f7180; background: #fff; }
+.topbar-heading small { color: var(--eduvers-base); }
+.topbar-heading div > div { color: var(--eduvers-black); }
+.top-search { color: #7b8581; background: var(--eduvers-primary); }
 .top-search input { color: var(--ink); }
 .icon-button {
-  color: #fff;
-  background: rgba(255, 255, 255, .1);
+  color: var(--eduvers-black);
+  background: var(--eduvers-primary);
 }
-.icon-button:hover { color: #fff; background: rgba(255, 255, 255, .17); }
-.user-summary { color: #fff; background: rgba(255, 255, 255, .1); }
-.user-summary .small { color: #fff; }
-.tiny { color: rgba(255, 255, 255, .66); }
+.icon-button:hover { color: var(--eduvers-base); background: rgba(var(--eduvers-base-rgb), .1); }
+.user-summary { color: var(--eduvers-black); background: var(--eduvers-primary); }
+.user-summary .small { color: var(--eduvers-black); }
+.tiny { color: #7b8581; }
 .topbar .logout-button,
 .topbar .menu-toggle {
-  color: var(--theme-navy);
-  background: #fff;
-  border-color: #fff;
+  color: var(--eduvers-black);
+  background: var(--eduvers-primary);
+  border-color: var(--eduvers-primary);
 }
 .sidebar-toggle {
-  color: #fff;
-  background: rgba(255, 255, 255, .1);
+  color: var(--eduvers-base);
+  background: rgba(var(--eduvers-base-rgb), .1);
 }
-.sidebar-toggle:hover { color: #fff; background: var(--brand-green); }
-.mobile-sidebar { color: #fff; background: var(--theme-sidebar); }
-.mobile-sidebar .offcanvas-header { border-bottom-color: rgba(255, 255, 255, .09); }
-.mobile-sidebar .btn-close { filter: invert(1) grayscale(1); }
+.sidebar-toggle:hover { color: #fff; background: var(--eduvers-base); }
+.mobile-sidebar { color: var(--ink); background: var(--surface); }
+.mobile-sidebar .offcanvas-header { border-bottom-color: var(--eduvers-bdr-color); }
+.mobile-sidebar .btn-close { filter: none; }
 
 @media(max-width:991px) {
-  .topbar { background: var(--theme-navy); }
+  .topbar { background: var(--surface); }
 }
