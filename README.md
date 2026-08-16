@@ -49,3 +49,6 @@ Frontend mặc định gọi API thật tại `http://localhost:7001/api`. Có t
 - `/cms/dashboard`, `/cms/courses`, `/cms/videos/101/editor`, `/cms/questions`, `/cms/students`, `/cms/reports`
 
 Thông tin kiến trúc và tích hợp nằm trong thư mục `docs/`.
+
+- [Bản đồ hệ thống](docs/LMS_SYSTEM_MAP.html)
+- [Các lệnh chạy project trong VS Code](docs/VS_CODE_COMMANDS.html)

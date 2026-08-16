@@ -910,7 +910,21 @@ Begin
         dbo.LMS_Questions.QuestionType,
         dbo.LMS_Questions.QuestionText,
         dbo.LMS_Questions.Description,
-        dbo.LMS_Questions.Difficulty
+        dbo.LMS_Questions.Difficulty,
+        (
+            Select
+                dbo.LMS_QuestionOptions.QuestionOptionID Id,
+                dbo.LMS_QuestionOptions.OptionCode,
+                dbo.LMS_QuestionOptions.OptionText,
+                dbo.LMS_QuestionOptions.SortOrder
+            From dbo.LMS_QuestionOptions
+            Where (dbo.LMS_QuestionOptions.QuestionID = dbo.LMS_Questions.QuestionID)
+                And (dbo.LMS_QuestionOptions.IsDeleted = 0)
+            Order By
+                dbo.LMS_QuestionOptions.SortOrder
+            For Json
+                Path
+        ) Options
     From dbo.LMS_VideoInteractions
         Inner Join dbo.SIM_Videos On dbo.SIM_Videos.VideoID = dbo.LMS_VideoInteractions.VideoID
         Inner Join dbo.LMS_Questions On dbo.LMS_Questions.QuestionID = dbo.LMS_VideoInteractions.QuestionID

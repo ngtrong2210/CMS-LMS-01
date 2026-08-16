@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Tài liệu lệnh chạy, dừng, build và kiểm tra dự án Elearning LMS/CMS trong Visual Studio Code."
+    />
+    <title>Elearning — Lệnh sử dụng trong VS Code</title>
+    <link rel="stylesheet" href="assets/vscode-commands.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#overview" aria-label="Về đầu trang">
+        <img src="../frontend/public/images/eduvers/logo-1.png" alt="Eduvers" />
+      </a>
+      <div class="brand-copy">
+        <strong>Lệnh chạy project trong VS Code</strong>
+        <small>VUE.JS • ASP.NET CORE • SQL SERVER</small>
+      </div>
+      <a class="map-link" href="LMS_SYSTEM_MAP.html">Xem bản đồ hệ thống</a>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" aria-label="Mục lục">
+        <p class="sidebar-label">Mục lục nhanh</p>
+        <a class="nav-link active" href="#overview"><span>01</span>Tổng quan</a>
+        <a class="nav-link" href="#start"><span>02</span>Chạy project</a>
+        <a class="nav-link" href="#stop"><span>03</span>Dừng project</a>
+        <a class="nav-link" href="#build"><span>04</span>Build và test</a>
+        <a class="nav-link" href="#database"><span>05</span>Khởi tạo SQL</a>
+        <a class="nav-link" href="#diagnostics"><span>06</span>Kiểm tra lỗi</a>
+        <a class="nav-link" href="#fixes"><span>07</span>Lỗi thường gặp</a>
+        <div class="side-note">
+          <strong>Thư mục project</strong>
+          <code>G:\0.0TOOL\CODEX\CMS-LMS-VueJS</code>
+        </div>
+      </aside>
+
+      <main>
+        <section id="overview" class="hero">
+          <p class="eyebrow">TÀI LIỆU DÙNG TRONG VISUAL STUDIO CODE</p>
+          <h1>Chạy và quản lý project bằng Terminal của VS Code</h1>
+          <p>
+            Mở hai Terminal riêng: một Terminal chạy API ASP.NET Core và một Terminal chạy giao diện Vue/Vite.
+            Mỗi khối lệnh bên dưới có thể sao chép và dán trực tiếp vào PowerShell của VS Code.
+          </p>
+          <div class="hero-actions">
+            <a href="http://localhost:5173" target="_blank" rel="noreferrer">Mở website</a>
+            <a href="http://localhost:7001/swagger" target="_blank" rel="noreferrer">Mở Swagger API</a>
+          </div>
+        </section>
+
+        <section id="start" aria-labelledby="startTitle">
+          <div class="section-heading">
+            <p class="kicker">Bắt đầu</p>
+            <h2 id="startTitle">Chạy project trong VS Code</h2>
+            <p>Chọn <b>Terminal → New Terminal</b>, sau đó dùng nút Split Terminal để mở Terminal thứ hai.</p>
+          </div>
+
+          <div class="step-grid">
+            <article class="command-card command-card-wide">
+              <div class="card-title">
+                <span class="step-number">1</span>
+                <div>
+                  <h3>Mở project bằng VS Code</h3>
+                  <p>Chạy từ PowerShell hoặc hộp thoại Run của Windows.</p>
+                </div>
+              </div>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="openProject">Sao chép</button>
+                <pre id="openProject"><code>code "G:\0.0TOOL\CODEX\CMS-LMS-VueJS"</code></pre>
+              </div>
+            </article>
+
+            <article class="command-card">
+              <div class="card-title">
+                <span class="step-number">2</span>
+                <div>
+                  <h3>Terminal 1 — Backend</h3>
+                  <p>Chạy API bằng launch profile <code>http</code> trên cổng 7001.</p>
+                </div>
+              </div>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="runBackend">Sao chép</button>
+                <pre id="runBackend"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\src\LmsCms.Api"
+dotnet run --launch-profile http</code></pre>
+              </div>
+              <p class="success-note">Thành công khi thấy: <code>Now listening on: http://localhost:7001</code></p>
+            </article>
+
+            <article class="command-card">
+              <div class="card-title">
+                <span class="step-number">3</span>
+                <div>
+                  <h3>Terminal 2 — Frontend</h3>
+                  <p>Chạy Vue/Vite trên cổng 5173.</p>
+                </div>
+              </div>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="runFrontend">Sao chép</button>
+                <pre id="runFrontend"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\frontend"
+npm run dev</code></pre>
+              </div>
+              <p class="success-note">Thành công khi thấy: <code>Local: http://localhost:5173/</code></p>
+            </article>
+
+            <article class="command-card command-card-wide info-card">
+              <h3>Cài thư viện frontend lần đầu</h3>
+              <p>Chỉ cần chạy khi mới tải project hoặc sau khi file <code>package.json</code> thay đổi.</p>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="installFrontend">Sao chép</button>
+                <pre id="installFrontend"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\frontend"
+npm install</code></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="stop" aria-labelledby="stopTitle">
+          <div class="section-heading">
+            <p class="kicker">Kết thúc</p>
+            <h2 id="stopTitle">Dừng project</h2>
+          </div>
+          <div class="command-card">
+            <h3>Cách thông thường</h3>
+            <p>Chọn từng Terminal đang chạy rồi nhấn:</p>
+            <div class="keyboard-row"><kbd>Ctrl</kbd><span>+</span><kbd>C</kbd></div>
+          </div>
+          <div class="command-card danger-card">
+            <h3>Tắt cưỡng chế cả backend và frontend</h3>
+            <p>Dùng khi đã đóng Terminal nhưng cổng 7001 hoặc 5173 vẫn còn bị chiếm.</p>
+            <div class="command-box">
+              <button class="copy-button" type="button" data-copy-target="forceStop">Sao chép</button>
+              <pre id="forceStop"><code>Get-NetTCPConnection -LocalPort 7001,5173 -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty OwningProcess -Unique |
+    ForEach-Object { Stop-Process -Id $_ -Force }</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="build" aria-labelledby="buildTitle">
+          <div class="section-heading">
+            <p class="kicker">Kiểm tra mã nguồn</p>
+            <h2 id="buildTitle">Build và test</h2>
+          </div>
+          <div class="command-grid">
+            <article class="command-card">
+              <h3>Build toàn bộ .NET</h3>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="buildDotnet">Sao chép</button>
+                <pre id="buildDotnet"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS"
+dotnet build .\LmsCms.sln</code></pre>
+              </div>
+            </article>
+            <article class="command-card">
+              <h3>Build frontend</h3>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="buildFrontend">Sao chép</button>
+                <pre id="buildFrontend"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\frontend"
+npm run build</code></pre>
+              </div>
+            </article>
+            <article class="command-card">
+              <h3>Chạy test .NET</h3>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="testDotnet">Sao chép</button>
+                <pre id="testDotnet"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS"
+dotnet test .\LmsCms.sln</code></pre>
+              </div>
+            </article>
+            <article class="command-card">
+              <h3>Chạy test frontend</h3>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="testFrontend">Sao chép</button>
+                <pre id="testFrontend"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\frontend"
+npm run test</code></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="database" aria-labelledby="databaseTitle">
+          <div class="section-heading">
+            <p class="kicker">SQL Server</p>
+            <h2 id="databaseTitle">Khởi tạo hoặc cập nhật database</h2>
+            <p>Chỉ chạy khi cần tạo schema, stored procedure và dữ liệu mẫu. Không ghi mật khẩu thật vào tài liệu hoặc Git.</p>
+          </div>
+          <div class="command-card warning-card">
+            <h3>Thiết lập connection string trong Terminal hiện tại</h3>
+            <div class="command-box">
+              <button class="copy-button" type="button" data-copy-target="initDatabase">Sao chép</button>
+              <pre id="initDatabase"><code>$env:ConnectionStrings__BootstrapConnection="&lt;CHUOI_KET_NOI_SQL_SERVER&gt;"
+$env:ConnectionStrings__DefaultConnection="&lt;CHUOI_KET_NOI_DATABASE_LMSCMS_DB&gt;"
+
+cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\src\LmsCms.Api"
+dotnet run --launch-profile http -- --init-db</code></pre>
+            </div>
+            <p class="warning-note">Không chạy lệnh này trong lúc backend khác đang giữ cổng 7001.</p>
+          </div>
+        </section>
+
+        <section id="diagnostics" aria-labelledby="diagnosticsTitle">
+          <div class="section-heading">
+            <p class="kicker">Chẩn đoán</p>
+            <h2 id="diagnosticsTitle">Kiểm tra cổng và tiến trình</h2>
+          </div>
+          <div class="command-grid">
+            <article class="command-card">
+              <h3>Kiểm tra cổng 7001 và 5173</h3>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="checkPorts">Sao chép</button>
+                <pre id="checkPorts"><code>Get-NetTCPConnection -LocalPort 7001,5173 -State Listen -ErrorAction SilentlyContinue |
+    Select-Object LocalAddress,LocalPort,OwningProcess</code></pre>
+              </div>
+            </article>
+            <article class="command-card">
+              <h3>Kiểm tra website và API</h3>
+              <div class="command-box">
+                <button class="copy-button" type="button" data-copy-target="checkHttp">Sao chép</button>
+                <pre id="checkHttp"><code>Invoke-WebRequest "http://localhost:5173/login" -UseBasicParsing
+Invoke-WebRequest "http://localhost:7001/swagger/index.html" -UseBasicParsing</code></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="fixes" aria-labelledby="fixesTitle">
+          <div class="section-heading">
+            <p class="kicker">Hỗ trợ</p>
+            <h2 id="fixesTitle">Lỗi thường gặp</h2>
+          </div>
+          <div class="faq-grid">
+            <article class="faq-card">
+              <h3><code>Required argument missing for --project</code></h3>
+              <p>Nguyên nhân: lệnh dừng ngay sau <code>--project</code> và chưa có đường dẫn project.</p>
+              <p>Khắc phục: <code>cd</code> vào <code>src\LmsCms.Api</code>, sau đó chạy <code>dotnet run --launch-profile http</code>.</p>
+            </article>
+            <article class="faq-card">
+              <h3><code>Could not read package.json</code></h3>
+              <p>Nguyên nhân: chạy <code>npm run dev</code> ở thư mục gốc.</p>
+              <p>Khắc phục: <code>cd</code> vào thư mục <code>frontend</code> trước khi chạy npm.</p>
+            </article>
+            <article class="faq-card">
+              <h3><code>Hosting failed to start</code></h3>
+              <p>Thường do cổng 7001 đã có backend khác sử dụng. Nhấn <code>Ctrl + C</code> ở Terminal cũ hoặc dùng lệnh tắt cưỡng chế.</p>
+            </article>
+            <article class="faq-card">
+              <h3><code>oh-my-posh is not recognized</code></h3>
+              <p>Đây là lỗi cấu hình giao diện PowerShell, không phải lỗi project.</p>
+              <div class="command-box compact">
+                <button class="copy-button" type="button" data-copy-target="fixProfile">Sao chép</button>
+                <pre id="fixProfile"><code>code $PROFILE</code></pre>
+              </div>
+              <p>Trong file profile, dùng điều kiện:</p>
+              <div class="command-box compact">
+                <button class="copy-button" type="button" data-copy-target="safePosh">Sao chép</button>
+                <pre id="safePosh"><code>if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
+    oh-my-posh init pwsh | Invoke-Expression
+}</code></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <footer>
+          <strong>Elearning LMS/CMS</strong>
+          <span>Cập nhật 16/08/2026 • Dùng cho PowerShell Terminal trong Visual Studio Code</span>
+        </footer>
+      </main>
+    </div>
+
+    <div id="copyToast" class="copy-toast" role="status" aria-live="polite">Đã sao chép lệnh</div>
+    <script src="assets/vscode-commands.js"></script>
+  </body>
+</html>

@@ -132,8 +132,10 @@
     <div class="app-card p-4 mt-4">
       <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
         <div>
-          <h2 class="h5 fw-bold mb-1">Dòng thời gian tương tác</h2>
-          <small class="text-secondary">Bấm vào timeline để kéo video đến thời điểm muốn thêm câu hỏi.</small>
+          <h2 class="timeline-section-title h5 fw-bold mb-1">Dòng thời gian tương tác</h2>
+          <small class="timeline-section-hint"
+            >Bấm để chọn thời điểm; giữ Ctrl và lăn chuột để phóng to đoạn cần biên tập.</small
+          >
         </div>
         <div class="timeline-info">
           <small>00:00 — {{ formatTime(form.durationSeconds) }}</small>
@@ -143,34 +145,60 @@
           </div>
         </div>
       </div>
-      <div
-        class="editor-timeline"
-        role="slider"
-        tabindex="0"
-        aria-label="Chọn thời điểm trong video"
-        aria-valuemin="0"
-        :aria-valuemax="form.durationSeconds"
-        :aria-valuenow="Math.round(currentTime)"
-        @click="seekFromTimeline"
-        @keydown.left.prevent="stepTimeline(-1)"
-        @keydown.right.prevent="stepTimeline(1)"
-      >
-        <span
-          v-for="(zone, index) in questionZones"
-          :key="index"
-          class="question-zone"
-          :style="{ left: zone.left + '%', width: zone.width + '%' }"
-        ></span
-        ><span class="timeline-playhead" :style="{ left: progressPercent + '%' }"></span
-        ><button
-          v-for="item in items"
-          :key="item.localKey"
-          class="timeline-point"
-          :style="{ left: markerPercent(item.time) + '%' }"
-          @click.stop="selectAndSeek(item)"
+      <div ref="timelineViewportRef" class="timeline-viewport" @wheel="handleTimelineWheel">
+        <div
+          ref="timelineRef"
+          class="editor-timeline"
+          :style="timelineTrackStyle"
+          role="slider"
+          tabindex="0"
+          aria-label="Chọn thời điểm trong video"
+          aria-valuemin="0"
+          :aria-valuemax="form.durationSeconds"
+          :aria-valuenow="Math.round(currentTime)"
+          :aria-valuetext="formatTime(currentTime)"
+          @click="seekFromTimeline"
+          @keydown.left.prevent="stepTimeline(-1)"
+          @keydown.right.prevent="stepTimeline(1)"
         >
-          <i class="bi bi-patch-question-fill"></i><span>{{ formatTime(item.time) }}</span>
-        </button>
+          <span
+            v-for="(zone, index) in questionZones"
+            :key="index"
+            class="question-zone"
+            :style="{ left: zone.left + '%', width: zone.width + '%' }"
+          ></span
+          ><span class="timeline-playhead" :style="{ left: progressPercent + '%' }"></span
+          ><button
+            v-for="item in items"
+            :key="item.localKey"
+            class="timeline-point"
+            :style="{ left: markerPercent(item.time) + '%' }"
+            @click.stop="selectAndSeek(item)"
+          >
+            <i class="bi bi-patch-question-fill"></i><span>{{ formatTime(item.time) }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="timeline-zoom-toolbar">
+        <span class="timeline-zoom-hint"><i class="bi bi-mouse2"></i> Ctrl + lăn chuột trên timeline để zoom</span>
+        <div class="timeline-zoom-controls" aria-label="Điều khiển thu phóng timeline">
+          <button type="button" title="Thu nhỏ timeline" aria-label="Thu nhỏ timeline" @click="changeTimelineZoom(-1)">
+            <i class="bi bi-dash-lg"></i>
+          </button>
+          <output aria-live="polite">{{ timelineZoomPercent }}%</output>
+          <button type="button" title="Phóng to timeline" aria-label="Phóng to timeline" @click="changeTimelineZoom(1)">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+          <button
+            type="button"
+            class="timeline-zoom-reset"
+            :disabled="timelineZoom === 1"
+            title="Đưa timeline về kích thước ban đầu"
+            @click="resetTimelineZoom"
+          >
+            <i class="bi bi-arrows-collapse"></i> 100%
+          </button>
+        </div>
       </div>
       <div class="timeline-selected-time">
         <i class="bi bi-cursor-fill"></i> Đang chọn <strong>{{ formatTime(currentTime) }}</strong>
@@ -485,7 +513,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { resolveApiAssetUrl } from '../../api/apiConfig'
@@ -500,7 +528,10 @@ const route = useRoute(),
   items = ref([]),
   questions = ref([]),
   currentTime = ref(0),
-  selected = ref(null)
+  selected = ref(null),
+  timelineViewportRef = ref(null),
+  timelineRef = ref(null),
+  timelineZoom = ref(1)
 const uploading = ref(false),
   saving = ref(false),
   duplicating = ref(false),
@@ -543,6 +574,8 @@ const playbackUrl = computed(() => resolveApiAssetUrl(form.videoUrl))
 const progressPercent = computed(() =>
   form.durationSeconds ? Math.min(100, (currentTime.value / form.durationSeconds) * 100) : 0
 )
+const timelineZoomPercent = computed(() => Math.round(timelineZoom.value * 100))
+const timelineTrackStyle = computed(() => ({ width: `${timelineZoomPercent.value}%` }))
 const questionZones = computed(() => {
   const duration = Math.max(1, form.durationSeconds),
     radius = Math.min(5, Math.max(2, duration / 48))
@@ -907,6 +940,63 @@ function seekFromTimeline(event) {
   if (!rect.width) return
   const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
   seekTo(ratio * form.durationSeconds, true)
+}
+const TIMELINE_ZOOM_MIN = 1
+const TIMELINE_ZOOM_MAX = 24
+const TIMELINE_ZOOM_FACTOR = 1.25
+
+function clampTimelineZoom(value) {
+  return Math.min(TIMELINE_ZOOM_MAX, Math.max(TIMELINE_ZOOM_MIN, value))
+}
+function handleTimelineWheel(event) {
+  if (!event.ctrlKey) return
+  event.preventDefault()
+
+  const timeline = timelineRef.value
+  const viewport = timelineViewportRef.value
+  if (!timeline || !viewport) return
+
+  const timelineRect = timeline.getBoundingClientRect()
+  const viewportRect = viewport.getBoundingClientRect()
+  if (!timelineRect.width) return
+
+  const anchorRatio = Math.min(1, Math.max(0, (event.clientX - timelineRect.left) / timelineRect.width))
+  const pointerOffset = event.clientX - viewportRect.left
+  const factor = Math.min(TIMELINE_ZOOM_FACTOR, Math.max(1 / TIMELINE_ZOOM_FACTOR, Math.exp(-event.deltaY * 0.002)))
+  setTimelineZoom(timelineZoom.value * factor, anchorRatio, pointerOffset)
+}
+function changeTimelineZoom(direction) {
+  const anchorRatio = form.durationSeconds ? currentTime.value / form.durationSeconds : 0
+  const viewport = timelineViewportRef.value
+  const timeline = timelineRef.value
+  const anchorOffset =
+    timeline && viewport
+      ? timeline.getBoundingClientRect().left +
+        anchorRatio * timeline.offsetWidth -
+        viewport.getBoundingClientRect().left
+      : 0
+  const factor = direction > 0 ? TIMELINE_ZOOM_FACTOR : 1 / TIMELINE_ZOOM_FACTOR
+  setTimelineZoom(timelineZoom.value * factor, anchorRatio, anchorOffset)
+}
+function setTimelineZoom(value, anchorRatio, anchorOffset) {
+  const nextZoom = clampTimelineZoom(value)
+  if (Math.abs(nextZoom - timelineZoom.value) < 0.001) return
+
+  timelineZoom.value = nextZoom
+  nextTick(() => {
+    const timeline = timelineRef.value
+    const viewport = timelineViewportRef.value
+    if (!timeline || !viewport) return
+    const timelineOffset =
+      timeline.getBoundingClientRect().left - viewport.getBoundingClientRect().left + viewport.scrollLeft
+    viewport.scrollLeft = timelineOffset + anchorRatio * timeline.offsetWidth - anchorOffset
+  })
+}
+function resetTimelineZoom() {
+  timelineZoom.value = TIMELINE_ZOOM_MIN
+  nextTick(() => {
+    if (timelineViewportRef.value) timelineViewportRef.value.scrollLeft = 0
+  })
 }
 function stepTimeline(direction) {
   seekTo(currentTime.value + direction, true)

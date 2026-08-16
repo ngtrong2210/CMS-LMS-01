@@ -78,6 +78,10 @@
             /><input v-else v-model="singleAnswer" type="radio" :value="option.code" /><span>{{ option.code }}</span
             >{{ option.text }}</label
           >
+          <div v-if="choiceQuestionWithoutOptions" class="alert alert-warning interaction-options-warning mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i>Câu hỏi chưa có phương án trả lời. Vui lòng kiểm tra lại
+            trong ngân hàng câu hỏi.
+          </div>
           <textarea
             v-if="activeQuestion.type === 'SHORT_ANSWER'"
             v-model.trim="shortAnswer"
@@ -161,6 +165,11 @@ const normalized = computed(() => normalizeInteractions(props.interactions))
 let engine = createInteractionEngine(normalized.value, props.answeredInteractionIds)
 const formatTime = formatInteractionTime
 const canSkip = computed(() => Boolean(activeQuestion.value?.allowSkip || !activeQuestion.value?.required))
+const choiceQuestionWithoutOptions = computed(
+  () =>
+    ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(activeQuestion.value?.type) &&
+    !activeQuestion.value?.options?.length
+)
 const hasAnswer = computed(() =>
   activeQuestion.value?.type === 'MULTIPLE_CHOICE'
     ? multipleAnswers.value.length > 0
