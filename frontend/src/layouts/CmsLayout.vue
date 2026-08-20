@@ -119,6 +119,7 @@ const globalSearch = ref(String(route.query.q || ''))
 const cachedPages = [
   'CourseManagementView',
   'AcademicStructureView',
+  'AssignmentGradingView',
   'VideoLibraryView',
   'QuestionBankView',
   'StudentsView',
@@ -139,10 +140,15 @@ const roleName = computed(() => ({ ADMIN: 'Quản trị viên', TEACHER: 'Giản
 const menu = [
   { label: 'Tổng quan', items: [{ to: '/cms/dashboard', text: 'Bảng điều khiển', icon: 'bi-grid' }] },
   {
-    label: 'Đào tạo',
+    label: 'Tổ chức đào tạo',
     items: [
-      { to: '/cms/academic', text: 'Cơ cấu đào tạo', icon: 'bi-diagram-3' },
-      { to: '/cms/courses', text: 'Khóa học', icon: 'bi-journal-bookmark' },
+      { to: '/cms/academic', text: 'Năm · Lớp · Môn học', icon: 'bi-diagram-3' },
+      { to: '/cms/courses', text: 'Soạn môn học lớp', icon: 'bi-journal-bookmark' }
+    ]
+  },
+  {
+    label: 'Học liệu',
+    items: [
       { to: '/cms/videos', text: 'Thư viện video', icon: 'bi-collection-play' },
       { to: '/cms/questions', text: 'Ngân hàng câu hỏi', icon: 'bi-patch-question' }
     ]
@@ -151,10 +157,16 @@ const menu = [
     label: 'Học viên',
     items: [
       { to: '/cms/students', text: 'Danh sách học viên', icon: 'bi-people' },
-      { to: '/cms/enrollments', text: 'Ghi danh khóa học', icon: 'bi-person-plus' }
+      { to: '/cms/enrollments', text: 'Phân lớp và ghi danh', icon: 'bi-person-plus' }
     ]
   },
-  { label: 'Phân tích', items: [{ to: '/cms/reports', text: 'Báo cáo', icon: 'bi-bar-chart' }] },
+  {
+    label: 'Giảng dạy',
+    items: [
+      { to: '/cms/assignments', text: 'Chấm và trả bài', icon: 'bi-clipboard-check' },
+      { to: '/cms/reports', text: 'Tiến độ và báo cáo', icon: 'bi-bar-chart' }
+    ]
+  },
   {
     label: 'Hệ thống',
     items: [

@@ -9,4 +9,5 @@ public sealed class MediaStorageOptions
     public string ThumbnailPath { get; init; } = "Media/Thumbnail";
     public string AudioPath { get; init; } = "Media/Audio";
     public long MaxVideoFileSizeMB { get; init; } = 500;
+    public long MaxLearningFileSizeMB { get; init; } = 200;
 }

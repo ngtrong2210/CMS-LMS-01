@@ -1,6 +1,6 @@
 <template>
   <section>
-    <RouterLink to="/lms/courses" class="small"><i class="bi bi-arrow-left me-1"></i>Khóa học của tôi</RouterLink>
+    <RouterLink to="/lms/courses" class="small"><i class="bi bi-arrow-left me-1"></i>Môn học của tôi</RouterLink>
     <div v-if="loading" class="text-center py-5"><span class="spinner-border"></span></div>
     <div v-else-if="error" class="alert alert-danger my-3">
       {{ error }}
@@ -100,7 +100,7 @@
                       </div>
                     </div>
                   </div>
-                  <p v-else>Khóa học chưa có nội dung.</p>
+                  <p v-else>Môn học chưa có nội dung.</p>
                 </div>
               </div>
             </div>
@@ -181,7 +181,7 @@ const route = useRoute(),
     title: '',
     description: '',
     teacher: '',
-    category: 'Khóa học',
+    category: 'Môn học lớp',
     progress: 0,
     finalScore: null
   }),
@@ -209,7 +209,7 @@ async function loadCourse() {
       title: pick(c, 'Title', 'title') || '',
       description: pick(c, 'Description', 'description') || pick(c, 'ShortDescription', 'shortDescription') || '',
       teacher: pick(c, 'TeacherName', 'teacherName') || '',
-      category: pick(c, 'CategoryName', 'categoryName') || 'Khóa học',
+      category: pick(c, 'CategoryName', 'categoryName') || 'Môn học lớp',
       progress: Number(pick(c, 'ProgressPercent', 'progressPercent') || 0),
       finalScore: pick(c, 'FinalScore', 'finalScore')
     })

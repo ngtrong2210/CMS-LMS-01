@@ -5,7 +5,7 @@
         <div class="section-title__tagline-box">
           <span class="section-title__tagline">KHÓA HỌC TRỰC TUYẾN</span>
         </div>
-        <h1 class="section-title__title">Khóa học của tôi</h1>
+        <h1 class="section-title__title">Môn học của tôi</h1>
         <p class="mt-2">Theo dõi và tiếp tục các khóa học đã ghi danh.</p>
       </div>
     </header>
@@ -169,7 +169,7 @@ async function loadCourses() {
       code: pick(row, 'Code', 'code') || '',
       title: pick(row, 'Title', 'title') || '',
       teacher: pick(row, 'TeacherName', 'teacherName') || '',
-      category: pick(row, 'CategoryName', 'categoryName') || 'Khóa học',
+      category: pick(row, 'CategoryName', 'categoryName') || 'Môn học lớp',
       lessons: Number(pick(row, 'LessonCount', 'lessonCount') || 0),
       progress: Number(pick(row, 'ProgressPercent', 'progressPercent') || 0),
       enrollmentStatus: pick(row, 'EnrollmentStatus', 'enrollmentStatus') || 'ENROLLED',

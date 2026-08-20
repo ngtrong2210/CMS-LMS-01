@@ -79,7 +79,10 @@ public sealed class LessonSaveRequest
     public string? ContentHtml { get; init; }
     [StringLength(1000)] public string? DocumentUrl { get; init; }
     [StringLength(250)] public string? AssignmentFolderName { get; init; }
+    public DateTime? AssignmentStartAt { get; init; }
     public DateTime? DueAt { get; init; }
+    [Range(1, 10000)] public decimal AssignmentMaxScore { get; init; } = 100;
+    [Range(1, 20)] public int MaxSubmissionAttempts { get; init; } = 3;
     [Range(1, 200)] public int MaxSubmissionFileSizeMB { get; init; } = 50;
     public bool AllowLateSubmission { get; init; }
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
@@ -222,6 +225,13 @@ public sealed class StudySessionStartRequest
 public sealed class StudySessionEndRequest
 {
     public bool IsCompleted { get; init; }
+}
+
+public sealed class AssignmentGradeRequest
+{
+    [Range(0, 10000)] public decimal? Score { get; init; }
+    public string? Feedback { get; init; }
+    [RegularExpression("GRADE|RETURN")] public string Action { get; init; } = "GRADE";
 }
 
 public sealed record AssignmentSubmissionFile(

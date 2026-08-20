@@ -118,11 +118,27 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
             cancellationToken: cancellationToken))).Cast<object>().ToArray();
     }
 
+    public async Task<int> ValidateAssignmentAsync(long lessonId, long studentId, string action, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            "dbo.LMS_AssignmentSubmission_Validate",
+            new { LessonID = lessonId, StudentUserID = studentId, Action = action },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
     public async Task<object> SubmitAssignmentAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, CancellationToken cancellationToken = default)
+        => await SaveAssignmentAsync(lessonId, studentId, submissionText, file, "SUBMIT", cancellationToken);
+
+    public async Task<object> SaveAssignmentDraftAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, CancellationToken cancellationToken = default)
+        => await SaveAssignmentAsync(lessonId, studentId, submissionText, file, "DRAFT", cancellationToken);
+
+    private async Task<object> SaveAssignmentAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, string action, CancellationToken cancellationToken)
     {
         using var connection = connections.CreateConnection();
         return await connection.QuerySingleAsync(new CommandDefinition(
-            "dbo.LMS_AssignmentSubmission_Create",
+            "dbo.LMS_AssignmentSubmission_Save",
             new
             {
                 LessonID = lessonId,
@@ -132,7 +148,8 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
                 OriginalFileName = file?.OriginalFileName,
                 StoredFileName = file?.StoredFileName,
                 FileSize = file?.FileSize,
-                MimeType = file?.MimeType
+                MimeType = file?.MimeType,
+                Action = action
             },
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));

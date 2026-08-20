@@ -308,7 +308,10 @@ Begin
         dbo.Lessons.ContentHtml,
         dbo.Lessons.DocumentUrl,
         dbo.Lessons.AssignmentFolderName,
+        dbo.Lessons.AssignmentStartAt,
         dbo.Lessons.DueAt,
+        dbo.Lessons.AssignmentMaxScore,
+        dbo.Lessons.MaxSubmissionAttempts,
         dbo.Lessons.MaxSubmissionFileSizeMB,
         dbo.Lessons.AllowLateSubmission
     From dbo.Lessons

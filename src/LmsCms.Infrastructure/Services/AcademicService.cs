@@ -101,4 +101,14 @@ public sealed class AcademicService(ISqlConnectionFactory connections) : IAcadem
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));
     }
+
+    public async Task<object> EnsureClassSubjectWorkspaceAsync(long classSubjectId, long actorId, bool isAdmin, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.QuerySingleAsync(new CommandDefinition(
+            "dbo.LMS_ClassSubject_Workspace_Ensure",
+            new { ClassSubjectID = classSubjectId, ActorID = actorId, IsAdmin = isAdmin },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
 }

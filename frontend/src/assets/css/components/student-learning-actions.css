@@ -1,0 +1,46 @@
+.assignment-actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.teacher-feedback {
+  color: #005099 !important;
+  margin-top: 0.2rem;
+}
+
+.assignment-availability {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.7rem;
+  color: #7a4f00;
+  background: #fff4cf;
+  font-weight: 700;
+}
+
+.lesson-completion {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+}
+
+.lesson-completion > div {
+  display: grid;
+}
+
+.lesson-completion small {
+  color: #74827d;
+}
+
+@media (max-width: 620px) {
+  .assignment-actions,
+  .lesson-completion {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

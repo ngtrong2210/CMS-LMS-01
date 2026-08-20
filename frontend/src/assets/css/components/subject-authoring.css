@@ -1,0 +1,8 @@
+.builder-eyebrow {
+  color: var(--eduvers-base);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+}

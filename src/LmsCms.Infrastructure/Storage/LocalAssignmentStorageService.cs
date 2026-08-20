@@ -14,12 +14,13 @@ public sealed class LocalAssignmentStorageService : IAssignmentStorageService
 
     private readonly string _storageRoot;
     private readonly string _relativeRoot;
-    private const long MaximumFileSize = 50L * 1024L * 1024L;
+    private readonly long _maximumFileSize;
 
     public LocalAssignmentStorageService(IWebHostEnvironment environment, IOptions<MediaStorageOptions> options)
     {
         var webRoot = Path.GetFullPath(environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot"));
         _relativeRoot = options.Value.FilePath.Replace('\\', '/').Trim('/');
+        _maximumFileSize = Math.Clamp(options.Value.MaxLearningFileSizeMB, 1, 200) * 1024L * 1024L;
         if (!_relativeRoot.StartsWith("Media/File", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("File học tập phải được lưu trong /Media/File/.");
 
@@ -37,7 +38,7 @@ public sealed class LocalAssignmentStorageService : IAssignmentStorageService
     private async Task<AssignmentSubmissionFile> SaveAsync(string subdirectory, Stream content, string originalFileName, string contentType, long fileSize, CancellationToken cancellationToken)
     {
         if (fileSize <= 0) throw new ArgumentException("File tải lên bị rỗng.");
-        if (fileSize > MaximumFileSize) throw new ArgumentException("File tải lên vượt quá giới hạn 50 MB.");
+        if (fileSize > _maximumFileSize) throw new ArgumentException($"File tải lên vượt quá giới hạn {_maximumFileSize / 1024L / 1024L} MB.");
 
         var safeOriginalName = Path.GetFileName(originalFileName);
         var extension = Path.GetExtension(safeOriginalName).ToLowerInvariant();

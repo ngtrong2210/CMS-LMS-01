@@ -1,7 +1,9 @@
 <template>
   <section>
     <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
-      <span class="badge badge-soft-primary"><i class="bi bi-clock"></i> Thời gian học {{ formatStudyTime(studySeconds) }}</span>
+      <span class="badge badge-soft-primary"
+        ><i class="bi bi-clock"></i> Thời gian học {{ formatStudyTime(studySeconds) }}</span
+      >
       <span v-if="isVideoLesson" class="badge badge-soft-success">Đã xem {{ Math.round(progress.watchPercent) }}%</span>
     </div>
     <div v-if="loading" class="app-card p-5 text-center">
@@ -39,28 +41,99 @@
             />
             <article v-else-if="lesson.type === 'EDITOR'" class="learning-content editor-content">
               <div class="content-type-icon"><i class="bi bi-journal-richtext"></i></div>
-              <div class="lesson-html" v-html="lesson.contentHtml || '<p>Bài học chưa có nội dung soạn thảo.</p>'"></div>
+              <div class="lesson-html" v-html="sanitizedContentHtml"></div>
             </article>
             <article v-else-if="lesson.type === 'DOCUMENT'" class="learning-content document-content">
               <div class="content-type-icon"><i class="bi bi-file-earmark-pdf"></i></div>
               <h2>Tài liệu bài học</h2>
               <p>Đọc tài liệu và duy trì trang học để hệ thống ghi nhận thời gian.</p>
-              <a v-if="lesson.documentUrl" class="btn btn-action-view" :href="resolveApiAssetUrl(lesson.documentUrl)" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Mở tài liệu</a>
+              <a
+                v-if="lesson.documentUrl"
+                class="btn btn-action-view"
+                :href="resolveApiAssetUrl(lesson.documentUrl)"
+                target="_blank"
+                rel="noopener"
+                ><i class="bi bi-box-arrow-up-right"></i> Mở tài liệu</a
+              >
               <span v-else class="text-secondary">Giảng viên chưa cập nhật file tài liệu.</span>
             </article>
             <article v-else-if="lesson.type === 'ASSIGNMENT'" class="learning-content assignment-content">
-              <div class="assignment-heading"><span class="content-type-icon"><i class="bi bi-cloud-arrow-up"></i></span><div><h2>Bài tập nộp file</h2><p v-if="lesson.dueAt">Hạn nộp: {{ dateTimeText(lesson.dueAt) }}</p><p v-else>Không giới hạn thời gian nộp.</p></div></div>
-              <div v-if="lesson.contentHtml" class="lesson-html" v-html="lesson.contentHtml"></div>
+              <div class="assignment-heading">
+                <span class="content-type-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+                <div>
+                  <h2>Bài tập nộp file</h2>
+                  <p v-if="lesson.dueAt">Hạn nộp: {{ dateTimeText(lesson.dueAt) }}</p>
+                  <p v-else>Không giới hạn thời gian nộp.</p>
+                </div>
+              </div>
+              <div v-if="lesson.contentHtml" class="lesson-html" v-html="sanitizedContentHtml"></div>
               <p v-else>{{ lesson.description || 'Thực hiện yêu cầu và nộp bài tại biểu mẫu bên dưới.' }}</p>
-              <a v-if="lesson.documentUrl" class="assignment-resource" :href="resolveApiAssetUrl(lesson.documentUrl)" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Tải đề bài / tài liệu đính kèm</a>
-              <form class="assignment-form" @submit.prevent="submitAssignment">
-                <label><span>Nội dung ghi chú</span><textarea v-model.trim="submissionText" class="form-control" rows="4" placeholder="Mô tả bài làm hoặc đường dẫn bổ sung..."></textarea></label>
-                <label><span>File bài làm</span><input class="form-control" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.png,.jpg,.jpeg" @change="selectSubmissionFile" /><small>Tối đa {{ lesson.maxSubmissionFileSizeMB }} MB</small></label>
-                <button class="btn btn-action-save" :disabled="submitting || (!submissionText && !submissionFile)"><span v-if="submitting" class="spinner-border spinner-border-sm"></span><i v-else class="bi bi-send"></i> Nộp bài</button>
+              <a
+                v-if="lesson.documentUrl"
+                class="assignment-resource"
+                :href="resolveApiAssetUrl(lesson.documentUrl)"
+                target="_blank"
+                rel="noopener"
+                ><i class="bi bi-paperclip"></i> Tải đề bài / tài liệu đính kèm</a
+              >
+              <div v-if="assignmentAvailability" class="assignment-availability">
+                <i class="bi bi-info-circle"></i> {{ assignmentAvailability }}
+              </div>
+              <form v-else class="assignment-form" @submit.prevent="submitAssignment">
+                <label
+                  ><span>Nội dung ghi chú</span
+                  ><textarea
+                    v-model.trim="submissionText"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Mô tả bài làm hoặc đường dẫn bổ sung..."
+                  ></textarea>
+                </label>
+                <label
+                  ><span>File bài làm</span
+                  ><input
+                    class="form-control"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.png,.jpg,.jpeg"
+                    @change="selectSubmissionFile"
+                  /><small>Tối đa {{ lesson.maxSubmissionFileSizeMB }} MB</small></label
+                >
+                <div class="assignment-actions">
+                  <button
+                    type="button"
+                    class="btn btn-action-view"
+                    :disabled="submitting || (!submissionText && !submissionFile)"
+                    @click="saveAssignmentDraft"
+                  >
+                    <i class="bi bi-floppy"></i> Lưu nháp</button
+                  ><button class="btn btn-action-save" :disabled="submitting || (!submissionText && !submissionFile)">
+                    <span v-if="submitting" class="spinner-border spinner-border-sm"></span
+                    ><i v-else class="bi bi-send"></i> Nộp bài
+                  </button>
+                </div>
               </form>
-              <div v-if="submissions.length" class="submission-history"><h3>Lịch sử nộp bài</h3><div v-for="item in submissions" :key="item.id"><span class="attempt">Lần {{ item.attemptNumber }}</span><div><strong>{{ submissionStatus(item.status) }}</strong><small>{{ dateTimeText(item.submittedAt) }}<template v-if="item.fileName"> · {{ item.fileName }}</template></small></div><span v-if="item.score != null" class="submission-score">{{ item.score }} điểm</span></div></div>
+              <div v-if="submissions.length" class="submission-history">
+                <h3>Lịch sử nộp bài</h3>
+                <div v-for="item in submissions" :key="item.id">
+                  <span class="attempt">Lần {{ item.attemptNumber }}</span>
+                  <div>
+                    <strong>{{ submissionStatus(item.status) }}</strong
+                    ><small
+                      >{{ dateTimeText(item.submittedAt)
+                      }}<template v-if="item.fileName"> · {{ item.fileName }}</template></small
+                    ><small v-if="item.feedback" class="teacher-feedback">Nhận xét: {{ item.feedback }}</small>
+                  </div>
+                  <span v-if="item.score != null" class="submission-score"
+                    >{{ item.score }}/{{ lesson.assignmentMaxScore }} điểm</span
+                  >
+                </div>
+              </div>
             </article>
-            <article v-else class="learning-content document-content"><div class="content-type-icon"><i class="bi bi-ui-checks"></i></div><h2>Bài kiểm tra</h2><p>Nội dung kiểm tra sẽ được mở tại đây.</p></article>
+            <article v-else class="learning-content document-content">
+              <div class="content-type-icon"><i class="bi bi-ui-checks"></i></div>
+              <h2>Bài kiểm tra</h2>
+              <p>Nội dung kiểm tra sẽ được mở tại đây.</p>
+            </article>
           </div>
           <div class="lesson-meta">
             <div>
@@ -76,7 +149,7 @@
         </div>
         <aside class="content-panel">
           <div class="p-3">
-            <strong>Nội dung khóa học</strong
+            <strong>Nội dung môn học</strong
             ><small class="d-block text-secondary">{{ completedLessons }}/{{ lessonCount }} bài đã hoàn thành</small>
           </div>
           <div class="chapter-list">
@@ -120,6 +193,16 @@
         </div>
         <p v-else class="text-secondary mb-0">Bài học này không có câu hỏi tương tác.</p>
       </div>
+      <div v-if="!isVideoLesson && lesson.type !== 'ASSIGNMENT'" class="lesson-completion app-card mt-4">
+        <div>
+          <strong>Hoàn thành nội dung này?</strong
+          ><small>Hệ thống chỉ ghi nhận thời gian hợp lệ từ heartbeat khi trang đang hoạt động.</small>
+        </div>
+        <button class="btn btn-action-save" :disabled="completing" @click="markLessonComplete">
+          <span v-if="completing" class="spinner-border spinner-border-sm"></span
+          ><i v-else class="bi bi-check2-circle"></i> Đánh dấu hoàn thành
+        </button>
+      </div>
     </template>
   </section>
 </template>
@@ -133,6 +216,7 @@ import { questionTypeLabel } from '../../utils/displayLabels'
 import { formatInteractionTime } from '../../utils/learningRules'
 import InteractiveVideoPlayer from '../../components/video/InteractiveVideoPlayer.vue'
 import { normalizeVideoSource } from '../../utils/videoSources'
+import { sanitizeLearningHtml } from '../../utils/sanitizeHtml'
 
 const route = useRoute(),
   playerRef = ref(null),
@@ -147,8 +231,24 @@ const route = useRoute(),
   submissions = ref([]),
   submissionText = ref(''),
   submissionFile = ref(null),
-  submitting = ref(false)
-const lesson = reactive({ id: 0, title: '', description: '', type: 'VIDEO', duration: 0, passingScore: 0, contentHtml: '', documentUrl: '', dueAt: null, maxSubmissionFileSizeMB: 50, allowLateSubmission: false }),
+  submitting = ref(false),
+  completing = ref(false)
+const lesson = reactive({
+    id: 0,
+    title: '',
+    description: '',
+    type: 'VIDEO',
+    duration: 0,
+    passingScore: 0,
+    contentHtml: '',
+    documentUrl: '',
+    assignmentStartAt: null,
+    dueAt: null,
+    assignmentMaxScore: 100,
+    maxSubmissionAttempts: 3,
+    maxSubmissionFileSizeMB: 50,
+    allowLateSubmission: false
+  }),
   course = reactive({ id: 0, title: '' }),
   video = reactive({
     id: 0,
@@ -169,11 +269,32 @@ const currentScore = ref(0),
   savingProgress = ref(false)
 const lessonCount = computed(() => chapters.value.reduce((total, chapter) => total + chapter.lessons.length, 0)),
   isVideoLesson = computed(() => ['VIDEO', 'INTERACTIVE_VIDEO'].includes(lesson.type)),
+  sanitizedContentHtml = computed(() =>
+    sanitizeLearningHtml(lesson.contentHtml || '<p>Bài học chưa có nội dung soạn thảo.</p>')
+  ),
+  assignmentAvailability = computed(() => {
+    const now = Date.now()
+    if (lesson.assignmentStartAt && now < new Date(lesson.assignmentStartAt).getTime())
+      return `Bài tập mở lúc ${dateTimeText(lesson.assignmentStartAt)}.`
+    if (lesson.dueAt && now > new Date(lesson.dueAt).getTime() && !lesson.allowLateSubmission)
+      return `Đã hết hạn nộp lúc ${dateTimeText(lesson.dueAt)}.`
+    const submittedAttempts = submissions.value.filter((item) => item.status !== 'DRAFT').length
+    if (submittedAttempts >= lesson.maxSubmissionAttempts)
+      return `Bạn đã sử dụng đủ ${lesson.maxSubmissionAttempts} lần nộp.`
+    return ''
+  }),
   completedLessons = computed(() =>
     chapters.value.reduce((total, chapter) => total + chapter.lessons.filter((x) => x.completed).length, 0)
   )
-onMounted(loadPlayer)
+const activityEvents = ['mousemove', 'keydown', 'click', 'scroll']
+let lastActivityAt = Date.now()
+const recordActivity = () => (lastActivityAt = Date.now())
+onMounted(() => {
+  activityEvents.forEach((eventName) => window.addEventListener(eventName, recordActivity, { passive: true }))
+  loadPlayer()
+})
 onBeforeUnmount(() => {
+  activityEvents.forEach((eventName) => window.removeEventListener(eventName, recordActivity))
   playerRef.value?.pause()
   void saveProgress()
   void stopStudySession(false)
@@ -205,7 +326,10 @@ async function loadPlayer() {
       passingScore: Number(pick(l, 'PassingScore', 'passingScore') || 0),
       contentHtml: pick(l, 'ContentHtml', 'contentHtml') || '',
       documentUrl: pick(l, 'DocumentUrl', 'documentUrl') || '',
+      assignmentStartAt: pick(l, 'AssignmentStartAt', 'assignmentStartAt') || null,
       dueAt: pick(l, 'DueAt', 'dueAt') || null,
+      assignmentMaxScore: Number(pick(l, 'AssignmentMaxScore', 'assignmentMaxScore') || 100),
+      maxSubmissionAttempts: Number(pick(l, 'MaxSubmissionAttempts', 'maxSubmissionAttempts') || 3),
       maxSubmissionFileSizeMB: Number(pick(l, 'MaxSubmissionFileSizeMB', 'maxSubmissionFileSizeMB') || 50),
       allowLateSubmission: Boolean(pick(l, 'AllowLateSubmission', 'allowLateSubmission'))
     })
@@ -262,6 +386,8 @@ async function loadPlayer() {
       const detail = await axiosClient.get(`/lms/courses/${course.id}`, { params: { _fresh: Date.now() } })
       mapCourseContent(detail)
     }
+    submissionText.value = ''
+    submissionFile.value = null
     if (lesson.type === 'ASSIGNMENT') await loadSubmissions()
     else submissions.value = []
     await startStudySession()
@@ -283,8 +409,9 @@ async function startStudySession() {
   })
   studySessionId.value = pick(result, 'StudySessionID', 'studySessionID') || ''
   studyTimer = setInterval(async () => {
-    studySeconds.value += 1
-    if (studySeconds.value % 30 === 0 && studySessionId.value) {
+    const isActive = document.visibilityState === 'visible' && Date.now() - lastActivityAt < 90000
+    if (isActive) studySeconds.value += 1
+    if (isActive && studySeconds.value > 0 && studySeconds.value % 30 === 0 && studySessionId.value) {
       try {
         await axiosClient.put(`/lms/study-sessions/${studySessionId.value}/heartbeat`)
       } catch {
@@ -312,8 +439,12 @@ async function loadSubmissions() {
     submittedAt: pick(row, 'SubmittedAt', 'submittedAt'),
     status: pick(row, 'SubmissionStatus', 'submissionStatus'),
     score: pick(row, 'Score', 'score'),
-    fileName: pick(row, 'OriginalFileName', 'originalFileName')
+    fileName: pick(row, 'OriginalFileName', 'originalFileName'),
+    submissionText: pick(row, 'SubmissionText', 'submissionText') || '',
+    feedback: pick(row, 'Feedback', 'feedback') || ''
   }))
+  const draft = submissions.value.find((item) => item.status === 'DRAFT')
+  if (draft && !submissionText.value) submissionText.value = draft.submissionText
 }
 function selectSubmissionFile(event) {
   submissionFile.value = event.target.files?.[0] || null
@@ -334,12 +465,44 @@ async function submitAssignment() {
     submitting.value = false
   }
 }
+async function saveAssignmentDraft() {
+  await saveAssignment('/submission-draft', false)
+}
+async function saveAssignment(path, clearAfterSave) {
+  submitting.value = true
+  try {
+    const body = new FormData()
+    if (submissionText.value) body.append('submissionText', submissionText.value)
+    if (submissionFile.value) body.append('file', submissionFile.value)
+    await axiosClient.put(`/lms/lessons/${lesson.id}${path}`, body)
+    if (clearAfterSave) {
+      submissionText.value = ''
+      submissionFile.value = null
+    }
+    await loadSubmissions()
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    submitting.value = false
+  }
+}
+async function markLessonComplete() {
+  completing.value = true
+  try {
+    await stopStudySession(true)
+    await loadPlayer()
+  } finally {
+    completing.value = false
+  }
+}
 function formatStudyTime(seconds) {
   const minutes = Math.floor(seconds / 60)
   return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 }
 function dateTimeText(value) {
-  return value ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—'
+  return value
+    ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+    : '—'
 }
 function submissionStatus(value) {
   return (

@@ -24,4 +24,10 @@ public sealed class AcademicController(IAcademicService academic) : ControllerBa
     [HttpPost("classes/students"), Authorize(Roles = "ADMIN")]
     public async Task<ActionResult<ApiResponse<object>>> AssignStudents(AssignStudentsToClassRequest request, CancellationToken cancellationToken) =>
         Ok(ApiResponse<object>.Ok(await academic.AssignStudentsToClassAsync(request, UserId, cancellationToken), "Đã phân học viên vào lớp và đồng bộ môn học."));
+
+    [HttpPost("class-subjects/{classSubjectId:long}/workspace")]
+    public async Task<ActionResult<ApiResponse<object>>> EnsureWorkspace(long classSubjectId, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(
+            await academic.EnsureClassSubjectWorkspaceAsync(classSubjectId, UserId, IsAdmin, cancellationToken),
+            "Đã sẵn sàng không gian soạn bài cho môn học lớp."));
 }

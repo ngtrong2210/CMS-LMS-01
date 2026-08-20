@@ -24,6 +24,7 @@ public interface IAcademicService
     Task<object> GetCatalogAsync(long actorId, bool isAdmin, CancellationToken cancellationToken = default);
     Task<object> SaveAsync(AcademicCatalogSaveRequest request, long actorId, CancellationToken cancellationToken = default);
     Task<object> AssignStudentsToClassAsync(AssignStudentsToClassRequest request, long actorId, CancellationToken cancellationToken = default);
+    Task<object> EnsureClassSubjectWorkspaceAsync(long classSubjectId, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
 }
 public interface ILearningService
 {
@@ -38,7 +39,14 @@ public interface ILearningService
     Task<object?> HeartbeatStudySessionAsync(Guid studySessionId, long studentId, CancellationToken cancellationToken = default);
     Task<object?> EndStudySessionAsync(Guid studySessionId, long studentId, bool isCompleted, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<object>> GetAssignmentSubmissionsAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
+    Task<int> ValidateAssignmentAsync(long lessonId, long studentId, string action, CancellationToken cancellationToken = default);
+    Task<object> SaveAssignmentDraftAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, CancellationToken cancellationToken = default);
     Task<object> SubmitAssignmentAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, CancellationToken cancellationToken = default);
+}
+public interface ITeachingService
+{
+    Task<IReadOnlyCollection<object>> GetAssignmentSubmissionsAsync(long? classSubjectId, string? status, string? search, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<object> GradeAssignmentSubmissionAsync(long assignmentSubmissionId, AssignmentGradeRequest request, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
 }
 public interface IReportService { Task<DashboardDto> GetDashboardAsync(CancellationToken cancellationToken = default); Task<IReadOnlyCollection<object>> GetReportAsync(string report, CancellationToken cancellationToken = default); }
 public interface ISearchService { Task<IReadOnlyCollection<object>> SearchAsync(string search, long actorId, bool isAdmin, int limit = 60, CancellationToken cancellationToken = default); }

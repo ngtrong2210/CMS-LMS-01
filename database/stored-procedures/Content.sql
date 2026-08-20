@@ -231,7 +231,10 @@ Create Or Alter Procedure dbo.LMS_Lesson_Create
     @ContentHtml Nvarchar(Max) = Null,
     @DocumentUrl Nvarchar(1000) = Null,
     @AssignmentFolderName Nvarchar(250) = Null,
+    @AssignmentStartAt Datetime2 = Null,
     @DueAt Datetime2 = Null,
+    @AssignmentMaxScore Decimal(8, 2) = 100,
+    @MaxSubmissionAttempts Int = 3,
     @MaxSubmissionFileSizeMB Int = 50,
     @AllowLateSubmission Bit = 0,
     @Status Varchar(30),
@@ -259,14 +262,16 @@ Begin
     Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT')
     Or @DurationSeconds < 0
     Or @SortOrder < 1
+    Or @AssignmentMaxScore Not Between 1 And 10000
+    Or @MaxSubmissionAttempts Not Between 1 And 20
     Or @MaxSubmissionFileSizeMB Not Between 1 And 200
     Or @PassingScore Not Between 0 And 100  Throw 50001,
     N'Dữ liệu bài học không hợp lệ.',
     1;
 
-    Insert dbo.Lessons (CourseId, ChapterId, Title, Description, LessonType, DurationSeconds, SortOrder, IsRequired, PassingScore, ContentHtml, DocumentUrl, AssignmentFolderName, DueAt, MaxSubmissionFileSizeMB, AllowLateSubmission, Status)
+    Insert dbo.Lessons (CourseId, ChapterId, Title, Description, LessonType, DurationSeconds, SortOrder, IsRequired, PassingScore, ContentHtml, DocumentUrl, AssignmentFolderName, AssignmentStartAt, DueAt, AssignmentMaxScore, MaxSubmissionAttempts, MaxSubmissionFileSizeMB, AllowLateSubmission, Status)
     Values
-        (@CourseId, @ChapterId, @Title, @Description, @LessonType, @DurationSeconds, @SortOrder, @IsRequired, @PassingScore, @ContentHtml, @DocumentUrl, @AssignmentFolderName, @DueAt, @MaxSubmissionFileSizeMB, @AllowLateSubmission, @Status);
+        (@CourseId, @ChapterId, @Title, @Description, @LessonType, @DurationSeconds, @SortOrder, @IsRequired, @PassingScore, @ContentHtml, @DocumentUrl, @AssignmentFolderName, @AssignmentStartAt, @DueAt, @AssignmentMaxScore, @MaxSubmissionAttempts, @MaxSubmissionFileSizeMB, @AllowLateSubmission, @Status);
 
     Declare @Id Bigint = Scope_identity();
 
@@ -291,7 +296,10 @@ Create Or Alter Procedure dbo.LMS_Lesson_Update
     @ContentHtml Nvarchar(Max) = Null,
     @DocumentUrl Nvarchar(1000) = Null,
     @AssignmentFolderName Nvarchar(250) = Null,
+    @AssignmentStartAt Datetime2 = Null,
     @DueAt Datetime2 = Null,
+    @AssignmentMaxScore Decimal(8, 2) = 100,
+    @MaxSubmissionAttempts Int = 3,
     @MaxSubmissionFileSizeMB Int = 50,
     @AllowLateSubmission Bit = 0,
     @Status Varchar(30),
@@ -305,6 +313,8 @@ Begin
     Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT')
     Or @DurationSeconds < 0
     Or @SortOrder < 1
+    Or @AssignmentMaxScore Not Between 1 And 10000
+    Or @MaxSubmissionAttempts Not Between 1 And 20
     Or @MaxSubmissionFileSizeMB Not Between 1 And 200
     Or @PassingScore Not Between 0 And 100  Throw 50001,
     N'Dữ liệu bài học không hợp lệ.',
@@ -322,7 +332,10 @@ Begin
         ContentHtml = @ContentHtml,
         DocumentUrl = @DocumentUrl,
         AssignmentFolderName = @AssignmentFolderName,
+        AssignmentStartAt = @AssignmentStartAt,
         DueAt = @DueAt,
+        AssignmentMaxScore = @AssignmentMaxScore,
+        MaxSubmissionAttempts = @MaxSubmissionAttempts,
         MaxSubmissionFileSizeMB = @MaxSubmissionFileSizeMB,
         AllowLateSubmission = @AllowLateSubmission,
         Status = @Status,

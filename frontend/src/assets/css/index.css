@@ -9,4 +9,6 @@
 @import './components/overlays.css';
 @import './components/confirm-dialog.css';
 @import './components/notification-center.css';
+@import './components/subject-authoring.css';
+@import './components/student-learning-actions.css';
 @import './core/responsive.css';

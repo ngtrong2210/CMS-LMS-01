@@ -50,6 +50,46 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.NotEmpty(data.GetProperty("timetables").EnumerateArray());
     }
 
+    [Fact]
+    public async Task ClassSubjectWorkspace_IsIdempotentAndLinkedToAcademicOffering()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var connectionFactory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = connectionFactory.CreateConnection();
+        var classSubjectId = await connection.QuerySingleAsync<long>("""
+            SELECT TOP(1) ClassSubjectID
+            FROM dbo.SIM_Class_Subject
+            WHERE ClassSubjectStatus=1
+            ORDER BY ClassSubjectID
+            """);
+
+        await AuthorizeAs("admin");
+        var first = await _client.PostAsync($"/api/academic/class-subjects/{classSubjectId}/workspace", null);
+        var second = await _client.PostAsync($"/api/academic/class-subjects/{classSubjectId}/workspace", null);
+        first.EnsureSuccessStatusCode();
+        second.EnsureSuccessStatusCode();
+
+        var firstJson = await first.Content.ReadFromJsonAsync<JsonElement>();
+        var secondJson = await second.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            firstJson.GetProperty("data").GetProperty("CourseID").GetInt64(),
+            secondJson.GetProperty("data").GetProperty("CourseID").GetInt64());
+    }
+
+    [Fact]
+    public async Task AssignmentQueue_IsAvailableToTeacherButForbiddenToStudent()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        await AuthorizeAs("teacher");
+        var teacherResponse = await _client.GetAsync("/api/teaching/assignment-submissions");
+        teacherResponse.EnsureSuccessStatusCode();
+        Assert.Contains("\"success\":true", await teacherResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+
+        await AuthorizeAs("student");
+        var studentResponse = await _client.GetAsync("/api/teaching/assignment-submissions");
+        Assert.Equal(HttpStatusCode.Forbidden, studentResponse.StatusCode);
+    }
+
     [Theory]
     [InlineData("admin", "ADMIN")]
     [InlineData("teacher", "TEACHER")]
@@ -602,8 +642,25 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Player_NonEnrolledCourse_IsNotAccessible()
     {
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var lessonId = await connection.QuerySingleAsync<long>("""
+            SELECT TOP(1) l.Id
+            FROM dbo.Lessons l
+                INNER JOIN dbo.SYS_Users u ON u.Username='student'
+            WHERE l.IsDeleted=0
+                AND NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.LMS_Enrollments e
+                    WHERE e.CourseID=l.CourseId
+                        AND e.StudentUserID=u.UserID
+                        AND e.Status<>'CANCELLED'
+                )
+            ORDER BY l.Id
+            """);
         await AuthorizeAs("student");
-        var response = await _client.GetAsync("/api/lms/lessons/16/player");
+        var response = await _client.GetAsync($"/api/lms/lessons/{lessonId}/player");
         Assert.Contains(response.StatusCode, new[] { HttpStatusCode.Forbidden, HttpStatusCode.NotFound });
     }
 
@@ -621,7 +678,24 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         var courses = await _client.GetStringAsync("/api/lms/courses");
         Assert.Contains("VUE3-001", courses, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("AGILE-010", courses, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/api/lms/courses/2")).StatusCode);
+        var factory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = factory.CreateConnection();
+        var nonEnrolledCourseId = await connection.QuerySingleAsync<long>("""
+            SELECT TOP(1) c.CourseID
+            FROM dbo.SIM_Courses c
+                INNER JOIN dbo.SYS_Users u ON u.Username='student'
+            WHERE c.IsDeleted=0
+                AND NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.LMS_Enrollments e
+                    WHERE e.CourseID=c.CourseID
+                        AND e.StudentUserID=u.UserID
+                        AND e.Status<>'CANCELLED'
+                )
+            ORDER BY c.CourseID
+            """);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/lms/courses/{nonEnrolledCourseId}")).StatusCode);
     }
 
     [Fact]
@@ -648,7 +722,17 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         var candidate = await connection.QuerySingleAsync<(long LessonId,long VideoId)>("""
             SELECT TOP(1) l.Id LessonId,l.VideoId
             FROM dbo.Lessons l
-            WHERE l.VideoId IS NOT NULL AND l.CourseId<>1 AND l.IsDeleted=0
+                INNER JOIN dbo.SYS_Users u ON u.Username='student'
+            WHERE l.VideoId IS NOT NULL
+                AND l.IsDeleted=0
+                AND NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.LMS_Enrollments e
+                    WHERE e.CourseID=l.CourseId
+                        AND e.StudentUserID=u.UserID
+                        AND e.Status<>'CANCELLED'
+                )
             ORDER BY l.Id
             """);
         await AuthorizeAs("student");

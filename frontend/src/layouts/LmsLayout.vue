@@ -17,7 +17,7 @@
         <div id="lmsNav" class="collapse navbar-collapse">
           <div class="navbar-nav mx-auto gap-lg-2">
             <RouterLink class="nav-link" to="/lms/dashboard">Tổng quan</RouterLink>
-            <RouterLink class="nav-link" to="/lms/courses">Khóa học của tôi</RouterLink>
+            <RouterLink class="nav-link" to="/lms/courses">Môn học của tôi</RouterLink>
             <RouterLink class="nav-link" to="/lms/results">Kết quả</RouterLink>
           </div>
           <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">

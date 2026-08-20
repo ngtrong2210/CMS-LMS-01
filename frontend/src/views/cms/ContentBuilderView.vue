@@ -2,8 +2,9 @@
   <section>
     <header class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
       <div>
-        <h1 class="page-title">Nội dung: {{ course.title }}</h1>
-        <p class="page-subtitle mb-0">Thêm, sửa, xóa chương/bài học và chọn video dùng chung từ thư viện.</p>
+        <span class="builder-eyebrow">SOẠN MÔN HỌC LỚP</span>
+        <h1 class="page-title">{{ course.title }}</h1>
+        <p class="page-subtitle mb-0">Tổ chức chương, bài học, học liệu và bài tập cho đúng lớp trong năm học.</p>
       </div>
       <CmsPageActions>
         <RouterLink class="btn btn-action-view" to="/cms/videos"
@@ -74,7 +75,7 @@
       <div v-if="!chapters.length" class="app-card empty-state">
         <i class="bi bi-journal-plus"></i>
         <h2>Chưa có chương</h2>
-        <p>Tạo chương đầu tiên để bắt đầu xây dựng nội dung khóa học.</p>
+        <p>Tạo chương đầu tiên để bắt đầu xây dựng nội dung môn học lớp.</p>
         <button class="btn btn-action-create" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
       </div>
     </div>
@@ -83,7 +84,7 @@
       <form class="app-card form-modal" @submit.prevent="saveChapter">
         <div class="modal-heading">
           <div>
-            <small>CHƯƠNG KHÓA HỌC</small>
+            <small>CHƯƠNG MÔN HỌC</small>
             <h2>{{ chapterForm.id ? 'Sửa chương' : 'Thêm chương' }}</h2>
           </div>
           <button type="button" class="btn-close" @click="chapterModal = false"></button>
@@ -173,25 +174,91 @@
           <div v-if="lessonForm.lessonType === 'EDITOR'" class="col-12">
             <label class="form-label"><i class="bi bi-pencil-square"></i> Nội dung soạn thảo</label>
             <div class="editor-toolbar">
-              <button type="button" title="Chữ đậm" @click="formatEditor('bold')"><i class="bi bi-type-bold"></i></button>
-              <button type="button" title="Chữ nghiêng" @click="formatEditor('italic')"><i class="bi bi-type-italic"></i></button>
-              <button type="button" title="Danh sách" @click="formatEditor('insertUnorderedList')"><i class="bi bi-list-ul"></i></button>
-              <button type="button" title="Tiêu đề" @click="formatEditor('formatBlock', 'h3')"><i class="bi bi-type-h3"></i></button>
+              <button type="button" title="Chữ đậm" @click="formatEditor('bold')">
+                <i class="bi bi-type-bold"></i>
+              </button>
+              <button type="button" title="Chữ nghiêng" @click="formatEditor('italic')">
+                <i class="bi bi-type-italic"></i>
+              </button>
+              <button type="button" title="Danh sách" @click="formatEditor('insertUnorderedList')">
+                <i class="bi bi-list-ul"></i>
+              </button>
+              <button type="button" title="Tiêu đề" @click="formatEditor('formatBlock', 'h3')">
+                <i class="bi bi-type-h3"></i>
+              </button>
             </div>
             <div ref="lessonEditor" class="lesson-rich-editor" contenteditable="true" @input="syncEditor"></div>
           </div>
           <template v-if="['DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType)">
             <div class="col-12">
               <label class="form-label"><i class="bi bi-paperclip"></i> File tài liệu / đề bài</label>
-              <input class="form-control" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.png,.jpg,.jpeg" @change="selectLessonFile" />
-              <small v-if="lessonForm.documentUrl" class="resource-path"><i class="bi bi-check-circle"></i> {{ lessonForm.documentUrl }}</small>
+              <input
+                class="form-control"
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.png,.jpg,.jpeg"
+                @change="selectLessonFile"
+              />
+              <small v-if="lessonForm.documentUrl" class="resource-path"
+                ><i class="bi bi-check-circle"></i> {{ lessonForm.documentUrl }}</small
+              >
             </div>
           </template>
           <template v-if="lessonForm.lessonType === 'ASSIGNMENT'">
-            <div class="col-md-6"><label class="form-label">Thư mục bài tập</label><input v-model.trim="lessonForm.assignmentFolderName" class="form-control" maxlength="250" placeholder="VD: Bai-tap-chuong-1" /></div>
-            <div class="col-md-6"><label class="form-label">Hạn nộp</label><input v-model="lessonForm.dueAt" class="form-control" type="datetime-local" /></div>
-            <div class="col-md-6"><label class="form-label">Dung lượng nộp tối đa (MB)</label><input v-model.number="lessonForm.maxSubmissionFileSizeMB" class="form-control" type="number" min="1" max="200" /></div>
-            <div class="col-md-6 check-row"><input id="allowLate" v-model="lessonForm.allowLateSubmission" class="form-check-input" type="checkbox" /><label for="allowLate">Cho phép nộp trễ</label></div>
+            <div class="col-md-6">
+              <label class="form-label">Thư mục bài tập</label
+              ><input
+                v-model.trim="lessonForm.assignmentFolderName"
+                class="form-control"
+                maxlength="250"
+                placeholder="VD: Bai-tap-chuong-1"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Thời gian mở</label
+              ><input v-model="lessonForm.assignmentStartAt" class="form-control" type="datetime-local" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Hạn nộp</label
+              ><input v-model="lessonForm.dueAt" class="form-control" type="datetime-local" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Điểm tối đa</label
+              ><input
+                v-model.number="lessonForm.assignmentMaxScore"
+                class="form-control"
+                type="number"
+                min="1"
+                max="10000"
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Số lần nộp tối đa</label
+              ><input
+                v-model.number="lessonForm.maxSubmissionAttempts"
+                class="form-control"
+                type="number"
+                min="1"
+                max="20"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Dung lượng nộp tối đa (MB)</label
+              ><input
+                v-model.number="lessonForm.maxSubmissionFileSizeMB"
+                class="form-control"
+                type="number"
+                min="1"
+                max="200"
+              />
+            </div>
+            <div class="col-md-6 check-row">
+              <input
+                id="allowLate"
+                v-model="lessonForm.allowLateSubmission"
+                class="form-check-input"
+                type="checkbox"
+              /><label for="allowLate">Cho phép nộp trễ</label>
+            </div>
           </template>
         </div>
         <div class="modal-actions">
@@ -347,7 +414,10 @@ function mapLesson(row, index) {
     contentHtml: pick(row, 'ContentHtml', 'contentHtml') || '',
     documentUrl: pick(row, 'DocumentUrl', 'documentUrl') || '',
     assignmentFolderName: pick(row, 'AssignmentFolderName', 'assignmentFolderName') || '',
+    assignmentStartAt: toLocalDateTime(pick(row, 'AssignmentStartAt', 'assignmentStartAt')),
     dueAt: toLocalDateTime(pick(row, 'DueAt', 'dueAt')),
+    assignmentMaxScore: Number(pick(row, 'AssignmentMaxScore', 'assignmentMaxScore') || 100),
+    maxSubmissionAttempts: Number(pick(row, 'MaxSubmissionAttempts', 'maxSubmissionAttempts') || 3),
     maxSubmissionFileSizeMB: Number(pick(row, 'MaxSubmissionFileSizeMB', 'maxSubmissionFileSizeMB') || 50),
     allowLateSubmission: Boolean(pick(row, 'AllowLateSubmission', 'allowLateSubmission'))
   }
@@ -370,7 +440,10 @@ function blankLesson() {
     contentHtml: '',
     documentUrl: '',
     assignmentFolderName: '',
+    assignmentStartAt: '',
     dueAt: '',
+    assignmentMaxScore: 100,
+    maxSubmissionAttempts: 3,
     maxSubmissionFileSizeMB: 50,
     allowLateSubmission: false
   }
@@ -436,7 +509,14 @@ async function saveLesson() {
       contentHtml: lessonForm.lessonType === 'EDITOR' ? lessonForm.contentHtml || null : null,
       documentUrl: ['DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType) ? lessonForm.documentUrl || null : null,
       assignmentFolderName: lessonForm.lessonType === 'ASSIGNMENT' ? lessonForm.assignmentFolderName || null : null,
-      dueAt: lessonForm.lessonType === 'ASSIGNMENT' && lessonForm.dueAt ? new Date(lessonForm.dueAt).toISOString() : null,
+      assignmentStartAt:
+        lessonForm.lessonType === 'ASSIGNMENT' && lessonForm.assignmentStartAt
+          ? new Date(lessonForm.assignmentStartAt).toISOString()
+          : null,
+      dueAt:
+        lessonForm.lessonType === 'ASSIGNMENT' && lessonForm.dueAt ? new Date(lessonForm.dueAt).toISOString() : null,
+      assignmentMaxScore: Number(lessonForm.assignmentMaxScore) || 100,
+      maxSubmissionAttempts: Number(lessonForm.maxSubmissionAttempts) || 3,
       maxSubmissionFileSizeMB: Number(lessonForm.maxSubmissionFileSizeMB) || 50,
       allowLateSubmission: lessonForm.lessonType === 'ASSIGNMENT' && lessonForm.allowLateSubmission,
       status: lessonForm.status
@@ -474,7 +554,7 @@ async function removeTarget() {
     )
     deleteTarget.value = null
     await load()
-    show('Đã xóa nội dung khỏi khóa học.')
+    show('Đã xóa nội dung khỏi môn học lớp.')
   } catch (error) {
     show(error.message, 'danger')
   } finally {
@@ -521,7 +601,14 @@ async function attachVideo(asset) {
 }
 function lessonTypeLabel(type) {
   return (
-    { INTERACTIVE_VIDEO: 'Video tương tác', VIDEO: 'Video', QUIZ: 'Bài kiểm tra', DOCUMENT: 'Tài liệu', EDITOR: 'Bài soạn thảo', ASSIGNMENT: 'Bài tập nộp file' }[type] || type
+    {
+      INTERACTIVE_VIDEO: 'Video tương tác',
+      VIDEO: 'Video',
+      QUIZ: 'Bài kiểm tra',
+      DOCUMENT: 'Tài liệu',
+      EDITOR: 'Bài soạn thảo',
+      ASSIGNMENT: 'Bài tập nộp file'
+    }[type] || type
   )
 }
 function selectLessonFile(event) {

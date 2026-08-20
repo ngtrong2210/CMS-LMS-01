@@ -19,7 +19,7 @@ public sealed class LmsController(ILearningService learning, IAssignmentStorageS
     public async Task<ActionResult<ApiResponse<object>>> GetCourse(long courseId, CancellationToken cancellationToken)
     {
         var data = await learning.GetCourseAsync(courseId, UserId, cancellationToken);
-        return data is null ? NotFound(ApiResponse<object>.Fail("Không tìm thấy khóa học hoặc bạn chưa được ghi danh.")) : Ok(ApiResponse<object>.Ok(data));
+        return data is null ? NotFound(ApiResponse<object>.Fail("Không tìm thấy môn học hoặc bạn chưa được ghi danh.")) : Ok(ApiResponse<object>.Ok(data));
     }
     [HttpGet("results")]
     public async Task<ActionResult<ApiResponse<object>>> GetResults(CancellationToken cancellationToken) => Ok(ApiResponse<object>.Ok(await learning.GetResultsAsync(UserId, null, cancellationToken)));
@@ -66,6 +66,10 @@ public sealed class LmsController(ILearningService learning, IAssignmentStorageS
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<ApiResponse<object>>> SubmitAssignment(long lessonId, [FromForm] string? submissionText, [FromForm] IFormFile? file, CancellationToken cancellationToken)
     {
+        var maximumFileSizeMb = await learning.ValidateAssignmentAsync(lessonId, UserId, "SUBMIT", cancellationToken);
+        if (file is not null && file.Length > maximumFileSizeMb * 1024L * 1024L)
+            return BadRequest(ApiResponse<object>.Fail($"File bài làm vượt quá giới hạn {maximumFileSizeMb} MB."));
+
         AssignmentSubmissionFile? stored = null;
         if (file is not null)
         {
@@ -74,5 +78,23 @@ public sealed class LmsController(ILearningService learning, IAssignmentStorageS
         }
 
         return Ok(ApiResponse<object>.Ok(await learning.SubmitAssignmentAsync(lessonId, UserId, submissionText, stored, cancellationToken), "Đã nộp bài tập."));
+    }
+
+    [HttpPut("lessons/{lessonId:long}/submission-draft")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<ApiResponse<object>>> SaveAssignmentDraft(long lessonId, [FromForm] string? submissionText, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    {
+        var maximumFileSizeMb = await learning.ValidateAssignmentAsync(lessonId, UserId, "DRAFT", cancellationToken);
+        if (file is not null && file.Length > maximumFileSizeMb * 1024L * 1024L)
+            return BadRequest(ApiResponse<object>.Fail($"File bài làm vượt quá giới hạn {maximumFileSizeMb} MB."));
+
+        AssignmentSubmissionFile? stored = null;
+        if (file is not null)
+        {
+            await using var stream = file.OpenReadStream();
+            stored = await assignmentStorage.SaveStudentSubmissionAsync(lessonId, UserId, stream, file.FileName, file.ContentType, file.Length, cancellationToken);
+        }
+
+        return Ok(ApiResponse<object>.Ok(await learning.SaveAssignmentDraftAsync(lessonId, UserId, submissionText, stored, cancellationToken), "Đã lưu nháp bài làm."));
     }
 }

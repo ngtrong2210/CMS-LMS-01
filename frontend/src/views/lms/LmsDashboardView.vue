@@ -41,7 +41,7 @@
       <div class="d-flex justify-content-between align-items-end mb-3">
         <div>
           <h2 class="h4 fw-bold mb-1">Tiếp tục học</h2>
-          <span class="page-subtitle">Khóa học bạn truy cập gần đây</span>
+          <span class="page-subtitle">Môn học bạn truy cập gần đây</span>
         </div>
         <RouterLink class="text-brand fw-semibold small" to="/lms/courses"
           >Xem tất cả <i class="bi bi-arrow-right"></i
@@ -91,7 +91,7 @@ const loading = ref(true),
   }),
   pick = (s, ...n) => n.map((x) => s?.[x]).find((v) => v !== undefined && v !== null)
 const stats = computed(() => [
-  { label: 'Khóa học đang học', value: summary.activeCourses, icon: 'bi-journal-play', tone: 'green' },
+  { label: 'Môn học đang học', value: summary.activeCourses, icon: 'bi-journal-play', tone: 'green' },
   { label: 'Bài học hoàn thành', value: summary.completedLessons, icon: 'bi-check2-circle', tone: 'blue' },
   { label: 'Điểm trung bình', value: summary.averageScore, icon: 'bi-star', tone: 'yellow' },
   { label: 'Thời gian học', value: `${Math.round(summary.learningSeconds / 360) / 10}h`, icon: 'bi-clock', tone: 'red' }
@@ -115,7 +115,7 @@ async function loadDashboard() {
       code: pick(r, 'Code', 'code'),
       title: pick(r, 'Title', 'title'),
       teacher: pick(r, 'TeacherName', 'teacherName'),
-      category: pick(r, 'CategoryName', 'categoryName') || 'Khóa học',
+      category: pick(r, 'CategoryName', 'categoryName') || 'Môn học lớp',
       progress: Number(pick(r, 'ProgressPercent', 'progressPercent') || 0),
       continueLessonId: Number(pick(r, 'ContinueLessonId', 'continueLessonId') || 0)
     }))
