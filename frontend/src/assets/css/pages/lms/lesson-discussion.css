@@ -1,0 +1,224 @@
+.lesson-discussion {
+  --discussion-navy: #123552;
+  --discussion-primary: #d3224d;
+  --discussion-muted: #687b86;
+  background: #fff;
+  border-radius: 12px;
+  margin-top: 12px;
+  padding: 24px;
+}
+.discussion-heading {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+}
+.discussion-heading span {
+  color: var(--discussion-primary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+.discussion-heading h2 {
+  color: var(--discussion-navy);
+  font-size: 1.2rem;
+  margin: 3px 0;
+}
+.discussion-heading p {
+  color: var(--discussion-muted);
+  font-size: 0.82rem;
+  margin: 0;
+}
+.discussion-heading > strong {
+  background: #fbe8ee;
+  border-radius: 20px;
+  color: var(--discussion-primary);
+  font-size: 0.72rem;
+  padding: 7px 11px;
+}
+.discussion-composer {
+  background: #f6f8f9;
+  border-radius: 10px;
+  margin: 20px 0;
+  padding: 14px;
+}
+.discussion-composer textarea,
+.comment-reply-form textarea,
+.comment-body > textarea {
+  background: #fff;
+  border: 0;
+  box-shadow: none;
+  font-size: 0.86rem;
+  resize: vertical;
+}
+.discussion-composer > div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.discussion-composer small { color: var(--discussion-muted); }
+.btn-comment-primary,
+.btn-comment-plain,
+.btn-comment-danger {
+  border: 0;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 750;
+  padding: 9px 13px;
+}
+.btn-comment-primary { background: var(--discussion-primary); color: #fff; }
+.btn-comment-plain { background: #eef2f3; color: var(--discussion-navy); }
+.btn-comment-danger { background: #cd1b1b; color: #fff; }
+.discussion-list {
+  display: grid;
+  gap: 4px;
+}
+.lesson-comment {
+  display: grid;
+  gap: 11px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  padding: 14px 0;
+}
+.lesson-comment.comment-depth-1,
+.lesson-comment.comment-depth-2 {
+  padding-left: 22px;
+}
+.comment-avatar {
+  align-items: center;
+  background: #e9eef1;
+  border-radius: 50%;
+  color: var(--discussion-navy);
+  display: flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  height: 38px;
+  justify-content: center;
+  overflow: hidden;
+  width: 38px;
+}
+.comment-avatar img { height: 100%; object-fit: cover; width: 100%; }
+.comment-body { min-width: 0; }
+.comment-body header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+.comment-body header > div {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+}
+.comment-body header strong { color: var(--discussion-navy); font-size: 0.83rem; }
+.comment-body time { color: #89979f; font-size: 0.68rem; }
+.comment-role {
+  border-radius: 12px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+.role-teacher { background: #e7f1fb; color: #1769aa; }
+.role-admin { background: #fbe8ee; color: #d3224d; }
+.role-student { background: #e7f6f0; color: #07875a; }
+.comment-content {
+  color: #344b5a;
+  font-size: 0.84rem;
+  line-height: 1.65;
+  margin: 7px 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.lesson-comment.deleted .comment-content { color: #89979f; font-style: italic; }
+.comment-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+.comment-actions button {
+  background: transparent;
+  border: 0;
+  color: #657985;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0;
+}
+.comment-actions button:hover { color: var(--discussion-primary); }
+.comment-actions button.danger { color: #cd1b1b; }
+.comment-actions > span { color: #8a989f; font-size: 0.65rem; }
+.comment-replies { margin-top: 6px; }
+.comment-reply-form {
+  background: #f6f8f9;
+  border-radius: 9px;
+  margin-top: 10px;
+  padding: 10px;
+}
+.comment-reply-form > div,
+.comment-editor-actions {
+  display: flex;
+  gap: 7px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.discussion-state,
+.discussion-empty {
+  align-items: center;
+  color: var(--discussion-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  min-height: 150px;
+  text-align: center;
+}
+.discussion-empty i { color: #a4b0b6; font-size: 2rem; }
+.discussion-state.error { color: #cd1b1b; }
+.discussion-state button,
+.discussion-load-more {
+  background: transparent;
+  border: 0;
+  color: var(--discussion-primary);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+.discussion-load-more { display: block; margin: 14px auto 0; }
+.app-modal-backdrop {
+  align-items: center;
+  background: rgba(7, 25, 34, 0.64);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 2050;
+}
+.app-confirm-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 24px 70px rgba(7, 25, 34, 0.22);
+  max-width: 450px;
+  padding: 28px;
+  width: 100%;
+}
+.confirm-icon {
+  align-items: center;
+  background: #fdebed;
+  border-radius: 50%;
+  color: #cd1b1b;
+  display: flex;
+  font-size: 1.25rem;
+  height: 46px;
+  justify-content: center;
+  margin-bottom: 14px;
+  width: 46px;
+}
+.app-confirm-modal > small { color: #d3224d; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; }
+.app-confirm-modal h3 { color: var(--discussion-navy); font-size: 1.18rem; margin: 4px 0 8px; }
+.app-confirm-modal p { color: var(--discussion-muted); font-size: 0.82rem; }
+.app-confirm-modal > div:last-child { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+@media (max-width: 640px) {
+  .lesson-discussion { padding: 16px; }
+  .discussion-heading > strong { display: none; }
+  .lesson-comment.comment-depth-1,
+  .lesson-comment.comment-depth-2 { padding-left: 10px; }
+  .comment-body header { align-items: flex-start; flex-direction: column; gap: 3px; }
+}

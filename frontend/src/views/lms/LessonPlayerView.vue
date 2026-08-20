@@ -1,11 +1,30 @@
 <template>
-  <section>
-    <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
-      <span class="badge badge-soft-primary"
-        ><i class="bi bi-clock"></i> Thời gian học {{ formatStudyTime(studySeconds) }}</span
-      >
-      <span v-if="isVideoLesson" class="badge badge-soft-success">Đã xem {{ Math.round(progress.watchPercent) }}%</span>
-    </div>
+  <section :class="['lesson-player-page', { 'focus-mode': focusMode }]">
+    <header class="lesson-player-header">
+      <RouterLink class="lesson-back-link" :to="`/lms/courses/${course.id || route.params.courseId}`">
+        <i class="bi bi-arrow-left"></i><span>Trở về môn học</span>
+      </RouterLink>
+      <div class="lesson-header-context">
+        <span>{{ course.title || 'Môn học' }}</span>
+        <div>
+          <span class="course-progress-track"><i :style="{ width: `${courseProgress}%` }"></i></span>
+          <small>{{ completedLessons }}/{{ lessonCount }} bài · {{ courseProgress }}%</small>
+        </div>
+      </div>
+      <div class="lesson-header-actions">
+        <span><i class="bi bi-clock"></i> {{ formatStudyTime(studySeconds) }}</span>
+        <button
+          type="button"
+          :title="focusMode ? 'Thoát chế độ tập trung' : 'Chế độ tập trung'"
+          @click="focusMode = !focusMode"
+        >
+          <i :class="['bi', focusMode ? 'bi-fullscreen-exit' : 'bi-arrows-fullscreen']"></i>
+        </button>
+        <button type="button" title="Ẩn hoặc hiện nội dung môn học" @click="sidebarOpen = !sidebarOpen">
+          <i class="bi bi-layout-sidebar-reverse"></i>
+        </button>
+      </div>
+    </header>
     <div v-if="loading" class="app-card p-5 text-center">
       <span class="spinner-border text-success"></span>
       <p class="text-secondary mt-3 mb-0">Đang tải bài học...</p>
@@ -17,8 +36,20 @@
       <button class="btn btn-action-refresh" @click="loadPlayer"><i class="bi bi-arrow-clockwise"></i> Thử lại</button>
     </div>
     <template v-else>
-      <div class="player-grid app-card overflow-hidden">
+      <div :class="['player-grid', { 'sidebar-closed': !sidebarOpen || focusMode }]">
         <div class="video-area">
+          <div class="current-lesson-heading">
+            <span :class="['lesson-type-icon', lessonTypeClass(lesson.type)]">
+              <i :class="['bi', lessonTypeMeta(lesson.type).icon]"></i>
+            </span>
+            <div>
+              <small>{{ lessonTypeMeta(lesson.type).label }}</small>
+              <h1>{{ lesson.title }}</h1>
+            </div>
+            <span v-if="isVideoLesson" class="lesson-watch-status"
+              >Đã xem {{ Math.round(progress.watchPercent) }}%</span
+            >
+          </div>
           <div class="video-stage">
             <InteractiveVideoPlayer
               v-if="isVideoLesson"
@@ -80,27 +111,42 @@
             </article>
             <article v-else-if="lesson.type === 'ASSIGNMENT'" class="learning-content assignment-content">
               <div class="assignment-heading">
-                <span class="content-type-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+                <span class="content-type-icon"><i class="bi bi-clipboard-check-fill"></i></span>
                 <div>
-                  <h2>Bài tập nộp file</h2>
+                  <small>BÀI TẬP CẦN NỘP</small>
+                  <h2>{{ lesson.title }}</h2>
                   <p v-if="lesson.dueAt">Hạn nộp: {{ dateTimeText(lesson.dueAt) }}</p>
                   <p v-else>Không giới hạn thời gian nộp.</p>
                 </div>
+                <div class="assignment-metadata">
+                  <span><i class="bi bi-star-fill"></i> {{ lesson.assignmentMaxScore }} điểm</span>
+                  <span><i class="bi bi-arrow-repeat"></i> {{ lesson.maxSubmissionAttempts }} lần nộp</span>
+                  <span :class="assignmentAvailability ? 'closed' : 'open'">
+                    <i class="bi bi-circle-fill"></i> {{ assignmentAvailability ? 'Đang đóng' : 'Đang nhận bài' }}
+                  </span>
+                </div>
               </div>
-              <div v-if="lesson.contentHtml" class="lesson-html" v-html="sanitizedContentHtml"></div>
-              <p v-else>{{ lesson.description || 'Thực hiện yêu cầu và nộp bài tại biểu mẫu bên dưới.' }}</p>
-              <a
-                v-if="lesson.documentUrl"
-                class="assignment-resource"
-                :href="resolveApiAssetUrl(lesson.documentUrl)"
-                target="_blank"
-                rel="noopener"
-                ><i class="bi bi-paperclip"></i> Tải đề bài / tài liệu đính kèm</a
-              >
+              <section class="assignment-requirements">
+                <h3><i class="bi bi-list-check"></i> Yêu cầu bài tập</h3>
+                <div v-if="lesson.contentHtml" class="lesson-html" v-html="sanitizedContentHtml"></div>
+                <p v-else>{{ lesson.description || 'Thực hiện yêu cầu và nộp bài tại biểu mẫu bên dưới.' }}</p>
+                <a
+                  v-if="lesson.documentUrl"
+                  class="assignment-resource"
+                  :href="resolveApiAssetUrl(lesson.documentUrl)"
+                  target="_blank"
+                  rel="noopener"
+                  ><i class="bi bi-file-earmark-arrow-down-fill"></i
+                  ><span
+                    ><strong>{{ documentFileName }}</strong
+                    ><small>Mở hoặc tải đề bài đính kèm</small></span
+                  ></a
+                >
+              </section>
               <div v-if="assignmentAvailability" class="assignment-availability">
                 <i class="bi bi-info-circle"></i> {{ assignmentAvailability }}
               </div>
-              <form v-else class="assignment-form" @submit.prevent="submitAssignment">
+              <form v-else class="assignment-form" @submit.prevent="showSubmitConfirm = true">
                 <div class="submission-heading">
                   <div>
                     <small>NỘP BÀI</small>
@@ -142,8 +188,19 @@
                   <strong>{{ submissionFile?.name || 'Chọn file bài làm' }}</strong>
                   <span>Kéo thả hoặc bấm để chọn file · tối đa {{ lesson.maxSubmissionFileSizeMB }} MB</span>
                 </label>
+                <button
+                  v-if="submissionMode === 'file' && submissionFile"
+                  type="button"
+                  class="remove-submission-file"
+                  @click="submissionFile = null"
+                >
+                  <i class="bi bi-x-circle"></i> Bỏ file {{ submissionFile.name }}
+                </button>
                 <div v-if="assignmentMessage" class="assignment-success">
                   <i class="bi bi-check-circle-fill"></i> {{ assignmentMessage }}
+                </div>
+                <div v-if="assignmentError" class="assignment-error">
+                  <i class="bi bi-exclamation-circle-fill"></i> {{ assignmentError }}
                 </div>
                 <div class="assignment-actions">
                   <button
@@ -263,8 +320,6 @@
           </div>
           <div class="lesson-meta">
             <div>
-              <span class="badge badge-soft-primary">{{ lesson.type }}</span>
-              <h1>{{ lesson.title }}</h1>
               <p>{{ lesson.description || 'Học qua video và hoàn thành các câu hỏi tương tác.' }}</p>
             </div>
             <div class="score">
@@ -273,61 +328,163 @@
             </div>
           </div>
         </div>
-        <aside class="content-panel">
-          <div class="p-3">
-            <strong>Nội dung môn học</strong
-            ><small class="d-block text-secondary">{{ completedLessons }}/{{ lessonCount }} bài đã hoàn thành</small>
+        <aside v-show="sidebarOpen && !focusMode" class="content-panel">
+          <div class="curriculum-heading">
+            <div>
+              <strong>Nội dung môn học</strong><small>{{ completedLessons }}/{{ lessonCount }} bài đã hoàn thành</small>
+            </div>
+            <button type="button" title="Đóng danh sách" @click="sidebarOpen = false">
+              <i class="bi bi-x-lg"></i>
+            </button>
           </div>
           <div class="chapter-list">
             <div v-for="chapter in chapters" :key="chapter.id" class="chapter">
-              <strong>{{ chapter.title }}</strong
-              ><RouterLink
-                v-for="item in chapter.lessons"
-                :key="item.id"
-                :to="`/lms/courses/${course.id}/lessons/${item.id}`"
-                :class="{ active: item.id === lesson.id }"
-                ><i
-                  :class="[
-                    'bi',
-                    item.completed ? 'bi-check-circle-fill' : item.id === lesson.id ? 'bi-play-circle' : 'bi-circle'
-                  ]"
-                ></i
-                ><span>{{ item.title }}</span
-                ><small>{{ formatTime(item.duration) }}</small></RouterLink
-              >
+              <button type="button" class="chapter-toggle" @click="toggleChapter(chapter.id)">
+                <span
+                  ><strong>{{ chapter.title }}</strong
+                  ><small>{{ chapter.lessons.length }} bài học</small></span
+                >
+                <i :class="['bi', expandedChapters.has(chapter.id) ? 'bi-chevron-up' : 'bi-chevron-down']"></i>
+              </button>
+              <div v-show="expandedChapters.has(chapter.id)" class="chapter-lessons">
+                <RouterLink
+                  v-for="item in chapter.lessons"
+                  :key="item.id"
+                  :to="`/lms/courses/${course.id}/lessons/${item.id}`"
+                  :class="{ active: item.id === lesson.id }"
+                >
+                  <span :class="['lesson-type-icon', lessonTypeClass(item.type)]">
+                    <i :class="['bi', lessonTypeMeta(item.type).icon]"></i>
+                  </span>
+                  <span
+                    ><strong>{{ item.title }}</strong
+                    ><small>{{ lessonTypeMeta(item.type).label }} · {{ formatTime(item.duration) }}</small></span
+                  >
+                  <i
+                    v-if="item.completed"
+                    class="bi bi-check-circle-fill lesson-status-complete"
+                    title="Đã hoàn thành"
+                  ></i>
+                  <i
+                    v-else-if="item.id === lesson.id"
+                    class="bi bi-play-circle-fill lesson-status-current"
+                    title="Đang học"
+                  ></i>
+                </RouterLink>
+              </div>
             </div>
           </div>
         </aside>
       </div>
-      <div v-if="isVideoLesson" class="app-card p-4 mt-4">
-        <h2 class="h5 fw-bold">Mốc câu hỏi tương tác</h2>
-        <div v-if="interactions.length" class="interaction-list">
-          <button
-            v-for="item in interactions"
-            :key="item.id"
-            type="button"
-            :class="{ answered: item.answered }"
-            @click="playerRef?.openQuestion(item)"
-          >
-            <span>{{ formatTime(item.timeSeconds) }}</span
-            ><i :class="['bi', item.answered ? 'bi-check-circle-fill' : 'bi-patch-question']"></i>
-            <div>
-              <strong>{{ item.label }}</strong
-              ><small>{{ questionTypeLabel(item.type) }} • {{ item.score }} điểm</small>
-            </div>
+      <nav class="lesson-tabs" aria-label="Nội dung bổ sung của bài học">
+        <button
+          v-for="tab in lessonTabs"
+          :key="tab.key"
+          type="button"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >
+          <i :class="['bi', tab.icon]"></i> {{ tab.label }}
+          <span v-if="tab.key === 'discussion' && discussionCount">{{ discussionCount }}</span>
+        </button>
+      </nav>
+      <div v-if="activeTab === 'overview'">
+        <div v-if="isVideoLesson" class="app-card p-4 mt-4">
+          <h2 class="h5 fw-bold">Mốc câu hỏi tương tác</h2>
+          <div v-if="interactions.length" class="interaction-list">
+            <button
+              v-for="item in interactions"
+              :key="item.id"
+              type="button"
+              :class="{ answered: item.answered }"
+              @click="playerRef?.openQuestion(item)"
+            >
+              <span>{{ formatTime(item.timeSeconds) }}</span
+              ><i :class="['bi', item.answered ? 'bi-check-circle-fill' : 'bi-patch-question']"></i>
+              <div>
+                <strong>{{ item.label }}</strong
+                ><small>{{ questionTypeLabel(item.type) }} • {{ item.score }} điểm</small>
+              </div>
+            </button>
+          </div>
+          <p v-else class="text-secondary mb-0">Bài học này không có câu hỏi tương tác.</p>
+        </div>
+        <div v-if="!isVideoLesson && lesson.type !== 'ASSIGNMENT'" class="lesson-completion app-card mt-4">
+          <div>
+            <strong>Hoàn thành nội dung này?</strong
+            ><small>Hệ thống chỉ ghi nhận thời gian hợp lệ từ heartbeat khi trang đang hoạt động.</small>
+          </div>
+          <button class="btn btn-action-save" :disabled="completing" @click="markLessonComplete">
+            <span v-if="completing" class="spinner-border spinner-border-sm"></span
+            ><i v-else class="bi bi-check2-circle"></i> Đánh dấu hoàn thành
           </button>
         </div>
-        <p v-else class="text-secondary mb-0">Bài học này không có câu hỏi tương tác.</p>
       </div>
-      <div v-if="!isVideoLesson && lesson.type !== 'ASSIGNMENT'" class="lesson-completion app-card mt-4">
-        <div>
-          <strong>Hoàn thành nội dung này?</strong
-          ><small>Hệ thống chỉ ghi nhận thời gian hợp lệ từ heartbeat khi trang đang hoạt động.</small>
+      <section v-else-if="activeTab === 'resources'" class="lesson-resource-tab app-card">
+        <div v-if="lesson.documentUrl" class="resource-list-item">
+          <span :class="['lesson-type-icon', lessonTypeClass('DOCUMENT')]"
+            ><i class="bi bi-file-earmark-pdf-fill"></i
+          ></span>
+          <div>
+            <strong>{{ documentFileName }}</strong
+            ><small>Tài liệu đính kèm của bài học</small>
+          </div>
+          <a :href="documentAssetUrl" target="_blank" rel="noopener"><i class="bi bi-download"></i> Tải xuống</a>
         </div>
-        <button class="btn btn-action-save" :disabled="completing" @click="markLessonComplete">
-          <span v-if="completing" class="spinner-border spinner-border-sm"></span
-          ><i v-else class="bi bi-check2-circle"></i> Đánh dấu hoàn thành
-        </button>
+        <div v-else class="discussion-empty">
+          <i class="bi bi-folder2-open"></i><strong>Chưa có tài nguyên đính kèm</strong>
+        </div>
+      </section>
+      <LessonDiscussion
+        v-else-if="activeTab === 'discussion'"
+        :lesson-id="lesson.id"
+        @count-change="discussionCount = $event"
+      />
+
+      <nav class="lesson-navigation" aria-label="Điều hướng bài học">
+        <RouterLink v-if="previousLesson" :to="lessonUrl(previousLesson)" class="previous">
+          <i class="bi bi-arrow-left"></i>
+          <span
+            ><small>Bài trước</small><strong>{{ previousLesson.title }}</strong></span
+          >
+        </RouterLink>
+        <span v-else></span>
+        <RouterLink v-if="nextLesson" :to="lessonUrl(nextLesson)" class="next">
+          <span
+            ><small>Bài tiếp theo</small><strong>{{ nextLesson.title }}</strong></span
+          >
+          <i class="bi bi-arrow-right"></i>
+        </RouterLink>
+      </nav>
+
+      <div v-if="showSubmitConfirm" class="app-modal-backdrop" @click.self="showSubmitConfirm = false">
+        <div
+          class="app-confirm-modal assignment-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="submit-assignment-title"
+        >
+          <span class="confirm-icon"><i class="bi bi-send-check-fill"></i></span>
+          <small>XÁC NHẬN NỘP BÀI</small>
+          <h3 id="submit-assignment-title">Bạn đã kiểm tra bài làm?</h3>
+          <p>Sau khi nộp, bài làm được ghi nhận là một lượt nộp chính thức và gửi đến giảng viên.</p>
+          <dl>
+            <div>
+              <dt>Hình thức</dt>
+              <dd>{{ submissionMode === 'file' ? 'Tải file' : 'Soạn trực tuyến' }}</dd>
+            </div>
+            <div v-if="submissionFile">
+              <dt>Tệp</dt>
+              <dd>{{ submissionFile.name }}</dd>
+            </div>
+          </dl>
+          <div>
+            <button type="button" class="btn-comment-plain" @click="showSubmitConfirm = false">Kiểm tra lại</button>
+            <button type="button" class="btn-comment-primary" @click="confirmSubmitAssignment">
+              <i class="bi bi-send-fill"></i> Xác nhận nộp
+            </button>
+          </div>
+        </div>
       </div>
     </template>
   </section>
@@ -341,8 +498,10 @@ import { resolveApiAssetUrl } from '../../api/apiConfig'
 import { questionTypeLabel } from '../../utils/displayLabels'
 import { formatInteractionTime } from '../../utils/learningRules'
 import InteractiveVideoPlayer from '../../components/video/InteractiveVideoPlayer.vue'
+import LessonDiscussion from '../../components/learning/LessonDiscussion.vue'
 import { normalizeVideoSource } from '../../utils/videoSources'
 import { sanitizeLearningHtml } from '../../utils/sanitizeHtml'
+import { lessonTypeClass, lessonTypeMeta } from '../../utils/lessonTypes'
 
 const route = useRoute(),
   playerRef = ref(null),
@@ -359,8 +518,15 @@ const route = useRoute(),
   submissionFile = ref(null),
   submissionMode = ref('editor'),
   assignmentMessage = ref(''),
+  assignmentError = ref(''),
   submitting = ref(false),
-  completing = ref(false)
+  completing = ref(false),
+  sidebarOpen = ref(true),
+  focusMode = ref(false),
+  activeTab = ref('overview'),
+  showSubmitConfirm = ref(false),
+  discussionCount = ref(0),
+  expandedChapters = ref(new Set())
 const quiz = reactive({
   id: 0,
   title: '',
@@ -437,6 +603,28 @@ const lessonCount = computed(() => chapters.value.reduce((total, chapter) => tot
   }),
   completedLessons = computed(() =>
     chapters.value.reduce((total, chapter) => total + chapter.lessons.filter((x) => x.completed).length, 0)
+  ),
+  courseProgress = computed(() =>
+    lessonCount.value ? Math.round((completedLessons.value / lessonCount.value) * 100) : 0
+  ),
+  lessonTabs = computed(() => [
+    {
+      key: 'overview',
+      label: lesson.type === 'ASSIGNMENT' ? 'Bài tập' : 'Tổng quan',
+      icon: lesson.type === 'ASSIGNMENT' ? 'bi-clipboard-check' : 'bi-info-circle'
+    },
+    { key: 'resources', label: 'Tài nguyên', icon: 'bi-paperclip' },
+    { key: 'discussion', label: 'Thảo luận', icon: 'bi-chat-square-text' }
+  ]),
+  orderedLessons = computed(() => chapters.value.flatMap((chapter) => chapter.lessons)),
+  currentLessonIndex = computed(() => orderedLessons.value.findIndex((item) => item.id === lesson.id)),
+  previousLesson = computed(() =>
+    currentLessonIndex.value > 0 ? orderedLessons.value[currentLessonIndex.value - 1] : null
+  ),
+  nextLesson = computed(() =>
+    currentLessonIndex.value >= 0 && currentLessonIndex.value < orderedLessons.value.length - 1
+      ? orderedLessons.value[currentLessonIndex.value + 1]
+      : null
   )
 const activityEvents = ['mousemove', 'keydown', 'click', 'scroll']
 let lastActivityAt = Date.now()
@@ -455,6 +643,9 @@ watch(
   () => route.params.lessonId,
   () => {
     playerRef.value?.pause()
+    activeTab.value = 'overview'
+    showSubmitConfirm.value = false
+    discussionCount.value = 0
     void Promise.all([saveProgress(), stopStudySession(false)]).finally(loadPlayer)
   }
 )
@@ -542,6 +733,7 @@ async function loadPlayer() {
     submissionFile.value = null
     submissionMode.value = 'editor'
     assignmentMessage.value = ''
+    assignmentError.value = ''
     if (lesson.type === 'ASSIGNMENT') await loadSubmissions()
     else submissions.value = []
     if (lesson.type === 'QUIZ') await loadQuiz()
@@ -609,10 +801,11 @@ function selectSubmissionFile(event) {
   submissionFile.value = event.target.files?.[0] || null
   if (submissionFile.value) submissionMode.value = 'file'
   assignmentMessage.value = ''
+  assignmentError.value = ''
 }
 async function submitAssignment() {
   submitting.value = true
-  error.value = ''
+  assignmentError.value = ''
   assignmentMessage.value = ''
   try {
     const body = new FormData()
@@ -625,18 +818,22 @@ async function submitAssignment() {
     assignmentMessage.value = 'Bài làm đã được nộp thành công.'
     await loadSubmissions()
   } catch (e) {
-    error.value = e.message
+    assignmentError.value = e.message
   } finally {
     submitting.value = false
   }
 }
+async function confirmSubmitAssignment() {
+  showSubmitConfirm.value = false
+  await submitAssignment()
+}
 async function saveAssignmentDraft() {
   await saveAssignment('/submission-draft', false)
-  if (!error.value) assignmentMessage.value = 'Đã lưu nháp bài làm.'
+  if (!assignmentError.value) assignmentMessage.value = 'Đã lưu nháp bài làm.'
 }
 async function saveAssignment(path, clearAfterSave) {
   submitting.value = true
-  error.value = ''
+  assignmentError.value = ''
   assignmentMessage.value = ''
   try {
     const body = new FormData()
@@ -649,7 +846,7 @@ async function saveAssignment(path, clearAfterSave) {
     }
     await loadSubmissions()
   } catch (e) {
-    error.value = e.message
+    assignmentError.value = e.message
   } finally {
     submitting.value = false
   }
@@ -778,21 +975,42 @@ function submissionStatus(value) {
 function mapCourseContent(data) {
   const chapterRows = pick(data, 'chapters', 'Chapters') || [],
     lessonRows = pick(data, 'lessons', 'Lessons') || []
-  chapters.value = chapterRows.map((row) => {
-    const id = Number(pick(row, 'Id', 'id'))
-    return {
-      id,
-      title: pick(row, 'Title', 'title') || '',
-      lessons: lessonRows
-        .filter((x) => Number(pick(x, 'ChapterId', 'chapterId')) === id)
-        .map((x) => ({
-          id: Number(pick(x, 'Id', 'id')),
-          title: pick(x, 'Title', 'title') || '',
-          duration: Number(pick(x, 'DurationSeconds', 'durationSeconds') || 0),
-          completed: Boolean(pick(x, 'Completed', 'completed'))
-        }))
-    }
-  })
+  chapters.value = chapterRows
+    .map((row) => {
+      const id = Number(pick(row, 'Id', 'id'))
+      return {
+        id,
+        title: pick(row, 'Title', 'title') || '',
+        sortOrder: Number(pick(row, 'SortOrder', 'sortOrder') || 0),
+        lessons: lessonRows
+          .filter((x) => Number(pick(x, 'ChapterId', 'chapterId')) === id)
+          .map((x) => ({
+            id: Number(pick(x, 'Id', 'id')),
+            title: pick(x, 'Title', 'title') || '',
+            type: pick(x, 'LessonType', 'lessonType') || 'EDITOR',
+            duration: Number(pick(x, 'DurationSeconds', 'durationSeconds') || 0),
+            sortOrder: Number(pick(x, 'SortOrder', 'sortOrder') || 0),
+            completed: Boolean(pick(x, 'Completed', 'completed'))
+          }))
+          .sort((first, second) => first.sortOrder - second.sortOrder || first.id - second.id)
+      }
+    })
+    .sort((first, second) => first.sortOrder - second.sortOrder || first.id - second.id)
+
+  expandedChapters.value = new Set(
+    chapters.value
+      .filter((chapter) => chapter.lessons.some((item) => item.id === lesson.id))
+      .map((chapter) => chapter.id)
+  )
+}
+function toggleChapter(chapterId) {
+  const next = new Set(expandedChapters.value)
+  if (next.has(chapterId)) next.delete(chapterId)
+  else next.add(chapterId)
+  expandedChapters.value = next
+}
+function lessonUrl(item) {
+  return `/lms/courses/${course.id}/lessons/${item.id}`
 }
 function handleProgress(value) {
   Object.assign(progress, value)
