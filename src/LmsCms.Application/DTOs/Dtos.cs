@@ -38,6 +38,41 @@ public sealed class NotificationListItemDto
     public string? ActorAvatarUrl { get; init; }
 }
 public sealed record NotificationFeedDto(IReadOnlyCollection<NotificationListItemDto> Items, int UnreadCount);
+public sealed class LessonCommentDto
+{
+    public long Id { get; init; }
+    public long CourseID { get; init; }
+    public long LessonID { get; init; }
+    public long UserID { get; init; }
+    public long? ParentCommentID { get; init; }
+    public string Content { get; init; } = "";
+    public bool IsEdited { get; init; }
+    public bool IsDeleted { get; init; }
+    public DateTime CreatedDate { get; init; }
+    public DateTime? UpdatedDate { get; init; }
+    public string UserFullName { get; init; } = "";
+    public string? UserAvatarUrl { get; init; }
+    public string UserRole { get; init; } = "STUDENT";
+    public bool CanEdit { get; init; }
+    public bool CanDelete { get; init; }
+    public int CommentLevel { get; init; }
+    public List<LessonCommentDto> Replies { get; set; } = [];
+}
+public sealed record LessonCommentFeedDto(
+    IReadOnlyCollection<LessonCommentDto> Items,
+    int Page,
+    int PageSize,
+    int RootCommentCount,
+    int TotalCommentCount);
+public sealed class LessonCommentCreateRequest
+{
+    [Required, StringLength(5000, MinimumLength = 1)] public string Content { get; init; } = "";
+    public long? ParentCommentId { get; init; }
+}
+public sealed class LessonCommentUpdateRequest
+{
+    [Required, StringLength(5000, MinimumLength = 1)] public string Content { get; init; } = "";
+}
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0290")]
 public sealed class CourseSaveRequest
 {

@@ -64,6 +64,13 @@ public interface INotificationService
     Task<bool> MarkReadAsync(long notificationId, long recipientUserId, CancellationToken cancellationToken = default);
     Task<int> MarkAllReadAsync(long recipientUserId, CancellationToken cancellationToken = default);
 }
+public interface ILessonCommentService
+{
+    Task<LessonCommentFeedDto> GetByLessonAsync(long lessonId, long actorUserId, bool isAdmin, bool isTeacher, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<long> CreateAsync(long lessonId, LessonCommentCreateRequest request, long actorUserId, bool isAdmin, bool isTeacher, CancellationToken cancellationToken = default);
+    Task<long> UpdateAsync(long lessonCommentId, LessonCommentUpdateRequest request, long actorUserId, CancellationToken cancellationToken = default);
+    Task<long> DeleteAsync(long lessonCommentId, long actorUserId, bool isAdmin, bool isTeacher, CancellationToken cancellationToken = default);
+}
 public interface IContentService
 {
     Task<IReadOnlyCollection<object>> GetChaptersAsync(long courseId, long actorId, bool isAdmin, CancellationToken ct = default);
