@@ -249,7 +249,7 @@
               class="form-control"
               type="url"
               placeholder="https://www.youtube.com/watch?v=..."
-              @blur="applyYouTubeUrl"
+              @input="applyYouTubeUrl"
             />
           </div>
           <p v-if="youtubeInput && !youtubeValid" class="youtube-validation">
@@ -426,7 +426,9 @@ useListViewState('cms-videos', { search, accessFilter, sourceFilter, usageFilter
 const playbackUrl = computed(() => resolveApiAssetUrl(form.videoUrl)),
   youtubeValid = computed(() => Boolean(extractYouTubeVideoId(youtubeInput.value || form.videoUrl))),
   sourceIsValid = computed(() =>
-    form.sourceType === 'YOUTUBE' ? Boolean(extractYouTubeVideoId(form.videoUrl)) : Boolean(form.videoUrl)
+    form.sourceType === 'YOUTUBE'
+      ? Boolean(extractYouTubeVideoId(youtubeInput.value || form.videoUrl))
+      : Boolean(form.videoUrl)
   ),
   pick = (source, ...names) =>
     names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null),
