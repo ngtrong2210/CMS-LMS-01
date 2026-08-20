@@ -154,6 +154,7 @@ Begin
         dbo.Lessons.VideoId,
         dbo.Videos.VideoAssetId,
         dbo.Videos.Title VideoTitle,
+        dbo.Videos.SourceType,
         dbo.Videos.VideoUrl,
         Cast(
             Iif(

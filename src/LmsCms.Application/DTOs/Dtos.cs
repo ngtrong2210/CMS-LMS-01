@@ -81,6 +81,7 @@ public sealed class VideoSaveRequest
 {
     public long LessonId { get; init; }
     [Required, StringLength(500)] public string Title { get; init; } = "";
+    [RegularExpression("LOCAL|YOUTUBE")] public string SourceType { get; init; } = "LOCAL";
     [StringLength(1000)] public string? VideoUrl { get; init; }
     [StringLength(1000)] public string? PosterUrl { get; init; }
     [Range(1, int.MaxValue)] public int DurationSeconds { get; init; }
@@ -92,6 +93,7 @@ public sealed class VideoSaveRequest
 public sealed class VideoAssetSaveRequest
 {
     [Required, StringLength(500)] public string Title { get; init; } = "";
+    [RegularExpression("LOCAL|YOUTUBE")] public string SourceType { get; init; } = "LOCAL";
     [Required, StringLength(1000)] public string VideoUrl { get; init; } = "";
     [StringLength(1000)] public string? PosterUrl { get; init; }
     [Range(1, int.MaxValue)] public int DurationSeconds { get; init; }

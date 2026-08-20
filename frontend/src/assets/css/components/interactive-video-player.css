@@ -2,3 +2,4 @@
 .interaction-result.correct{color:#07875a}.interaction-result.wrong{color:#cd1b1b}
 .interaction-track:focus-visible{box-shadow:0 0 0 4px rgba(var(--eduvers-blue-rgb),.14)}.interaction-playhead{background:var(--eduvers-blue);box-shadow:0 2px 7px rgba(var(--eduvers-blue-rgb),.28)}.timeline-question,.timeline-question.answered,.timeline-current i{color:var(--eduvers-blue)}
 .interaction-options-warning{font-size:.82rem;line-height:1.5}
+.interactive-player.youtube-mode{height:auto;grid-template-rows:auto auto;overflow:visible}.interactive-player.youtube-mode .interactive-stage{height:auto;display:block}.interactive-player.youtube-mode .youtube-player-shell{width:100%}.youtube-interaction-host{padding:1rem;background:#f5f7f6}.youtube-interaction-host .interaction-modal{margin:0 auto;box-shadow:0 12px 32px rgba(10,31,24,.12)}

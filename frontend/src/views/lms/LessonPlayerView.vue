@@ -21,6 +21,7 @@
               ref="playerRef"
               :key="playerKey"
               :source="video.url"
+              :source-type="video.sourceType"
               :poster="video.poster"
               :duration-seconds="video.duration"
               :interactions="interactions"
@@ -105,6 +106,7 @@ import { resolveApiAssetUrl } from '../../api/apiConfig'
 import { questionTypeLabel } from '../../utils/displayLabels'
 import { formatInteractionTime } from '../../utils/learningRules'
 import InteractiveVideoPlayer from '../../components/video/InteractiveVideoPlayer.vue'
+import { normalizeVideoSource } from '../../utils/videoSources'
 
 const route = useRoute(),
   playerRef = ref(null),
@@ -118,6 +120,7 @@ const lesson = reactive({ id: 0, title: '', description: '', type: 'VIDEO', dura
   course = reactive({ id: 0, title: '' }),
   video = reactive({
     id: 0,
+    sourceType: 'LOCAL',
     url: '',
     poster: '',
     duration: 0,
@@ -170,7 +173,11 @@ async function loadPlayer() {
     Object.assign(course, { id: Number(pick(c, 'Id', 'id')), title: pick(c, 'Title', 'title') || '' })
     Object.assign(video, {
       id: Number(pick(v, 'Id', 'id') || 0),
-      url: resolveApiAssetUrl(pick(v, 'VideoUrl', 'videoUrl') || ''),
+      sourceType: normalizeVideoSource(pick(v, 'SourceType', 'sourceType')),
+      url:
+        normalizeVideoSource(pick(v, 'SourceType', 'sourceType')) === 'YOUTUBE'
+          ? pick(v, 'VideoUrl', 'videoUrl') || ''
+          : resolveApiAssetUrl(pick(v, 'VideoUrl', 'videoUrl') || ''),
       poster: resolveApiAssetUrl(pick(v, 'PosterUrl', 'posterUrl') || ''),
       duration: Number(pick(v, 'DurationSeconds', 'durationSeconds') || lesson.duration),
       allowSeek: Boolean(pick(v, 'AllowSeek', 'allowSeek')),

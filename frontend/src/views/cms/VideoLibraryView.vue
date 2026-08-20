@@ -37,12 +37,11 @@
           </select>
         </label>
         <label class="filter-field">
-          <span>Định dạng</span>
+          <span>Nguồn video</span>
           <select v-model="sourceFilter" class="form-select">
-            <option value="ALL">Tất cả định dạng</option>
-            <option value="MP4">MP4</option>
-            <option value="WEBM">WebM</option>
-            <option value="OTHER">Định dạng khác</option>
+            <option value="ALL">Tất cả nguồn</option>
+            <option value="LOCAL">Video tải lên</option>
+            <option value="YOUTUBE">Liên kết YouTube</option>
           </select>
         </label>
         <label class="filter-field">
@@ -92,8 +91,12 @@
                     ><i class="bi bi-play-fill"></i
                   ></span>
                   <div>
-                    <strong>{{ item.title }}</strong
-                    ><small>{{ item.originalFileName || item.videoUrl || 'Chưa có file' }}</small>
+                    <strong>{{ item.title }}</strong>
+                    <span :class="['video-source-badge', item.sourceType.toLowerCase()]">
+                      <i :class="['bi', item.sourceType === 'YOUTUBE' ? 'bi-youtube' : 'bi-file-play']"></i>
+                      {{ item.sourceType === 'YOUTUBE' ? 'YouTube' : 'Tải lên' }}
+                    </span>
+                    <small>{{ item.originalFileName || item.videoUrl || 'Chưa có nguồn video' }}</small>
                   </div>
                 </div>
               </td>
@@ -189,7 +192,25 @@
           </div>
           <button type="button" class="btn-close" @click="uploadModal = false"></button>
         </div>
-        <label v-if="!form.videoUrl" class="drop-zone" :class="{ disabled: uploading }"
+        <div class="video-source-picker" role="group" aria-label="Chọn nguồn video">
+          <button
+            type="button"
+            :class="['video-source-option', { active: form.sourceType === 'LOCAL' }]"
+            @click="changeSourceType('LOCAL')"
+          >
+            <i class="bi bi-cloud-arrow-up"></i
+            ><span><strong>Tải video lên</strong><small>MP4, WebM, OGV hoặc MOV</small></span>
+          </button>
+          <button
+            type="button"
+            :class="['video-source-option', { active: form.sourceType === 'YOUTUBE' }]"
+            @click="changeSourceType('YOUTUBE')"
+          >
+            <i class="bi bi-youtube"></i
+            ><span><strong>Liên kết YouTube</strong><small>Dùng video công khai hoặc không công khai</small></span>
+          </button>
+        </div>
+        <label v-if="form.sourceType === 'LOCAL' && !form.videoUrl" class="drop-zone" :class="{ disabled: uploading }"
           ><i class="bi bi-cloud-arrow-up"></i
           ><strong>{{ uploading ? `Đang tải lên ${uploadProgress}%` : 'Chọn file video' }}</strong
           ><span>MP4, WebM, OGV hoặc MOV; file lưu trong project.</span
@@ -200,7 +221,7 @@
             :disabled="uploading"
             @change="upload"
         /></label>
-        <div v-else class="video-preview">
+        <div v-else-if="form.sourceType === 'LOCAL'" class="video-preview">
           <video
             ref="metadataVideo"
             :src="playbackUrl"
@@ -217,6 +238,29 @@
               :disabled="uploading"
               @change="upload"
           /></label>
+        </div>
+        <div v-else class="youtube-source-panel">
+          <label class="form-label" for="youtube-url">Liên kết YouTube</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-youtube"></i></span>
+            <input
+              id="youtube-url"
+              v-model.trim="youtubeInput"
+              class="form-control"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              @blur="applyYouTubeUrl"
+            />
+          </div>
+          <p v-if="youtubeInput && !youtubeValid" class="youtube-validation">
+            <i class="bi bi-exclamation-circle"></i> Liên kết YouTube chưa hợp lệ.
+          </p>
+          <YouTubeVideoPlayer
+            v-if="youtubeValid"
+            class="youtube-library-preview"
+            :source="form.videoUrl"
+            @ready="onYouTubeReady"
+          />
         </div>
         <div class="row g-3 mt-1">
           <div class="col-md-6">
@@ -235,7 +279,9 @@
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label">URL tương đối trong project</label
+            <label class="form-label">{{
+              form.sourceType === 'YOUTUBE' ? 'Đường dẫn YouTube chuẩn hóa' : 'URL tương đối trong project'
+            }}</label
             ><input v-model="form.videoUrl" class="form-control" readonly required />
           </div>
         </div>
@@ -252,7 +298,7 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-action-cancel" @click="uploadModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
-          ><button class="btn btn-action-save" :disabled="saving || uploading || !form.videoUrl">
+          ><button class="btn btn-action-save" :disabled="saving || uploading || !sourceIsValid">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span
             ><i v-else :class="['bi', form.id ? 'bi-arrow-repeat' : 'bi-check-lg']"></i>
             {{ form.id ? 'Lưu và đồng bộ' : 'Lưu vào thư viện' }}
@@ -341,9 +387,16 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { resolveApiAssetUrl } from '../../api/apiConfig'
+import YouTubeVideoPlayer from '../../components/video/YouTubeVideoPlayer.vue'
 import { useListViewState } from '../../composables/useListViewState'
 import { confirmDialog } from '../../utils/confirmDialog'
 import { formatInteractionTime } from '../../utils/learningRules'
+import {
+  canonicalYouTubeUrl,
+  extractYouTubeVideoId,
+  normalizeVideoSource,
+  youtubeThumbnailUrl
+} from '../../utils/videoSources'
 
 const items = ref([]),
   search = ref(''),
@@ -365,11 +418,16 @@ const shareModal = ref(false),
   teacherSearch = ref('')
 const message = ref(''),
   messageType = ref('success'),
+  youtubeInput = ref(''),
   form = reactive(blank()),
   shareForm = reactive({ assetId: 0, title: '', shareScope: 'PRIVATE', teacherIds: [] })
 const router = useRouter()
 useListViewState('cms-videos', { search, accessFilter, sourceFilter, usageFilter, statusFilter })
 const playbackUrl = computed(() => resolveApiAssetUrl(form.videoUrl)),
+  youtubeValid = computed(() => Boolean(extractYouTubeVideoId(youtubeInput.value || form.videoUrl))),
+  sourceIsValid = computed(() =>
+    form.sourceType === 'YOUTUBE' ? Boolean(extractYouTubeVideoId(form.videoUrl)) : Boolean(form.videoUrl)
+  ),
   pick = (source, ...names) =>
     names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null),
   formatTime = formatInteractionTime
@@ -418,6 +476,7 @@ function blank() {
   return {
     id: 0,
     title: '',
+    sourceType: 'LOCAL',
     videoUrl: '',
     posterUrl: '',
     durationSeconds: 60,
@@ -446,6 +505,7 @@ async function load() {
     items.value = (Array.isArray(rows) ? rows : []).map((row) => ({
       id: Number(pick(row, 'Id', 'id')),
       title: pick(row, 'Title', 'title'),
+      sourceType: normalizeVideoSource(pick(row, 'SourceType', 'sourceType')),
       videoUrl: pick(row, 'VideoUrl', 'videoUrl') || '',
       posterUrl: pick(row, 'PosterUrl', 'posterUrl') || '',
       originalFileName: pick(row, 'OriginalFileName', 'originalFileName') || '',
@@ -480,6 +540,7 @@ function clearFilters() {
   accessFilter.value = sourceFilter.value = usageFilter.value = statusFilter.value = 'ALL'
 }
 function thumbnailFor(item, index) {
+  if (item.sourceType === 'YOUTUBE') return item.posterUrl || youtubeThumbnailUrl(item.videoUrl)
   const projectPoster =
     item.posterUrl &&
     (!/^https?:\/\//i.test(item.posterUrl) || /^https?:\/\/localhost(?::\d+)?\//i.test(item.posterUrl))
@@ -506,6 +567,7 @@ function accessLabel(item) {
 }
 function openUpload() {
   Object.assign(form, blank())
+  youtubeInput.value = ''
   uploadProgress.value = 0
   uploadModal.value = true
 }
@@ -513,6 +575,7 @@ function openEdit(item) {
   Object.assign(form, blank(), {
     id: item.id,
     title: item.title,
+    sourceType: item.sourceType,
     videoUrl: item.videoUrl,
     posterUrl: item.posterUrl,
     durationSeconds: item.durationSeconds,
@@ -522,6 +585,7 @@ function openEdit(item) {
     status: item.status,
     usageCount: item.usageCount
   })
+  youtubeInput.value = item.sourceType === 'YOUTUBE' ? item.videoUrl : ''
   uploadProgress.value = 0
   uploadModal.value = true
 }
@@ -548,11 +612,37 @@ async function upload(event) {
     uploading.value = false
   }
 }
+function changeSourceType(sourceType) {
+  if (form.sourceType === sourceType) return
+  form.sourceType = sourceType
+  form.videoUrl = ''
+  form.posterUrl = ''
+  form.originalFileName = ''
+  form.fileSize = 0
+  form.mimeType = ''
+  youtubeInput.value = ''
+}
+function applyYouTubeUrl() {
+  const canonicalUrl = canonicalYouTubeUrl(youtubeInput.value)
+  form.videoUrl = canonicalUrl
+  form.posterUrl = youtubeThumbnailUrl(canonicalUrl)
+  form.originalFileName = ''
+  form.fileSize = 0
+  form.mimeType = ''
+}
+function onYouTubeReady({ duration }) {
+  if (duration > 0) form.durationSeconds = Math.max(1, Math.round(duration))
+}
 function readDuration() {
   if (metadataVideo.value?.duration && Number.isFinite(metadataVideo.value.duration))
     form.durationSeconds = Math.max(1, Math.round(metadataVideo.value.duration))
 }
 async function save() {
+  if (form.sourceType === 'YOUTUBE') applyYouTubeUrl()
+  if (!sourceIsValid.value) {
+    show('Vui lòng chọn file video hoặc nhập liên kết YouTube hợp lệ.', 'danger')
+    return
+  }
   saving.value = true
   try {
     const payload = { ...form, durationSeconds: Math.max(1, Math.round(form.durationSeconds)) }

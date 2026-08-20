@@ -15,7 +15,7 @@
           ><i v-else class="bi bi-copy"></i> Nhân bản video
         </button>
         <label
-          v-if="form.canEdit"
+          v-if="form.canEdit && form.sourceType === 'LOCAL'"
           class="btn btn-action-upload header-upload-button mb-0"
           :class="{ disabled: uploading }"
           ><i class="bi bi-cloud-arrow-up"></i> {{ uploading ? `Đang tải ${uploadProgress}%` : 'Upload video'
@@ -49,8 +49,15 @@
     <div class="editor-grid">
       <div class="app-card video-card">
         <div class="video">
+          <YouTubeVideoPlayer
+            v-if="playbackUrl && form.sourceType === 'YOUTUBE'"
+            ref="youtubeEditorRef"
+            :source="playbackUrl"
+            @ready="syncYouTubeMetadata"
+            @timeupdate="syncYouTubeTime"
+          />
           <video
-            v-if="playbackUrl"
+            v-else-if="playbackUrl"
             ref="videoRef"
             :src="playbackUrl"
             :poster="form.posterUrl || undefined"
@@ -68,6 +75,10 @@
           <div class="current-position">
             <small>Vị trí hiện tại</small><strong>{{ formatTime(currentTime) }}</strong>
           </div>
+          <span :class="['editor-source-badge', form.sourceType.toLowerCase()]">
+            <i :class="['bi', form.sourceType === 'YOUTUBE' ? 'bi-youtube' : 'bi-file-play']"></i>
+            {{ form.sourceType === 'YOUTUBE' ? 'Nguồn YouTube' : 'Video tải lên' }}
+          </span>
           <div v-if="uploadedFile" class="file-meta">
             <i class="bi bi-file-earmark-play"></i>
             <div>
@@ -486,6 +497,7 @@
             ref="previewPlayerRef"
             :key="previewKey"
             :source="playbackUrl"
+            :source-type="form.sourceType"
             :poster="form.posterUrl"
             :duration-seconds="form.durationSeconds"
             :interactions="items"
@@ -521,10 +533,13 @@ import { confirmDialog } from '../../utils/confirmDialog'
 import { questionTypeLabel } from '../../utils/displayLabels'
 import { formatInteractionTime } from '../../utils/learningRules'
 import InteractiveVideoPlayer from '../../components/video/InteractiveVideoPlayer.vue'
+import YouTubeVideoPlayer from '../../components/video/YouTubeVideoPlayer.vue'
+import { normalizeVideoSource } from '../../utils/videoSources'
 
 const route = useRoute(),
   router = useRouter(),
   videoRef = ref(null),
+  youtubeEditorRef = ref(null),
   items = ref([]),
   questions = ref([]),
   currentTime = ref(0),
@@ -557,6 +572,7 @@ const form = reactive({
   videoAssetId: 0,
   lessonId: 0,
   title: 'Video bài giảng',
+  sourceType: 'LOCAL',
   videoUrl: '',
   posterUrl: '',
   durationSeconds: 600,
@@ -570,7 +586,7 @@ const form = reactive({
 })
 const quickQuestion = reactive(blankQuickQuestion())
 const formatTime = formatInteractionTime
-const playbackUrl = computed(() => resolveApiAssetUrl(form.videoUrl))
+const playbackUrl = computed(() => (form.sourceType === 'YOUTUBE' ? form.videoUrl : resolveApiAssetUrl(form.videoUrl)))
 const progressPercent = computed(() =>
   form.durationSeconds ? Math.min(100, (currentTime.value / form.durationSeconds) * 100) : 0
 )
@@ -611,6 +627,7 @@ async function loadVideo() {
     form.videoAssetId = Number(pick(data, 'VideoAssetId', 'videoAssetId') || 0)
     form.lessonId = Number(pick(data, 'LessonId', 'lessonId') || 0)
     form.title = pick(data, 'Title', 'title') || form.title
+    form.sourceType = normalizeVideoSource(pick(data, 'SourceType', 'sourceType'))
     form.videoUrl = pick(data, 'VideoUrl', 'videoUrl') || ''
     form.posterUrl = pick(data, 'PosterUrl', 'posterUrl') || ''
     form.durationSeconds = Number(pick(data, 'DurationSeconds', 'durationSeconds') || 600)
@@ -712,6 +729,7 @@ async function saveVideo() {
     await axiosClient.put(`/videos/${form.id}`, {
       lessonId: form.lessonId,
       title: form.title,
+      sourceType: form.sourceType,
       videoUrl: form.videoUrl || null,
       posterUrl: form.posterUrl || null,
       durationSeconds: Math.max(1, Math.round(form.durationSeconds)),
@@ -907,6 +925,13 @@ function syncMetadata() {
   if (videoRef.value?.duration && Number.isFinite(videoRef.value.duration))
     form.durationSeconds = Math.round(videoRef.value.duration)
 }
+function syncYouTubeTime({ currentTime: time = 0 }) {
+  currentTime.value = time
+}
+function syncYouTubeMetadata({ duration = 0, currentTime: time = 0 }) {
+  currentTime.value = time
+  if (duration > 0) form.durationSeconds = Math.round(duration)
+}
 function seekTo(time, pause = false) {
   const target = Math.min(form.durationSeconds, Math.max(0, Number(time) || 0))
   currentTime.value = target
@@ -914,6 +939,7 @@ function seekTo(time, pause = false) {
     if (pause) videoRef.value.pause()
     videoRef.value.currentTime = target
   }
+  if (youtubeEditorRef.value) youtubeEditorRef.value.seekTo(target, pause)
 }
 function selectAndSeek(item) {
   selected.value = item
@@ -1009,6 +1035,7 @@ function addAtCurrent() {
   const q = questions.value[0]
   if (!q) return
   videoRef.value?.pause()
+  youtubeEditorRef.value?.pause?.()
   const item = {
     id: 0,
     localKey: `new-${Date.now()}`,

@@ -70,6 +70,7 @@ Go
 Create Or Alter Procedure dbo.LMS_VideoLibrary_UpdateWithLearningPolicy
     @Id Bigint,
     @Title Nvarchar(500),
+    @SourceType Varchar(20) = 'LOCAL',
     @VideoUrl Nvarchar(1000),
     @PosterUrl Nvarchar(1000) = Null,
     @DurationSeconds Int,
@@ -88,15 +89,23 @@ Begin
 
     If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
         Or @DurationSeconds <= 0
+        Or @SourceType Not In ('LOCAL', 'YOUTUBE')
         Or @Status Not In ('ACTIVE', 'INACTIVE')
         Throw 50001, N'Dữ liệu video thư viện không hợp lệ.', 1;
 
-    If @VideoUrl Not Like '/Media/Video/%'
+    If @SourceType = 'LOCAL'
+        And (@VideoUrl Not Like '/Media/Video/%'
         Or @VideoUrl Like '%..%'
         Or @VideoUrl Like '%\%'
         Or @VideoUrl Like '%?%'
-        Or @VideoUrl Like '%#%'
+        Or @VideoUrl Like '%#%')
         Throw 50001, N'VideoUrl không hợp lệ.', 1;
+
+    If @SourceType = 'YOUTUBE'
+        And (@VideoUrl Not Like 'https://%youtube.com/%'
+            And @VideoUrl Not Like 'https://%youtu.be/%'
+            And @VideoUrl Not Like 'https://%youtube-nocookie.com/%')
+        Throw 50001, N'Liên kết YouTube không hợp lệ.', 1;
 
     Declare @VideoID Bigint,
         @CurrentVideoVersionID Bigint;
@@ -136,18 +145,20 @@ Begin
     Update dbo.SIM_VideoVersions
     Set
         Title = @Title,
+        SourceType = @SourceType,
         VideoUrl = @VideoUrl,
         PosterUrl = @PosterUrl,
         DurationSeconds = @DurationSeconds,
-        OriginalFileName = Coalesce(@OriginalFileName, OriginalFileName),
-        FileSize = Coalesce(@FileSize, FileSize),
-        MimeType = Coalesce(@MimeType, MimeType),
+        OriginalFileName = Case When @SourceType = 'YOUTUBE' Then Null Else Coalesce(@OriginalFileName, OriginalFileName) End,
+        FileSize = Case When @SourceType = 'YOUTUBE' Then Null Else Coalesce(@FileSize, FileSize) End,
+        MimeType = Case When @SourceType = 'YOUTUBE' Then Null Else Coalesce(@MimeType, MimeType) End,
         ChangeSummary = Coalesce(Nullif(Ltrim(Rtrim(@ChangeSummary)), ''), N'Cập nhật đồng bộ trước khi phát sinh kết quả học tập.')
     Where (dbo.SIM_VideoVersions.VideoVersionID = @CurrentVideoVersionID);
 
     Update dbo.SIM_Videos
     Set
         Title = @Title,
+        SourceType = @SourceType,
         VideoUrl = @VideoUrl,
         PosterUrl = @PosterUrl,
         DurationSeconds = @DurationSeconds,
@@ -158,12 +169,13 @@ Begin
     Update dbo.SIM_VideoAssets
     Set
         Title = @Title,
+        SourceType = @SourceType,
         VideoUrl = @VideoUrl,
         PosterUrl = @PosterUrl,
         DurationSeconds = @DurationSeconds,
-        OriginalFileName = Coalesce(@OriginalFileName, OriginalFileName),
-        FileSize = Coalesce(@FileSize, FileSize),
-        MimeType = Coalesce(@MimeType, MimeType),
+        OriginalFileName = Case When @SourceType = 'YOUTUBE' Then Null Else Coalesce(@OriginalFileName, OriginalFileName) End,
+        FileSize = Case When @SourceType = 'YOUTUBE' Then Null Else Coalesce(@FileSize, FileSize) End,
+        MimeType = Case When @SourceType = 'YOUTUBE' Then Null Else Coalesce(@MimeType, MimeType) End,
         Status = @Status,
         UpdatedAt = Sysutcdatetime()
     Where (dbo.SIM_VideoAssets.VideoAssetID = @Id);
@@ -235,6 +247,7 @@ Create Or Alter Procedure dbo.LMS_Video_UpdateWithLearningPolicy
     @Id Bigint,
     @LessonId Bigint,
     @Title Nvarchar(500),
+    @SourceType Varchar(20) = 'LOCAL',
     @VideoUrl Nvarchar(1000) = Null,
     @PosterUrl Nvarchar(1000) = Null,
     @DurationSeconds Int,
@@ -280,6 +293,7 @@ Begin
     Exec dbo.LMS_VideoLibrary_UpdateWithLearningPolicy
         @Id = @VideoAssetID,
         @Title = @Title,
+        @SourceType = @SourceType,
         @VideoUrl = @VideoUrl,
         @PosterUrl = @PosterUrl,
         @DurationSeconds = @DurationSeconds,
@@ -358,6 +372,7 @@ Begin
     Insert dbo.SIM_VideoAssets
     (
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -370,6 +385,7 @@ Begin
     )
     Select
         @DuplicateTitle,
+        dbo.SIM_VideoVersions.SourceType,
         dbo.SIM_VideoVersions.VideoUrl,
         dbo.SIM_VideoVersions.PosterUrl,
         dbo.SIM_VideoVersions.DurationSeconds,
@@ -388,6 +404,7 @@ Begin
     (
         VideoAssetID,
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -399,6 +416,7 @@ Begin
     Select
         @NewVideoAssetID,
         @DuplicateTitle,
+        dbo.SIM_VideoVersions.SourceType,
         dbo.SIM_VideoVersions.VideoUrl,
         dbo.SIM_VideoVersions.PosterUrl,
         dbo.SIM_VideoVersions.DurationSeconds,
@@ -416,6 +434,7 @@ Begin
         VideoID,
         VersionNumber,
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -435,6 +454,7 @@ Begin
         @NewVideoID,
         1,
         @DuplicateTitle,
+        dbo.SIM_VideoVersions.SourceType,
         dbo.SIM_VideoVersions.VideoUrl,
         dbo.SIM_VideoVersions.PosterUrl,
         dbo.SIM_VideoVersions.DurationSeconds,
@@ -803,6 +823,7 @@ Begin
         dbo.SIM_Videos.CurrentVideoVersionID CurrentVideoVersionId,
         dbo.SIM_VideoVersions.VersionNumber,
         dbo.SIM_VideoVersions.Title,
+        dbo.SIM_VideoVersions.SourceType,
         dbo.SIM_VideoVersions.VideoUrl,
         dbo.SIM_VideoVersions.PosterUrl,
         dbo.SIM_VideoVersions.DurationSeconds,
@@ -939,6 +960,7 @@ Go
 
 Create Or Alter Procedure dbo.LMS_VideoLibrary_Create
     @Title Nvarchar(500),
+    @SourceType Varchar(20) = 'LOCAL',
     @VideoUrl Nvarchar(1000) = Null,
     @PosterUrl Nvarchar(1000) = Null,
     @DurationSeconds Int,
@@ -953,17 +975,26 @@ Begin
 
     If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
         Or @DurationSeconds <= 0
+        Or @SourceType Not In ('LOCAL', 'YOUTUBE')
         Throw 50001, N'Dữ liệu video thư viện không hợp lệ.', 1;
 
-    If @VideoUrl Is Not Null
+    If @SourceType = 'LOCAL'
+        And @VideoUrl Is Not Null
         And (@VideoUrl Not Like '/Media/Video/%' Or @VideoUrl Like '%..%' Or @VideoUrl Like '%\%' Or @VideoUrl Like '%?%' Or @VideoUrl Like '%#%')
         Throw 50001, N'VideoUrl không hợp lệ.', 1;
+
+    If @SourceType = 'YOUTUBE'
+        And (@VideoUrl Not Like 'https://%youtube.com/%'
+            And @VideoUrl Not Like 'https://%youtu.be/%'
+            And @VideoUrl Not Like 'https://%youtube-nocookie.com/%')
+        Throw 50001, N'Liên kết YouTube không hợp lệ.', 1;
 
     Begin Transaction;
 
     Insert dbo.SIM_VideoAssets
     (
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -975,6 +1006,7 @@ Begin
     Values
     (
         @Title,
+        @SourceType,
         @VideoUrl,
         @PosterUrl,
         @DurationSeconds,
@@ -990,6 +1022,7 @@ Begin
     (
         VideoAssetID,
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -1002,6 +1035,7 @@ Begin
     (
         @VideoAssetID,
         @Title,
+        @SourceType,
         @VideoUrl,
         @PosterUrl,
         @DurationSeconds,
@@ -1018,6 +1052,7 @@ Begin
         VideoID,
         VersionNumber,
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -1038,6 +1073,7 @@ Begin
         @VideoID,
         1,
         @Title,
+        @SourceType,
         @VideoUrl,
         @PosterUrl,
         @DurationSeconds,
@@ -1332,6 +1368,7 @@ Create Or Alter Procedure dbo.LMS_Video_Create
     @Id Bigint = Null,
     @LessonId Bigint,
     @Title Nvarchar(500),
+    @SourceType Varchar(20) = 'LOCAL',
     @VideoUrl Nvarchar(1000) = Null,
     @PosterUrl Nvarchar(1000) = Null,
     @DurationSeconds Int,
@@ -1348,12 +1385,20 @@ Begin
 
     If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
         Or @DurationSeconds <= 0
+        Or @SourceType Not In ('LOCAL', 'YOUTUBE')
         Or @RequiredWatchPercent Not Between 0 And 100
         Throw 50001, N'Dữ liệu video không hợp lệ.', 1;
 
-    If @VideoUrl Is Not Null
+    If @SourceType = 'LOCAL'
+        And @VideoUrl Is Not Null
         And (@VideoUrl Not Like '/Media/Video/%' Or @VideoUrl Like '%..%' Or @VideoUrl Like '%\%' Or @VideoUrl Like '%?%' Or @VideoUrl Like '%#%')
         Throw 50001, N'VideoUrl phải là URL tương đối an toàn trong /Media/Video/.', 1;
+
+    If @SourceType = 'YOUTUBE'
+        And (@VideoUrl Not Like 'https://%youtube.com/%'
+            And @VideoUrl Not Like 'https://%youtu.be/%'
+            And @VideoUrl Not Like 'https://%youtube-nocookie.com/%')
+        Throw 50001, N'Liên kết YouTube không hợp lệ.', 1;
 
     If Not Exists
         (
@@ -1372,6 +1417,7 @@ Begin
     Insert dbo.SIM_VideoAssets
     (
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -1381,6 +1427,7 @@ Begin
     Values
     (
         @Title,
+        @SourceType,
         @VideoUrl,
         @PosterUrl,
         @DurationSeconds,
@@ -1394,6 +1441,7 @@ Begin
     (
         VideoAssetID,
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -1406,6 +1454,7 @@ Begin
     (
         @VideoAssetID,
         @Title,
+        @SourceType,
         @VideoUrl,
         @PosterUrl,
         @DurationSeconds,
@@ -1422,6 +1471,7 @@ Begin
         VideoID,
         VersionNumber,
         Title,
+        SourceType,
         VideoUrl,
         PosterUrl,
         DurationSeconds,
@@ -1439,6 +1489,7 @@ Begin
         @VideoID,
         1,
         @Title,
+        @SourceType,
         @VideoUrl,
         @PosterUrl,
         @DurationSeconds,
@@ -1687,6 +1738,7 @@ Go
 Create Or Alter Procedure dbo.LMS_VideoLibrary_Update
     @Id Bigint,
     @Title Nvarchar(500),
+    @SourceType Varchar(20) = 'LOCAL',
     @VideoUrl Nvarchar(1000),
     @PosterUrl Nvarchar(1000) = Null,
     @DurationSeconds Int,
@@ -1705,6 +1757,7 @@ Begin
     Exec dbo.LMS_VideoLibrary_UpdateWithLearningPolicy
         @Id = @Id,
         @Title = @Title,
+        @SourceType = @SourceType,
         @VideoUrl = @VideoUrl,
         @PosterUrl = @PosterUrl,
         @DurationSeconds = @DurationSeconds,
@@ -1723,6 +1776,7 @@ Create Or Alter Procedure dbo.LMS_Video_Update
     @Id Bigint,
     @LessonId Bigint,
     @Title Nvarchar(500),
+    @SourceType Varchar(20) = 'LOCAL',
     @VideoUrl Nvarchar(1000) = Null,
     @PosterUrl Nvarchar(1000) = Null,
     @DurationSeconds Int,
@@ -1740,6 +1794,7 @@ Begin
         @Id = @Id,
         @LessonId = @LessonId,
         @Title = @Title,
+        @SourceType = @SourceType,
         @VideoUrl = @VideoUrl,
         @PosterUrl = @PosterUrl,
         @DurationSeconds = @DurationSeconds,

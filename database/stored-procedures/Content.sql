@@ -600,6 +600,7 @@ Begin
     Select
         dbo.VideoAssets.Id,
         dbo.VideoAssets.Title,
+        dbo.VideoAssets.SourceType,
         dbo.VideoAssets.VideoUrl,
         dbo.VideoAssets.PosterUrl,
         dbo.VideoAssets.DurationSeconds,
@@ -709,7 +710,7 @@ Begin
         And (@Access Is Null Or @Access = '' Or @Access = 'ALL' Or (@Access = 'MINE' And dbo.VideoAssets.CreatedBy = @ActorId) Or (@Access = 'SHARED' And dbo.VideoAssets.CreatedBy <> @ActorId And (dbo.VideoAssets.ShareScope = 'SCHOOL' Or directShare.IsShared = 1)) Or (@Access = 'SCHOOL' And dbo.VideoAssets.ShareScope = 'SCHOOL'))
         And (@Status Is Null Or @Status = '' Or @Status = 'ALL' Or dbo.VideoAssets.Status = @Status)
         And (@Usage Is Null Or @Usage = '' Or @Usage = 'ALL' Or (@Usage = 'USED' And Isnull(useInfo.UsageCount, 0) > 0) Or (@Usage = 'UNUSED' And Isnull(useInfo.UsageCount, 0) = 0))
-        And (@Source Is Null Or @Source = '' Or @Source = 'ALL' Or (@Source = 'MP4' And (dbo.VideoAssets.MimeType = 'video/mp4' Or dbo.VideoAssets.OriginalFileName Like '%.mp4')) Or (@Source = 'WEBM' And (dbo.VideoAssets.MimeType = 'video/webm' Or dbo.VideoAssets.OriginalFileName Like '%.webm')) Or (@Source = 'OTHER' And Isnull(dbo.VideoAssets.MimeType, '') Not In ('video/mp4', 'video/webm') And Isnull(dbo.VideoAssets.OriginalFileName, '') Not Like '%.mp4' And Isnull(dbo.VideoAssets.OriginalFileName, '') Not Like '%.webm'))
+        And (@Source Is Null Or @Source = '' Or @Source = 'ALL' Or dbo.VideoAssets.SourceType = @Source)
         And (@Search Is Null Or @Search = '' Or dbo.VideoAssets.Title Like '%' + @Search + '%' Or dbo.VideoAssets.OriginalFileName Like '%' + @Search + '%' Or dbo.Users.FullName Like '%' + @Search + '%')
     Order By
         dbo.VideoAssets.CreatedAt Desc,

@@ -1,8 +1,18 @@
 <template>
-  <div class="interactive-player">
+  <div :class="['interactive-player', { 'youtube-mode': isYouTube }]">
     <div class="interactive-stage">
+      <YouTubeVideoPlayer
+        v-if="source && isYouTube"
+        ref="youtubeRef"
+        :source="source"
+        :initial-time="initialTime"
+        @ready="onYouTubeReady"
+        @play="onYouTubePlay"
+        @pause="emitProgress"
+        @timeupdate="onYouTubeTimeUpdate"
+      />
       <video
-        v-if="source"
+        v-else-if="source"
         ref="videoRef"
         :src="source"
         :poster="poster || undefined"
@@ -60,7 +70,11 @@
       </div>
     </div>
 
-    <div v-if="activeQuestion" class="interaction-backdrop" @click.self="closeQuestion">
+    <div
+      v-if="activeQuestion"
+      :class="isYouTube ? 'youtube-interaction-host' : 'interaction-backdrop'"
+      @click.self="closeQuestion"
+    >
       <div class="interaction-modal app-card" role="dialog" aria-modal="true" :aria-label="activeQuestion.label">
         <button v-if="canSkip" class="interaction-close" type="button" aria-label="Đóng câu hỏi" @click="closeQuestion">
           <i class="bi bi-x-lg"></i>
@@ -132,11 +146,14 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import YouTubeVideoPlayer from './YouTubeVideoPlayer.vue'
 import { formatInteractionTime } from '../../utils/learningRules'
 import { createInteractionEngine, normalizeInteractions } from '../../composables/useVideoInteractions'
+import { isYouTubeSource } from '../../utils/videoSources'
 
 const props = defineProps({
   source: { type: String, default: '' },
+  sourceType: { type: String, default: 'LOCAL' },
   poster: { type: String, default: '' },
   durationSeconds: { type: Number, default: 0 },
   interactions: { type: Array, default: () => [] },
@@ -151,6 +168,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['progress', 'answered'])
 const videoRef = ref(null),
+  youtubeRef = ref(null),
   activeQuestion = ref(null),
   singleAnswer = ref(''),
   multipleAnswers = ref([]),
@@ -162,6 +180,7 @@ const videoRef = ref(null),
   loaded = ref(false),
   currentTime = ref(props.initialTime)
 const normalized = computed(() => normalizeInteractions(props.interactions))
+const isYouTube = computed(() => isYouTubeSource(props.sourceType))
 let engine = createInteractionEngine(normalized.value, props.answeredInteractionIds)
 const formatTime = formatInteractionTime
 const canSkip = computed(() => Boolean(activeQuestion.value?.allowSkip || !activeQuestion.value?.required))
@@ -177,7 +196,9 @@ const hasAnswer = computed(() =>
       ? Boolean(shortAnswer.value)
       : Boolean(singleAnswer.value)
 )
-const effectiveDuration = computed(() => props.durationSeconds || videoRef.value?.duration || 0)
+const effectiveDuration = computed(
+  () => props.durationSeconds || youtubeRef.value?.getDuration?.() || videoRef.value?.duration || 0
+)
 const currentPercent = computed(() =>
   effectiveDuration.value ? Math.min(100, Math.max(0, (currentTime.value / effectiveDuration.value) * 100)) : 0
 )
@@ -194,6 +215,7 @@ function resetEngine(at = 0) {
 function resetPlayer() {
   const element = videoRef.value
   element?.pause()
+  youtubeRef.value?.pause?.()
   watchedMax.value = props.maxWatchedTime
   currentTime.value = 0
   resetEngine(0)
@@ -201,6 +223,7 @@ function resetPlayer() {
     element.currentTime = 0
     element.playbackRate = 1
   }
+  youtubeRef.value?.seekTo?.(0, true)
 }
 function onLoaded() {
   loaded.value = true
@@ -215,12 +238,30 @@ function onLoaded() {
 function activate(item) {
   if (!item) return
   videoRef.value?.pause()
+  youtubeRef.value?.pause?.()
   activeQuestion.value = item
   singleAnswer.value = ''
   multipleAnswers.value = []
   shortAnswer.value = ''
   answerError.value = ''
   answerResult.value = null
+}
+function onYouTubeReady({ currentTime: time = props.initialTime }) {
+  loaded.value = true
+  currentTime.value = time
+  engine.loadAt(time)
+  emitProgress()
+}
+function onYouTubePlay({ currentTime: time = 0 }) {
+  if (!loaded.value) return
+  activate(engine.start(time))
+}
+function onYouTubeTimeUpdate({ currentTime: time = 0 }) {
+  if (!loaded.value) return
+  currentTime.value = time
+  watchedMax.value = Math.max(watchedMax.value, time)
+  activate(engine.tick(time))
+  emitProgress()
 }
 function onPlay() {
   if (!loaded.value) return
@@ -253,10 +294,11 @@ function onRateChange() {
 }
 function emitProgress() {
   const element = videoRef.value
-  if (!element) return
-  const duration = props.durationSeconds || element.duration || 0
+  const time = isYouTube.value ? youtubeRef.value?.getCurrentTime?.() || currentTime.value : element?.currentTime
+  if (time === undefined) return
+  const duration = effectiveDuration.value
   emit('progress', {
-    currentTime: element.currentTime,
+    currentTime: time,
     maxWatchedTime: watchedMax.value,
     watchPercent: duration ? Math.min(100, (watchedMax.value / duration) * 100) : 0
   })
@@ -267,7 +309,7 @@ function openQuestion(item) {
 function closeQuestion() {
   if (!canSkip.value || !engine.close()) return
   activeQuestion.value = null
-  void videoRef.value?.play()
+  play()
 }
 async function submit() {
   if (!activeQuestion.value || submitting.value) return
@@ -300,16 +342,16 @@ function continuePlayback() {
   activeQuestion.value = null
   answerResult.value = null
   if (next) activate(next)
-  else void videoRef.value?.play()
+  else play()
 }
 function markerPercent(time) {
   return effectiveDuration.value ? Math.min(99, Math.max(1, (time / effectiveDuration.value) * 100)) : 0
 }
 function seekTo(time) {
-  if (!videoRef.value) return
   const target = Math.min(effectiveDuration.value, Math.max(0, Number(time) || 0))
   currentTime.value = target
-  videoRef.value.currentTime = target
+  if (isYouTube.value) youtubeRef.value?.seekTo?.(target)
+  else if (videoRef.value) videoRef.value.currentTime = target
 }
 function seekFromTimeline(event) {
   if (!canTimelineSeek.value) return
@@ -321,16 +363,26 @@ function stepTimeline(seconds) {
   if (canTimelineSeek.value) seekTo(currentTime.value + seconds)
 }
 function play() {
-  return videoRef.value?.play()
+  return isYouTube.value ? youtubeRef.value?.play?.() : videoRef.value?.play()
 }
 function pause() {
-  videoRef.value?.pause()
+  if (isYouTube.value) youtubeRef.value?.pause?.()
+  else videoRef.value?.pause()
 }
 onBeforeUnmount(() => {
   videoRef.value?.pause()
+  youtubeRef.value?.pause?.()
   activeQuestion.value = null
 })
-defineExpose({ seekTo, play, pause, openQuestion, reset: resetPlayer, videoElement: videoRef })
+defineExpose({
+  seekTo,
+  play,
+  pause,
+  openQuestion,
+  reset: resetPlayer,
+  videoElement: videoRef,
+  youtubePlayer: youtubeRef
+})
 </script>
 
 <style scoped src="../../assets/css/components/interactive-video-player.css"></style>

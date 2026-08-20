@@ -326,6 +326,7 @@ Begin
         dbo.VideoVersions.Id VideoVersionId,
         dbo.VideoVersions.VersionNumber,
         dbo.VideoVersions.Title,
+        dbo.VideoVersions.SourceType,
         dbo.VideoVersions.VideoUrl,
         dbo.VideoVersions.PosterUrl,
         dbo.VideoVersions.DurationSeconds,

@@ -552,6 +552,77 @@
 .text-brand {
   color: var(--eduvers-base) !important;
 }
+.video-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  margin: 0.2rem 0;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.video-source-badge.local {
+  color: #005099;
+  background: #e7f1fa;
+}
+.video-source-badge.youtube {
+  color: #b50020;
+  background: #fff0f2;
+}
+.video-source-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.video-source-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  color: #53655f;
+  text-align: left;
+  background: #f7f9f8;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+.video-source-option.active {
+  color: #005099;
+  background: #edf6fc;
+  border-color: #9fc7e2;
+}
+.video-source-option i {
+  font-size: 1.45rem;
+}
+.video-source-option span {
+  display: grid;
+}
+.video-source-option small {
+  color: #71817c;
+  font-size: 0.72rem;
+}
+.youtube-source-panel {
+  padding: 1rem;
+  background: #f7f9f8;
+  border-radius: 10px;
+}
+.youtube-source-panel .input-group-text {
+  color: #e00028;
+  background: #fff;
+}
+.youtube-validation {
+  margin: 0.5rem 0 0;
+  color: #c51636;
+  font-size: 0.78rem;
+}
+.youtube-library-preview {
+  max-width: 720px;
+  margin: 1rem auto 0;
+  overflow: hidden;
+  border-radius: 10px;
+}
 @media (max-width: 1200px) {
   .filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -562,6 +633,7 @@
 }
 @media (max-width: 700px) {
   .filter-grid,
+  .video-source-picker,
   .scope-options,
   .teacher-list {
     grid-template-columns: 1fr;
