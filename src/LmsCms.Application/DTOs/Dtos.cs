@@ -92,6 +92,31 @@ public sealed class CourseSaveRequest
 public sealed record VideoProgressRequest(long LessonId, long VideoId, decimal CurrentTime, decimal MaxWatchedTime, decimal WatchPercent);
 public sealed record SubmitAnswerRequest(long LessonId, long? VideoId, long? InteractionId, long QuestionId, IReadOnlyCollection<string> Answers, decimal? TimeInVideo, int? TimeSpent);
 public sealed record AnswerResultDto(long AnswerId, bool? IsCorrect, decimal ScoreAwarded, decimal CurrentLessonScore, int AttemptNumber, string ReviewStatus, string? Explanation);
+public sealed record InteractiveContentSettingsRequest(
+    [property: RegularExpression("REQUIRED_QUESTIONS|ALL_QUESTIONS|PASSING_SCORE")] string CompletionRule,
+    bool RequireReading,
+    [property: Range(0, 100)] decimal PassingScore,
+    bool ShowResultImmediately,
+    bool ShowScore);
+public sealed class ContentInteractionSaveRequest
+{
+    [Range(1, long.MaxValue)] public long QuestionId { get; init; }
+    [StringLength(100)] public string? ContentAnchor { get; init; }
+    public bool Required { get; init; } = true;
+    public bool AllowRetry { get; init; } = true;
+    [Range(0, 10000)] public decimal Score { get; init; } = 10;
+    [Range(1, 100)] public int AttemptLimit { get; init; } = 2;
+    [Range(1, int.MaxValue)] public int SortOrder { get; init; } = 1;
+    [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
+}
+public sealed record InteractiveContentAnswerRequest(
+    [property: Range(1, long.MaxValue)] long ContentInteractionId,
+    [property: Range(1, long.MaxValue)] long QuestionId,
+    [property: MinLength(1)] IReadOnlyCollection<string> Answers,
+    int? TimeSpentSeconds);
+public sealed record InteractiveReadingProgressRequest(
+    [property: Range(0, 100)] decimal ReadingProgressPercent,
+    [property: Range(0, 100)] decimal LastScrollPercent);
 public sealed record PreviewAnswerRequest(long InteractionId, long QuestionId, IReadOnlyCollection<string> Answers);
 public sealed record PreviewAnswerResultDto(bool? IsCorrect, decimal ScoreAwarded, string ReviewStatus, string? Explanation);
 public sealed record PlayerDataDto(object? Lesson, object? Course, object? Video, object? Progress, IReadOnlyCollection<object> Interactions, IReadOnlyCollection<object> AnsweredInteractions);
@@ -106,7 +131,7 @@ public sealed class LessonSaveRequest
 {
     [Required, StringLength(500)] public string Title { get; init; } = "";
     [StringLength(1000)] public string? Description { get; init; }
-    [RegularExpression("VIDEO|INTERACTIVE_VIDEO|QUIZ|DOCUMENT|EDITOR|ASSIGNMENT")] public string LessonType { get; init; } = "VIDEO";
+    [RegularExpression("VIDEO|INTERACTIVE_VIDEO|QUIZ|DOCUMENT|EDITOR|ASSIGNMENT|INTERACTIVE_CONTENT")] public string LessonType { get; init; } = "VIDEO";
     [Range(0, int.MaxValue)] public int DurationSeconds { get; init; }
     [Range(1, int.MaxValue)] public int SortOrder { get; init; } = 1;
     public bool IsRequired { get; init; } = true;

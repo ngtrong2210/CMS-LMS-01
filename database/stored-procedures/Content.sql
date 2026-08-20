@@ -259,7 +259,7 @@ Begin
     1;
 
     If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
-    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT')
+    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT', 'INTERACTIVE_CONTENT')
     Or @DurationSeconds < 0
     Or @SortOrder < 1
     Or @AssignmentMaxScore Not Between 1 And 10000
@@ -310,7 +310,7 @@ Begin
     Set Nocount On;
 
     If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
-    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT')
+    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT', 'INTERACTIVE_CONTENT')
     Or @DurationSeconds < 0
     Or @SortOrder < 1
     Or @AssignmentMaxScore Not Between 1 And 10000

@@ -40,6 +40,22 @@ public sealed class LmsController(ILearningService learning, IAssignmentStorageS
     [HttpPost("answers")]
     public async Task<ActionResult<ApiResponse<AnswerResultDto>>> SubmitAnswer(SubmitAnswerRequest request, CancellationToken cancellationToken) => Ok(ApiResponse<AnswerResultDto>.Ok(await learning.SubmitAnswerAsync(UserId, request, cancellationToken)));
 
+    [HttpGet("lessons/{lessonId:long}/interactive-content")]
+    public async Task<ActionResult<ApiResponse<object>>> GetInteractiveContent(long lessonId, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(await learning.GetInteractiveContentAsync(lessonId, UserId, cancellationToken)));
+
+    [HttpPost("lessons/{lessonId:long}/interactive-content/answers")]
+    public async Task<ActionResult<ApiResponse<AnswerResultDto>>> SubmitInteractiveContentAnswer(long lessonId, InteractiveContentAnswerRequest request, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<AnswerResultDto>.Ok(await learning.SubmitInteractiveContentAnswerAsync(lessonId, UserId, request, cancellationToken)));
+
+    [HttpPut("lessons/{lessonId:long}/interactive-content/reading-progress")]
+    public async Task<ActionResult<ApiResponse<object>>> SaveInteractiveReadingProgress(long lessonId, InteractiveReadingProgressRequest request, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(await learning.SaveInteractiveReadingProgressAsync(lessonId, UserId, request, cancellationToken), "Đã lưu vị trí đọc."));
+
+    [HttpPost("lessons/{lessonId:long}/interactive-content/complete")]
+    public async Task<ActionResult<ApiResponse<object>>> CompleteInteractiveContent(long lessonId, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(await learning.CompleteInteractiveContentAsync(lessonId, UserId, cancellationToken)));
+
     [HttpPost("study-sessions")]
     public async Task<ActionResult<ApiResponse<object>>> StartStudySession(StudySessionStartRequest request, CancellationToken cancellationToken) =>
         Ok(ApiResponse<object>.Ok(await learning.StartStudySessionAsync(UserId, request, cancellationToken)));

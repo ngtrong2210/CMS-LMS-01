@@ -70,6 +70,64 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
         return await connection.QuerySingleAsync<AnswerResultDto>(new CommandDefinition("dbo.LMS_StudentAnswer_Submit", new { StudentId = studentId, request.LessonId, request.VideoId, request.InteractionId, request.QuestionId, AnswerText = answerText, TimeInVideoSeconds = request.TimeInVideo, TimeSpentSeconds = request.TimeSpent }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
     }
 
+    public async Task<object> GetInteractiveContentAsync(long lessonId, long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        using var result = await connection.QueryMultipleAsync(new CommandDefinition(
+            "dbo.LMS_InteractiveContent_GetForStudent",
+            new { LessonID = lessonId, StudentUserID = studentId },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+        var lesson = await result.ReadSingleAsync();
+        var interactions = (await result.ReadAsync()).Cast<object>().ToArray();
+        var answers = (await result.ReadAsync()).Cast<object>().ToArray();
+        var progress = await result.ReadSingleAsync();
+        return new { Lesson = lesson, Interactions = interactions, Answers = answers, Progress = progress };
+    }
+
+    public async Task<AnswerResultDto> SubmitInteractiveContentAnswerAsync(long lessonId, long studentId, InteractiveContentAnswerRequest request, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        var answerText = string.Join("|", request.Answers
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+        return await connection.QuerySingleAsync<AnswerResultDto>(new CommandDefinition(
+            "dbo.LMS_InteractiveContent_SubmitAnswer",
+            new
+            {
+                LessonID = lessonId,
+                request.ContentInteractionId,
+                request.QuestionId,
+                StudentUserID = studentId,
+                AnswerText = answerText,
+                request.TimeSpentSeconds
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public async Task<object> SaveInteractiveReadingProgressAsync(long lessonId, long studentId, InteractiveReadingProgressRequest request, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.QuerySingleAsync(new CommandDefinition(
+            "dbo.LMS_InteractiveContent_SaveReadingProgress",
+            new { LessonID = lessonId, StudentUserID = studentId, request.ReadingProgressPercent, request.LastScrollPercent },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public async Task<object> CompleteInteractiveContentAsync(long lessonId, long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.QuerySingleAsync(new CommandDefinition(
+            "dbo.LMS_InteractiveContent_Complete",
+            new { LessonID = lessonId, StudentUserID = studentId },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
     public async Task<object> StartStudySessionAsync(long studentId, StudySessionStartRequest request, CancellationToken cancellationToken = default)
     {
         using var connection = connections.CreateConnection();

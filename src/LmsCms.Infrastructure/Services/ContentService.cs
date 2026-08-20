@@ -81,6 +81,36 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     public Task<bool> UpdateInteractionAsync(long id,InteractionSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_VideoInteraction_Update",new{Id=id,r.QuestionId,r.TimeSeconds,r.EndTimeSeconds,r.InteractionType,r.Required,r.PauseVideo,r.AllowSkip,r.Score,r.AttemptLimit,r.SortOrder,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
     public Task<bool> DeleteInteractionAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_VideoInteraction_Delete",new{Id=id,ActorId=actorId,IsAdmin=isAdmin},ct);
     public Task ReorderInteractionsAsync(ReorderRequest request,long actorId,bool isAdmin,CancellationToken ct=default)=>Reorder("dbo.LMS_VideoInteraction_Reorder",request,actorId,isAdmin,ct);
+    public async Task<object> GetInteractiveContentForTeacherAsync(long lessonId,long actorId,bool isAdmin,CancellationToken ct=default)
+    {
+        using var db=connections.CreateConnection();
+        using var grid=await db.QueryMultipleAsync(new CommandDefinition("dbo.LMS_InteractiveContent_GetForTeacher",new{LessonID=lessonId,ActorUserID=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct));
+        var settings=await grid.ReadSingleAsync();
+        var interactions=(await grid.ReadAsync()).Cast<object>().ToArray();
+        var analytics=await grid.ReadSingleAsync();
+        return new { Settings=settings, Interactions=interactions, Analytics=analytics };
+    }
+    public Task<long> SaveInteractiveContentSettingsAsync(long lessonId,InteractiveContentSettingsRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>ScalarId("dbo.LMS_InteractiveContent_SaveSettings",new{LessonID=lessonId,r.CompletionRule,r.RequireReading,r.PassingScore,r.ShowResultImmediately,r.ShowScore,ActorUserID=actorId,IsAdmin=isAdmin},ct);
+    public Task<long> CreateContentInteractionAsync(long lessonId,ContentInteractionSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>ScalarId("dbo.LMS_ContentInteraction_Create",new{LessonID=lessonId,r.QuestionId,r.ContentAnchor,r.Required,r.AllowRetry,r.Score,r.AttemptLimit,r.SortOrder,r.Status,ActorUserID=actorId,IsAdmin=isAdmin},ct);
+    public Task<bool> UpdateContentInteractionAsync(long id,ContentInteractionSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_ContentInteraction_Update",new{ContentInteractionID=id,r.QuestionId,r.ContentAnchor,r.Required,r.AllowRetry,r.Score,r.AttemptLimit,r.SortOrder,r.Status,ActorUserID=actorId,IsAdmin=isAdmin},ct);
+    public Task<bool> DeleteContentInteractionAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)=>Affected("dbo.LMS_ContentInteraction_Delete",new{ContentInteractionID=id,ActorUserID=actorId,IsAdmin=isAdmin},ct);
+    public async Task ReorderContentInteractionsAsync(ReorderRequest request,long actorId,bool isAdmin,CancellationToken ct=default)
+    {
+        using var db=connections.CreateConnection();
+        db.Open();
+        using var tx=db.BeginTransaction();
+        try
+        {
+            foreach(var item in request.Items)
+                await db.ExecuteAsync(new CommandDefinition("dbo.LMS_ContentInteraction_Reorder",new{ContentInteractionID=item.Id,item.SortOrder,ActorUserID=actorId,IsAdmin=isAdmin},transaction:tx,commandType:CommandType.StoredProcedure,cancellationToken:ct));
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
     private async Task<long> ScalarId(string procedure,object args,CancellationToken ct){using var db=connections.CreateConnection();return await db.QuerySingleAsync<long>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct));}
     private async Task<bool> Affected(string procedure,object args,CancellationToken ct){using var db=connections.CreateConnection();return await db.ExecuteScalarAsync<int>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct))>0;}
     private async Task Reorder(string procedure,ReorderRequest request,long actorId,bool isAdmin,CancellationToken ct){using var db=connections.CreateConnection();db.Open();using var tx=db.BeginTransaction();try{foreach(var item in request.Items)await db.ExecuteAsync(new CommandDefinition(procedure,new{item.Id,item.SortOrder,ActorId=actorId,IsAdmin=isAdmin},transaction:tx,commandType:CommandType.StoredProcedure,cancellationToken:ct));tx.Commit();}catch{tx.Rollback();throw;}}

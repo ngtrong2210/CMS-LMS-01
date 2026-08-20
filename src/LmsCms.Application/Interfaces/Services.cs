@@ -35,6 +35,10 @@ public interface ILearningService
     Task<PlayerDataDto?> GetPlayerAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
     Task SaveVideoProgressAsync(long studentId, VideoProgressRequest request, CancellationToken cancellationToken = default);
     Task<AnswerResultDto> SubmitAnswerAsync(long studentId, SubmitAnswerRequest request, CancellationToken cancellationToken = default);
+    Task<object> GetInteractiveContentAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
+    Task<AnswerResultDto> SubmitInteractiveContentAnswerAsync(long lessonId, long studentId, InteractiveContentAnswerRequest request, CancellationToken cancellationToken = default);
+    Task<object> SaveInteractiveReadingProgressAsync(long lessonId, long studentId, InteractiveReadingProgressRequest request, CancellationToken cancellationToken = default);
+    Task<object> CompleteInteractiveContentAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
     Task<object> StartStudySessionAsync(long studentId, StudySessionStartRequest request, CancellationToken cancellationToken = default);
     Task<object?> HeartbeatStudySessionAsync(Guid studySessionId, long studentId, CancellationToken cancellationToken = default);
     Task<object?> EndStudySessionAsync(Guid studySessionId, long studentId, bool isCompleted, CancellationToken cancellationToken = default);
@@ -101,6 +105,12 @@ public interface IContentService
     Task<bool> UpdateInteractionAsync(long id, InteractionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
     Task<bool> DeleteInteractionAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
     Task ReorderInteractionsAsync(ReorderRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<object> GetInteractiveContentForTeacherAsync(long lessonId, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<long> SaveInteractiveContentSettingsAsync(long lessonId, InteractiveContentSettingsRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<long> CreateContentInteractionAsync(long lessonId, ContentInteractionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<bool> UpdateContentInteractionAsync(long id, ContentInteractionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<bool> DeleteContentInteractionAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task ReorderContentInteractionsAsync(ReorderRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
 }
 public interface IQuestionService
 {
