@@ -328,6 +328,13 @@
             </div>
           </div>
         </div>
+        <button
+          v-if="sidebarOpen && !focusMode"
+          type="button"
+          class="curriculum-backdrop"
+          aria-label="Đóng nội dung môn học"
+          @click="sidebarOpen = false"
+        ></button>
         <aside v-show="sidebarOpen && !focusMode" class="content-panel">
           <div class="curriculum-heading">
             <div>
@@ -631,6 +638,7 @@ let lastActivityAt = Date.now()
 const recordActivity = () => (lastActivityAt = Date.now())
 onMounted(() => {
   activityEvents.forEach((eventName) => window.addEventListener(eventName, recordActivity, { passive: true }))
+  if (window.matchMedia('(max-width: 1100px)').matches) sidebarOpen.value = false
   loadPlayer()
 })
 onBeforeUnmount(() => {
