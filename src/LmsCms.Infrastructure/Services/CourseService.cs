@@ -36,7 +36,7 @@ public sealed class CourseService(ISqlConnectionFactory connections) : ICourseSe
         return await connection.QuerySingleAsync<long>(new CommandDefinition("dbo.LMS_Course_Create", new
         {
             request.Code, request.Title, request.Slug, request.ThumbnailUrl, request.ShortDescription, request.Description,
-            request.TeacherId, request.CategoryId, request.Level, request.PassingScore, request.Status, ActorId = actorId
+            request.TeacherId, request.CategoryId, request.ClassSubjectId, request.Level, request.PassingScore, request.Status, ActorId = actorId
         }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
     }
 
@@ -46,7 +46,7 @@ public sealed class CourseService(ISqlConnectionFactory connections) : ICourseSe
         var affected = await connection.ExecuteScalarAsync<int>(new CommandDefinition("dbo.LMS_Course_Update", new
         {
             Id = id, request.Code, request.Title, request.Slug, request.ThumbnailUrl, request.ShortDescription, request.Description,
-            request.TeacherId, request.CategoryId, request.Level, request.PassingScore, request.Status, ActorId = actorId, IsAdmin = isAdmin
+            request.TeacherId, request.CategoryId, request.ClassSubjectId, request.Level, request.PassingScore, request.Status, ActorId = actorId, IsAdmin = isAdmin
         }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
         return affected > 0;
     }

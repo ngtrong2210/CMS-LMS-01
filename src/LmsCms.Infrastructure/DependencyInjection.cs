@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourseService, CourseService>();
+        services.AddScoped<IAcademicService, AcademicService>();
         services.AddScoped<ILearningService, LearningService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ISearchService, SearchService>();
@@ -25,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IQuestionService, QuestionService>();
         services.AddScoped<IStudentService, StudentService>();
         services.AddSingleton<IVideoStorageService, LocalVideoStorageService>();
+        services.AddSingleton<IAssignmentStorageService, LocalAssignmentStorageService>();
         services.AddSingleton<IProjectStorageService, ProjectStorageService>();
         services.AddHostedService<StorageCleanupHostedService>();
         services.AddHealthChecks().AddCheck<SqlServerHealthCheck>("sql-server");

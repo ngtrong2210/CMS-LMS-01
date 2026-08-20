@@ -32,6 +32,24 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal("Healthy", json.GetProperty("sqlServer").GetString());
     }
 
+    [Fact]
+    public async Task AcademicCatalog_AdminCanViewTrainingStructureAndTimetable()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        await AuthorizeAs("admin");
+
+        var response = await _client.GetAsync("/api/academic/catalog");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var data = json.GetProperty("data");
+
+        Assert.NotEmpty(data.GetProperty("years").EnumerateArray());
+        Assert.NotEmpty(data.GetProperty("classes").EnumerateArray());
+        Assert.NotEmpty(data.GetProperty("subjects").EnumerateArray());
+        Assert.NotEmpty(data.GetProperty("classSubjects").EnumerateArray());
+        Assert.NotEmpty(data.GetProperty("timetables").EnumerateArray());
+    }
+
     [Theory]
     [InlineData("admin", "ADMIN")]
     [InlineData("teacher", "TEACHER")]

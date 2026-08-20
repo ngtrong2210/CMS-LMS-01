@@ -1,0 +1,27 @@
+.timetable-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.day-badge {
+  background: #e8f4ff;
+  border-radius: 999px;
+  color: #005099;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+.timetable-table {
+  min-width: 980px;
+}
+
+@media (max-width: 767px) {
+  .timetable-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

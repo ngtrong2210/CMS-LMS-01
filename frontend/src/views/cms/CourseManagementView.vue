@@ -118,6 +118,16 @@
               <option value="ADVANCED">Nâng cao</option>
             </select>
           </div>
+          <div class="col-12">
+            <label class="form-label"><i class="bi bi-diagram-3"></i> Môn học lớp theo năm học</label>
+            <select v-model.number="form.classSubjectId" class="form-select">
+              <option :value="null">Không liên kết môn học lớp</option>
+              <option v-for="item in academicOfferings" :key="item.classSubjectId" :value="item.classSubjectId">
+                {{ item.yearName }} · HK{{ item.semester }} · {{ item.className }} · {{ item.subjectName }}
+              </option>
+            </select>
+            <small class="form-text">Liên kết giúp học viên trong lớp được tự động ghi danh đúng môn.</small>
+          </div>
           <div class="col-md-6">
             <label class="form-label">Điểm đạt</label
             ><input v-model.number="form.passingScore" class="form-control" type="number" min="0" max="100" />
@@ -150,6 +160,7 @@ import { useListViewState } from '../../composables/useListViewState'
 import { confirmDialog } from '../../utils/confirmDialog'
 import { courseStatusBadgeClass, statusLabel } from '../../utils/displayLabels'
 const items = ref([]),
+  academicOfferings = ref([]),
   search = ref(''),
   status = ref(''),
   loading = ref(true),
@@ -166,7 +177,7 @@ watch([search, status], () => {
   clearTimeout(timer)
   timer = setTimeout(load, 250)
 })
-onMounted(load)
+onMounted(() => Promise.all([load(), loadAcademicOptions()]))
 function blank() {
   return {
     id: 0,
@@ -177,9 +188,25 @@ function blank() {
     description: '',
     teacherId: 2,
     categoryId: 1,
+    classSubjectId: null,
     level: 'BEGINNER',
     passingScore: 60,
     status: 'DRAFT'
+  }
+}
+async function loadAcademicOptions() {
+  try {
+    const data = await axiosClient.get('/academic/catalog')
+    const rows = pick(data, 'ClassSubjects', 'classSubjects') || []
+    academicOfferings.value = rows.map((row) => ({
+      classSubjectId: Number(pick(row, 'ClassSubjectID', 'classSubjectID')),
+      yearName: pick(row, 'YearName', 'yearName'),
+      semester: Number(pick(row, 'Semester', 'semester')),
+      className: pick(row, 'ClassName', 'className'),
+      subjectName: pick(row, 'SubjectName', 'subjectName')
+    }))
+  } catch {
+    academicOfferings.value = []
   }
 }
 async function load() {
@@ -229,6 +256,7 @@ async function openForm(item = null) {
         description: pick(detail, 'Description', 'description') || '',
         teacherId: Number(pick(detail, 'TeacherId', 'teacherId')),
         categoryId: Number(pick(detail, 'CategoryId', 'categoryId') || 0) || null,
+        classSubjectId: Number(pick(detail, 'ClassSubjectID', 'classSubjectID') || 0) || null,
         level: pick(detail, 'Level', 'level'),
         passingScore: Number(pick(detail, 'PassingScore', 'passingScore') || 0),
         status: pick(detail, 'Status', 'status')
@@ -252,6 +280,7 @@ async function save() {
       description: form.description || null,
       teacherId: Number(form.teacherId),
       categoryId: form.categoryId ? Number(form.categoryId) : null,
+      classSubjectId: form.classSubjectId ? Number(form.classSubjectId) : null,
       level: form.level,
       passingScore: Number(form.passingScore) || 0,
       status: form.status
@@ -260,7 +289,7 @@ async function save() {
     else await axiosClient.post('/courses', body)
     showForm.value = false
     await load()
-    show('Đã lưu khóa học vào SQL.')
+    show('Đã lưu khóa học.')
   } catch (error) {
     show(error.message, 'danger')
   } finally {

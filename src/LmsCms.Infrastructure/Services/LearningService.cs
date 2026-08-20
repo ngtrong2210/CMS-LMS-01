@@ -69,4 +69,72 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
         return await connection.QuerySingleAsync<AnswerResultDto>(new CommandDefinition("dbo.LMS_StudentAnswer_Submit", new { StudentId = studentId, request.LessonId, request.VideoId, request.InteractionId, request.QuestionId, AnswerText = answerText, TimeInVideoSeconds = request.TimeInVideo, TimeSpentSeconds = request.TimeSpent }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
     }
+
+    public async Task<object> StartStudySessionAsync(long studentId, StudySessionStartRequest request, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.QuerySingleAsync(new CommandDefinition(
+            "dbo.LMS_StudySession_Start",
+            new
+            {
+                StudentUserID = studentId,
+                request.CourseId,
+                request.ChapterId,
+                request.LessonId,
+                request.PageUrl,
+                request.ClientSessionKey
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public async Task<object?> HeartbeatStudySessionAsync(Guid studySessionId, long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync(new CommandDefinition(
+            "dbo.LMS_StudySession_Heartbeat",
+            new { StudySessionID = studySessionId, StudentUserID = studentId },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public async Task<object?> EndStudySessionAsync(Guid studySessionId, long studentId, bool isCompleted, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync(new CommandDefinition(
+            "dbo.LMS_StudySession_End",
+            new { StudySessionID = studySessionId, StudentUserID = studentId, IsCompleted = isCompleted },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public async Task<IReadOnlyCollection<object>> GetAssignmentSubmissionsAsync(long lessonId, long studentId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return (await connection.QueryAsync(new CommandDefinition(
+            "dbo.LMS_AssignmentSubmission_GetByLesson",
+            new { LessonID = lessonId, StudentUserID = studentId },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken))).Cast<object>().ToArray();
+    }
+
+    public async Task<object> SubmitAssignmentAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, CancellationToken cancellationToken = default)
+    {
+        using var connection = connections.CreateConnection();
+        return await connection.QuerySingleAsync(new CommandDefinition(
+            "dbo.LMS_AssignmentSubmission_Create",
+            new
+            {
+                LessonID = lessonId,
+                StudentUserID = studentId,
+                SubmissionText = submissionText,
+                FileUrl = file?.FileUrl,
+                OriginalFileName = file?.OriginalFileName,
+                StoredFileName = file?.StoredFileName,
+                FileSize = file?.FileSize,
+                MimeType = file?.MimeType
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
 }

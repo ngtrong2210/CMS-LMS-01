@@ -1,0 +1,27 @@
+using System.Security.Claims;
+using LmsCms.Application.Common;
+using LmsCms.Application.DTOs;
+using LmsCms.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace LmsCms.Api.Controllers;
+
+[ApiController, Route("api/academic"), Authorize(Roles = "ADMIN,TEACHER")]
+public sealed class AcademicController(IAcademicService academic) : ControllerBase
+{
+    private long UserId => long.Parse(User.FindFirstValue("userId")!);
+    private bool IsAdmin => User.IsInRole("ADMIN");
+
+    [HttpGet("catalog")]
+    public async Task<ActionResult<ApiResponse<object>>> GetCatalog(CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(await academic.GetCatalogAsync(UserId, IsAdmin, cancellationToken)));
+
+    [HttpPost("catalog"), Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<ApiResponse<object>>> Save(AcademicCatalogSaveRequest request, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(await academic.SaveAsync(request, UserId, cancellationToken), "Đã lưu danh mục đào tạo."));
+
+    [HttpPost("classes/students"), Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<ApiResponse<object>>> AssignStudents(AssignStudentsToClassRequest request, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(await academic.AssignStudentsToClassAsync(request, UserId, cancellationToken), "Đã phân học viên vào lớp và đồng bộ môn học."));
+}

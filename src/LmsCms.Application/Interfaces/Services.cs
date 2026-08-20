@@ -19,6 +19,12 @@ public interface ICourseService
     Task<bool> ChangeStatusAsync(long id, string status, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(long id, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
 }
+public interface IAcademicService
+{
+    Task<object> GetCatalogAsync(long actorId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<object> SaveAsync(AcademicCatalogSaveRequest request, long actorId, CancellationToken cancellationToken = default);
+    Task<object> AssignStudentsToClassAsync(AssignStudentsToClassRequest request, long actorId, CancellationToken cancellationToken = default);
+}
 public interface ILearningService
 {
     Task<object> GetDashboardAsync(long studentId, CancellationToken cancellationToken = default);
@@ -28,6 +34,11 @@ public interface ILearningService
     Task<PlayerDataDto?> GetPlayerAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
     Task SaveVideoProgressAsync(long studentId, VideoProgressRequest request, CancellationToken cancellationToken = default);
     Task<AnswerResultDto> SubmitAnswerAsync(long studentId, SubmitAnswerRequest request, CancellationToken cancellationToken = default);
+    Task<object> StartStudySessionAsync(long studentId, StudySessionStartRequest request, CancellationToken cancellationToken = default);
+    Task<object?> HeartbeatStudySessionAsync(Guid studySessionId, long studentId, CancellationToken cancellationToken = default);
+    Task<object?> EndStudySessionAsync(Guid studySessionId, long studentId, bool isCompleted, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<object>> GetAssignmentSubmissionsAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
+    Task<object> SubmitAssignmentAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, CancellationToken cancellationToken = default);
 }
 public interface IReportService { Task<DashboardDto> GetDashboardAsync(CancellationToken cancellationToken = default); Task<IReadOnlyCollection<object>> GetReportAsync(string report, CancellationToken cancellationToken = default); }
 public interface ISearchService { Task<IReadOnlyCollection<object>> SearchAsync(string search, long actorId, bool isAdmin, int limit = 60, CancellationToken cancellationToken = default); }
@@ -91,6 +102,11 @@ public interface IVideoStorageService
     Task<bool> DeleteAsync(string videoUrl, CancellationToken ct = default);
     bool Exists(string videoUrl);
     string GetUrl(string videoUrl);
+}
+public interface IAssignmentStorageService
+{
+    Task<AssignmentSubmissionFile> SaveTeacherResourceAsync(long lessonId, Stream content, string originalFileName, string contentType, long fileSize, CancellationToken cancellationToken = default);
+    Task<AssignmentSubmissionFile> SaveStudentSubmissionAsync(long lessonId, long studentUserId, Stream content, string originalFileName, string contentType, long fileSize, CancellationToken cancellationToken = default);
 }
 public enum ProjectStorageArea { Cache, Temp, Exports, Processing }
 public sealed record ProjectStoredFile(string RelativePath, long FileSize, DateTime CreatedAtUtc);

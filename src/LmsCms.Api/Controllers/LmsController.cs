@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LmsCms.Api.Controllers;
 
 [ApiController, Route("api/lms"), Authorize(Roles = "STUDENT")]
-public sealed class LmsController(ILearningService learning) : ControllerBase
+public sealed class LmsController(ILearningService learning, IAssignmentStorageService assignmentStorage) : ControllerBase
 {
     private long UserId => long.Parse(User.FindFirstValue("userId")!);
     [HttpGet("dashboard")]
@@ -39,4 +39,40 @@ public sealed class LmsController(ILearningService learning) : ControllerBase
     }
     [HttpPost("answers")]
     public async Task<ActionResult<ApiResponse<AnswerResultDto>>> SubmitAnswer(SubmitAnswerRequest request, CancellationToken cancellationToken) => Ok(ApiResponse<AnswerResultDto>.Ok(await learning.SubmitAnswerAsync(UserId, request, cancellationToken)));
+
+    [HttpPost("study-sessions")]
+    public async Task<ActionResult<ApiResponse<object>>> StartStudySession(StudySessionStartRequest request, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<object>.Ok(await learning.StartStudySessionAsync(UserId, request, cancellationToken)));
+
+    [HttpPut("study-sessions/{studySessionId:guid}/heartbeat")]
+    public async Task<ActionResult<ApiResponse<object>>> HeartbeatStudySession(Guid studySessionId, CancellationToken cancellationToken)
+    {
+        var data = await learning.HeartbeatStudySessionAsync(studySessionId, UserId, cancellationToken);
+        return data is null ? NotFound(ApiResponse<object>.Fail("Phiên học không còn hoạt động.")) : Ok(ApiResponse<object>.Ok(data));
+    }
+
+    [HttpPost("study-sessions/{studySessionId:guid}/end")]
+    public async Task<ActionResult<ApiResponse<object>>> EndStudySession(Guid studySessionId, StudySessionEndRequest request, CancellationToken cancellationToken)
+    {
+        var data = await learning.EndStudySessionAsync(studySessionId, UserId, request.IsCompleted, cancellationToken);
+        return data is null ? NotFound(ApiResponse<object>.Fail("Không tìm thấy phiên học.")) : Ok(ApiResponse<object>.Ok(data));
+    }
+
+    [HttpGet("lessons/{lessonId:long}/submissions")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<object>>>> GetAssignmentSubmissions(long lessonId, CancellationToken cancellationToken) =>
+        Ok(ApiResponse<IReadOnlyCollection<object>>.Ok(await learning.GetAssignmentSubmissionsAsync(lessonId, UserId, cancellationToken)));
+
+    [HttpPost("lessons/{lessonId:long}/submissions")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<ApiResponse<object>>> SubmitAssignment(long lessonId, [FromForm] string? submissionText, [FromForm] IFormFile? file, CancellationToken cancellationToken)
+    {
+        AssignmentSubmissionFile? stored = null;
+        if (file is not null)
+        {
+            await using var stream = file.OpenReadStream();
+            stored = await assignmentStorage.SaveStudentSubmissionAsync(lessonId, UserId, stream, file.FileName, file.ContentType, file.Length, cancellationToken);
+        }
+
+        return Ok(ApiResponse<object>.Ok(await learning.SubmitAssignmentAsync(lessonId, UserId, submissionText, stored, cancellationToken), "Đã nộp bài tập."));
+    }
 }

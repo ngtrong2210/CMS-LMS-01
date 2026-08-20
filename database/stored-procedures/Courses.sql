@@ -150,6 +150,12 @@ Begin
         dbo.Lessons.SortOrder,
         dbo.Lessons.IsRequired,
         dbo.Lessons.PassingScore,
+        dbo.Lessons.ContentHtml,
+        dbo.Lessons.DocumentUrl,
+        dbo.Lessons.AssignmentFolderName,
+        dbo.Lessons.DueAt,
+        dbo.Lessons.MaxSubmissionFileSizeMB,
+        dbo.Lessons.AllowLateSubmission,
         dbo.Lessons.Status,
         dbo.Lessons.VideoId,
         dbo.Videos.VideoAssetId,
@@ -184,6 +190,7 @@ Create Or Alter Procedure dbo.LMS_Course_Create
     @Description Nvarchar(Max) = Null,
     @TeacherId Bigint,
     @CategoryId Bigint = Null,
+    @ClassSubjectID Bigint = Null,
     @Level Varchar(50),
     @PassingScore Decimal(5, 2),
     @Status Varchar(30),
@@ -230,6 +237,18 @@ Begin
     N'Danh mục không tồn tại.',
     1;
 
+    If @ClassSubjectID Is Not Null
+    And Not Exists (
+        Select
+            1
+        From dbo.SIM_Class_Subject
+        Where (DataGroupID = 1)
+            And (ClassSubjectID = @ClassSubjectID)
+            And (ClassSubjectStatus = 1)
+    ) Throw 50002,
+    N'Môn học lớp không tồn tại.',
+    1;
+
     If Exists (
         Select
             1
@@ -245,9 +264,9 @@ Begin
 
     Begin Transaction;
 
-    Insert dbo.Courses (Code, Title, Slug, ThumbnailUrl, ShortDescription, Description, TeacherId, CategoryId, Level, PassingScore, Status, PublishedAt, CreatedBy)
+    Insert dbo.Courses (Code, Title, Slug, ThumbnailUrl, ShortDescription, Description, TeacherId, CategoryId, DataGroupID, ClassSubjectID, Level, PassingScore, Status, PublishedAt, CreatedBy)
     Values
-        (@Code, @Title, @Slug, @ThumbnailUrl, @ShortDescription, @Description, @TeacherId, @CategoryId, @Level, @PassingScore, @Status, Iif(@Status = 'PUBLISHED', Sysutcdatetime(), Null), @ActorId);
+        (@Code, @Title, @Slug, @ThumbnailUrl, @ShortDescription, @Description, @TeacherId, @CategoryId, 1, @ClassSubjectID, @Level, @PassingScore, @Status, Iif(@Status = 'PUBLISHED', Sysutcdatetime(), Null), @ActorId);
 
     Declare @Id Bigint = Scope_identity();
 
@@ -288,6 +307,7 @@ Create Or Alter Procedure dbo.LMS_Course_Update
     @Description Nvarchar(Max) = Null,
     @TeacherId Bigint,
     @CategoryId Bigint = Null,
+    @ClassSubjectID Bigint = Null,
     @Level Varchar(50),
     @PassingScore Decimal(5, 2),
     @Status Varchar(30),
@@ -335,6 +355,18 @@ Begin
     N'Danh mục không tồn tại.',
     1;
 
+    If @ClassSubjectID Is Not Null
+    And Not Exists (
+        Select
+            1
+        From dbo.SIM_Class_Subject
+        Where (DataGroupID = 1)
+            And (ClassSubjectID = @ClassSubjectID)
+            And (ClassSubjectStatus = 1)
+    ) Throw 50002,
+    N'Môn học lớp không tồn tại.',
+    1;
+
     If Exists (
         Select
             1
@@ -370,6 +402,8 @@ Begin
         Description = @Description,
         TeacherId = @TeacherId,
         CategoryId = @CategoryId,
+        DataGroupID = 1,
+        ClassSubjectID = @ClassSubjectID,
         Level = @Level,
         PassingScore = @PassingScore,
         Status = @Status,

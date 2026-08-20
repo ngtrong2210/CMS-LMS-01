@@ -118,6 +118,7 @@ const sidebarScrolling = ref(false)
 const globalSearch = ref(String(route.query.q || ''))
 const cachedPages = [
   'CourseManagementView',
+  'AcademicStructureView',
   'VideoLibraryView',
   'QuestionBankView',
   'StudentsView',
@@ -140,6 +141,7 @@ const menu = [
   {
     label: 'Đào tạo',
     items: [
+      { to: '/cms/academic', text: 'Cơ cấu đào tạo', icon: 'bi-diagram-3' },
       { to: '/cms/courses', text: 'Khóa học', icon: 'bi-journal-bookmark' },
       { to: '/cms/videos', text: 'Thư viện video', icon: 'bi-collection-play' },
       { to: '/cms/questions', text: 'Ngân hàng câu hỏi', icon: 'bi-patch-question' }

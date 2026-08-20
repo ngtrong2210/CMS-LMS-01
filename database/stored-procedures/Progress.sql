@@ -304,7 +304,13 @@ Begin
         dbo.Lessons.Description,
         dbo.Lessons.LessonType,
         dbo.Lessons.DurationSeconds,
-        dbo.Lessons.PassingScore
+        dbo.Lessons.PassingScore,
+        dbo.Lessons.ContentHtml,
+        dbo.Lessons.DocumentUrl,
+        dbo.Lessons.AssignmentFolderName,
+        dbo.Lessons.DueAt,
+        dbo.Lessons.MaxSubmissionFileSizeMB,
+        dbo.Lessons.AllowLateSubmission
     From dbo.Lessons
     Where (dbo.Lessons.Id = @LessonId)
         And (dbo.Lessons.IsDeleted = 0);

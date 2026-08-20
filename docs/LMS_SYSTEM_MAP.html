@@ -32,12 +32,13 @@
         <p class="sidebar-label">Mục lục nhanh</p>
         <a class="nav-link active" href="#overview"><span class="nav-no">01</span>Tổng quan</a>
         <a class="nav-link" href="#roles"><span class="nav-no">02</span>Vai trò</a>
-        <a class="nav-link" href="#businessFlow"><span class="nav-no">03</span>Luồng toàn hệ thống</a>
-        <a class="nav-link" href="#detailFlows"><span class="nav-no">04</span>Luồng chi tiết</a>
-        <a class="nav-link" href="#videoVersioning"><span class="nav-no">05</span>Quy tắc sửa video</a>
-        <a class="nav-link" href="#dataRelation"><span class="nav-no">06</span>Quan hệ dữ liệu</a>
-        <a class="nav-link" href="#tableDictionary"><span class="nav-no">07</span>Danh mục 25 bảng</a>
-        <a class="nav-link" href="#businessRules"><span class="nav-no">08</span>Quy tắc quan trọng</a>
+        <a class="nav-link" href="#academicModel"><span class="nav-no">03</span>Cơ cấu đào tạo</a>
+        <a class="nav-link" href="#businessFlow"><span class="nav-no">04</span>Luồng toàn hệ thống</a>
+        <a class="nav-link" href="#detailFlows"><span class="nav-no">05</span>Luồng chi tiết</a>
+        <a class="nav-link" href="#videoVersioning"><span class="nav-no">06</span>Quy tắc sửa video</a>
+        <a class="nav-link" href="#dataRelation"><span class="nav-no">07</span>Quan hệ dữ liệu</a>
+        <a class="nav-link" href="#tableDictionary"><span class="nav-no">08</span>Danh mục bảng</a>
+        <a class="nav-link" href="#businessRules"><span class="nav-no">09</span>Quy tắc quan trọng</a>
         <div class="side-legend">
           <strong>Quy ước schema</strong>
           <span><b>SYS_</b> — tài khoản, vai trò, quyền</span>
@@ -58,8 +59,8 @@
             <span class="pill">Vue.js CMS/LMS</span>
             <span class="pill">ASP.NET Core API</span>
             <span class="pill">SQL Server</span>
-            <span class="pill">25 bảng vật lý</span>
-            <span class="pill">Cập nhật 15/08/2026</span>
+            <span class="pill">Schema đào tạo + LMS mở rộng</span>
+            <span class="pill">Cập nhật 20/08/2026</span>
           </div>
         </div>
 
@@ -141,6 +142,39 @@
               </ul>
             </article>
           </div>
+        </section>
+
+        <section id="academicModel" aria-labelledby="academicModelTitle">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Cơ cấu đào tạo chính quy</p>
+              <h2 id="academicModelTitle">Từ khóa tuyển sinh đến bài học và kết quả</h2>
+              <p class="section-desc">Phân biệt rõ hồ sơ đào tạo SIM với không gian học trực tuyến và dữ liệu phát sinh LMS.</p>
+            </div>
+          </div>
+          <article class="card flow-lane" data-search="khoa khóa lớp môn năm học thời khóa biểu chương bài học">
+            <div class="lane-head"><span class="lane-no">A</span><div><h3>Luồng tổ chức đào tạo</h3><small>Một lớp học môn gì, vào năm nào, do ai phụ trách?</small></div></div>
+            <div class="flow-row" style="--columns: 6">
+              <div class="flow-node"><h3>Khóa tuyển sinh</h3><p>K18, thời gian 2025–2029.</p><code>SIM_Course</code></div>
+              <div class="flow-node"><h3>Khoa chuyên môn</h3><p>Khoa Công nghệ thông tin.</p><code>SIM_Science</code></div>
+              <div class="flow-node"><h3>Lớp hành chính</h3><p>Học viên thuộc một lớp.</p><code>SIM_Class + SIM_Student</code></div>
+              <div class="flow-node"><h3>Môn học lớp</h3><p>Lớp + môn + năm + học kỳ + giáo viên.</p><code>SIM_Class_Subject</code></div>
+              <div class="flow-node"><h3>Thời khóa biểu</h3><p>Thứ, tiết, giờ, phòng và hiệu lực.</p><code>SIM_Timetable</code></div>
+              <div class="flow-node result"><h3>Không gian LMS</h3><p>Mỗi môn học lớp liên kết một khóa học online.</p><code>SIM_Courses.ClassSubjectID</code></div>
+            </div>
+          </article>
+          <article class="card flow-lane" data-search="video tài liệu editor bài tập nộp file thời gian học chấm điểm">
+            <div class="lane-head"><span class="lane-no">B</span><div><h3>Luồng học liệu và hoạt động học viên</h3><small>Một môn có chương; một chương có nhiều loại bài học.</small></div></div>
+            <div class="flow-row" style="--columns: 6">
+              <div class="flow-node"><h3>Chương</h3><p>Nhóm nội dung theo chủ đề.</p><code>SIM_Chapters</code></div>
+              <div class="flow-node"><h3>Bài học</h3><p>Video, editor, tài liệu, quiz hoặc bài tập.</p><code>SIM_Lessons</code></div>
+              <div class="flow-node"><h3>File học liệu</h3><p>PDF/Word/đề bài nằm trong Media.</p><code>SIM_LessonResources</code></div>
+              <div class="flow-node"><h3>Nộp bài</h3><p>Mỗi lần nộp lưu nội dung và file riêng.</p><code>LMS_AssignmentSubmissions</code></div>
+              <div class="flow-node"><h3>Đếm thời gian</h3><p>Heartbeat cộng thời gian hoạt động thực.</p><code>LMS_StudySessions</code></div>
+              <div class="flow-node result"><h3>Điểm & báo cáo</h3><p>Điểm bài, tiến độ, thời lượng theo học viên.</p><code>LMS_Student*Progress</code></div>
+            </div>
+          </article>
+          <div class="callout"><strong>Quy ước quan trọng:</strong> <code>SIM_Course</code> (số ít) là khóa tuyển sinh K18; <code>SIM_Courses</code> (số nhiều) là không gian học online. Hai khái niệm không dùng thay thế cho nhau.</div>
         </section>
 
         <section id="businessFlow" aria-labelledby="businessFlowTitle">
@@ -328,6 +362,8 @@
           <div id="tabContent" class="tab-panel">
             <div class="table-wrap"><table><thead><tr><th>Bước</th><th>API</th><th>Stored Procedure</th><th>Bảng chính</th></tr></thead><tbody>
               <tr data-search="course khóa học"><td>Tạo khóa học</td><td class="mono">POST /api/courses</td><td class="mono">LMS_Course_Create</td><td>SIM_Courses</td></tr>
+              <tr data-search="academic cơ cấu năm khoa lớp môn"><td>Đọc cơ cấu đào tạo</td><td class="mono">GET /api/academic/catalog</td><td class="mono">LMS_Academic_GetCatalog</td><td>SIM_Year, SIM_Science, SIM_Course, SIM_Class, SIM_Subject</td></tr>
+              <tr data-search="class subject timetable thời khóa biểu"><td>Mở môn / xếp lịch</td><td class="mono">POST /api/academic/catalog</td><td class="mono">LMS_Academic_Save</td><td>SIM_Class_Subject, SIM_Timetable</td></tr>
               <tr data-search="chapter chương"><td>Tạo chương</td><td class="mono">POST /api/courses/{id}/chapters</td><td class="mono">LMS_Chapter_Create</td><td>SIM_Chapters</td></tr>
               <tr data-search="lesson bài học"><td>Tạo bài học</td><td class="mono">POST /api/chapters/{id}/lessons</td><td class="mono">LMS_Lesson_Create</td><td>SIM_Lessons</td></tr>
               <tr data-search="attach video gắn"><td>Gắn video có sẵn</td><td class="mono">PUT /api/lessons/{lessonId}/video/{videoId}</td><td class="mono">LMS_Video_AttachToLesson</td><td>SIM_Lessons.VideoID + VideoVersionID</td></tr>
@@ -350,6 +386,8 @@
               <tr data-search="player bài học"><td>Mở player</td><td class="mono">GET /api/lms/lessons/{id}/player</td><td class="mono">LMS_LessonPlayer_GetData</td><td>SIM_Lessons, SIM_VideoVersions, LMS_VideoInteractions</td></tr>
               <tr data-search="progress tiến độ"><td>Lưu tiến độ</td><td class="mono">POST /api/lms/progress/video</td><td class="mono">LMS_StudentVideoProgress_Save</td><td>LMS_StudentVideoProgress</td></tr>
               <tr data-search="answer trả lời điểm"><td>Nộp đáp án</td><td class="mono">POST /api/lms/answers</td><td class="mono">LMS_StudentAnswer_Submit</td><td>LMS_StudentAnswers, LMS_StudentAnswerOptions</td></tr>
+              <tr data-search="study time heartbeat thời gian học"><td>Ghi thời gian học</td><td class="mono">POST/PUT /api/lms/study-sessions</td><td class="mono">LMS_StudySession_*</td><td>LMS_StudySessions</td></tr>
+              <tr data-search="assignment submission nộp bài file"><td>Nộp bài tập</td><td class="mono">POST /api/lms/lessons/{id}/submissions</td><td class="mono">LMS_AssignmentSubmission_Create</td><td>LMS_AssignmentSubmissions + /Media/File/Assignments</td></tr>
             </tbody></table></div>
           </div>
         </section>
@@ -484,10 +522,20 @@
                 <tr data-search="SYS_RefreshTokens refresh token jwt"><td>SYS_RefreshTokens</td><td><span class="module-badge">SYS</span></td><td><span class="key">PK RefreshTokenID</span><span class="key fk">UserID</span></td><td>SYS_Users</td><td>Gia hạn và thu hồi phiên đăng nhập.</td></tr>
                 <tr data-search="SYS_AuditLogs audit log nhật ký"><td>SYS_AuditLogs</td><td><span class="module-badge">SYS</span></td><td><span class="key">PK AuditLogID</span><span class="key fk">UserID</span></td><td>SYS_Users</td><td>Nhật ký thao tác và thay đổi dữ liệu.</td></tr>
 
+                <tr data-search="SIM_Year năm học"><td>SIM_Year</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + YearID</span></td><td>SIM_Class_Subject</td><td>Năm học, ví dụ 2025–2026.</td></tr>
+                <tr data-search="SIM_Science khoa"><td>SIM_Science</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + ScienceID</span></td><td>SIM_Class, SIM_Subject, SIM_Teacher</td><td>Khoa chuyên môn.</td></tr>
+                <tr data-search="SIM_Course khóa tuyển sinh K18"><td>SIM_Course</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + CourseID</span></td><td>SIM_Class</td><td>Khóa tuyển sinh K18, K19; khác SIM_Courses online.</td></tr>
+                <tr data-search="SIM_Subject môn học"><td>SIM_Subject</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + SubjectID</span></td><td>SIM_Science, SIM_Class_Subject</td><td>Danh mục môn học và số tín chỉ.</td></tr>
+                <tr data-search="SIM_Teacher giáo viên"><td>SIM_Teacher</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + TeacherID</span><span class="key fk">UserID</span></td><td>SYS_Users, SIM_Science</td><td>Hồ sơ nghiệp vụ giảng viên.</td></tr>
+                <tr data-search="SIM_Class lớp hành chính"><td>SIM_Class</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + ClassID</span></td><td>SIM_Course, SIM_Science</td><td>Lớp hành chính thuộc khoa và khóa tuyển sinh.</td></tr>
+                <tr data-search="SIM_Student sinh viên lớp"><td>SIM_Student</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + StudentID</span><span class="key fk">UserID</span></td><td>SYS_Users, SIM_Class</td><td>Hồ sơ sinh viên và lớp đang học.</td></tr>
+                <tr data-search="SIM_Class_Subject môn học lớp năm học"><td>SIM_Class_Subject</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK DataGroupID + ClassSubjectID</span></td><td>Năm, lớp, môn, giáo viên</td><td>Môn được mở cho lớp theo năm học và học kỳ.</td></tr>
+                <tr data-search="SIM_Timetable thời khóa biểu"><td>SIM_Timetable</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK TimetableID</span><span class="key fk">ClassSubjectID</span></td><td>SIM_Class_Subject</td><td>Thứ, tiết, giờ, phòng và thời gian hiệu lực.</td></tr>
                 <tr data-search="SIM_CourseCategories category danh mục"><td>SIM_CourseCategories</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK CourseCategoryID</span></td><td>SIM_Courses</td><td>Danh mục phân loại khóa học.</td></tr>
                 <tr data-search="SIM_Courses course khóa học teacher"><td>SIM_Courses</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK CourseID</span><span class="key fk">TeacherUserID</span></td><td>SYS_Users, SIM_CourseCategories</td><td>Thông tin và trạng thái xuất bản khóa học.</td></tr>
                 <tr data-search="SIM_Chapters chapter chương"><td>SIM_Chapters</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK ChapterID</span><span class="key fk">CourseID</span></td><td>SIM_Courses</td><td>Chương nội dung thuộc khóa học.</td></tr>
-                <tr data-search="SIM_Lessons lesson bài học video version"><td>SIM_Lessons</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK LessonID</span><span class="key fk">CourseID</span><span class="key fk">VideoID</span><span class="key fk">VideoVersionID</span></td><td>SIM_Courses, SIM_Videos, SIM_VideoVersions</td><td>Bài học ghim một phiên bản video cụ thể.</td></tr>
+                <tr data-search="SIM_Lessons lesson bài học video document editor assignment"><td>SIM_Lessons</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK LessonID</span><span class="key fk">CourseID</span><span class="key fk">VideoID</span><span class="key fk">VideoVersionID</span></td><td>SIM_Courses, SIM_Videos, SIM_VideoVersions</td><td>Bài video, quiz, tài liệu, nội dung editor hoặc bài tập nộp file.</td></tr>
+                <tr data-search="SIM_LessonResources file tài liệu"><td>SIM_LessonResources</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK LessonResourceID</span><span class="key fk">LessonID</span></td><td>SIM_Lessons, SYS_Users</td><td>File và liên kết học liệu được giáo viên tải lên.</td></tr>
                 <tr data-search="SIM_VideoAssets asset thư viện file media"><td>SIM_VideoAssets</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetID</span><span class="key fk">CreatedByUserID</span></td><td>SYS_Users, SIM_Videos</td><td>Metadata tài nguyên video và tác giả.</td></tr>
                 <tr data-search="SIM_VideoAssetShares share chia sẻ giáo viên"><td>SIM_VideoAssetShares</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoAssetShareID</span><span class="key fk">VideoAssetID</span><span class="key fk">TeacherUserID</span></td><td>SIM_VideoAssets, SYS_Users</td><td>Chia sẻ video cho giáo viên được chọn.</td></tr>
                 <tr data-search="SIM_Videos video tương tác độc lập current version"><td>SIM_Videos</td><td><span class="module-badge sim">SIM</span></td><td><span class="key">PK VideoID</span><span class="key fk">VideoAssetID</span><span class="key fk">CurrentVideoVersionID</span></td><td>SIM_VideoAssets, SIM_VideoVersions</td><td>Định danh video dùng chung và con trỏ tới phiên bản mới nhất.</td></tr>
@@ -502,7 +550,9 @@
                 <tr data-search="LMS_StudentVideoProgress video progress xem version"><td>LMS_StudentVideoProgress</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentVideoProgressID</span><span class="key fk">LessonID</span><span class="key fk">VideoVersionID</span></td><td>SYS_Users, SIM_Lessons, SIM_VideoVersions</td><td>Vị trí xem, thời lượng và % hoàn thành theo phiên bản.</td></tr>
                 <tr data-search="LMS_StudentAnswers answer sai đúng score điểm version"><td>LMS_StudentAnswers</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudentAnswerID</span><span class="key fk">VideoVersionID</span><span class="key fk">VideoInteractionID</span><span class="key fk">QuestionID</span></td><td>Học viên, khóa, bài, phiên bản, tương tác, câu hỏi</td><td>Mọi lần trả lời đúng/sai, điểm và phiên bản nội dung đã làm.</td></tr>
                 <tr data-search="LMS_StudentAnswerOptions selected option"><td>LMS_StudentAnswerOptions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key fk">StudentAnswerID</span><span class="key fk">QuestionOptionID</span></td><td>LMS_StudentAnswers, LMS_QuestionOptions</td><td>Các lựa chọn học viên đã chọn.</td></tr>
-                <tr data-search="LMS_LearningSessions session học pause seek version"><td>LMS_LearningSessions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK LearningSessionID</span><span class="key">SessionID</span><span class="key fk">VideoVersionID</span></td><td>Học viên, khóa, bài học, phiên bản video</td><td>Phiên học, thời lượng xem, seek/pause/tương tác theo phiên bản.</td></tr>
+                <tr data-search="LMS_LearningSessions session học pause seek version"><td>LMS_LearningSessions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK LearningSessionID</span><span class="key">SessionID</span><span class="key fk">VideoVersionID</span></td><td>Học viên, khóa, bài học, phiên bản video</td><td>Phiên xem video, seek/pause và tương tác theo phiên bản.</td></tr>
+                <tr data-search="LMS_StudySessions thời gian học heartbeat"><td>LMS_StudySessions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK StudySessionID</span><span class="key fk">StudentUserID</span></td><td>Môn học, chương, bài học</td><td>Thời gian hoạt động thực trên mọi loại bài học qua heartbeat.</td></tr>
+                <tr data-search="LMS_AssignmentSubmissions nộp bài file điểm"><td>LMS_AssignmentSubmissions</td><td><span class="module-badge lms">LMS</span></td><td><span class="key">PK AssignmentSubmissionID</span><span class="key fk">LessonID</span></td><td>Học viên, bài tập, khóa học</td><td>Lịch sử nộp file, nội dung, trạng thái chấm và điểm.</td></tr>
               </tbody>
             </table>
           </div>

@@ -17,6 +17,7 @@ const routes = [
     { path: '', redirect: '/cms/dashboard' },
     { path: 'dashboard', component: () => import('../views/cms/CmsDashboardView.vue'), meta: { title: 'Tổng quan', hideBack: true } },
     { path: 'search', component: () => import('../views/cms/GlobalSearchView.vue'), meta: { title: 'Tìm kiếm' } },
+    { path: 'academic', component: () => import('../views/cms/AcademicStructureView.vue'), meta: { title: 'Cơ cấu đào tạo' } },
     { path: 'courses', component: () => import('../views/cms/CourseManagementView.vue'), meta: { title: 'Khóa học' } },
     { path: 'courses/:id/content', component: () => import('../views/cms/ContentBuilderView.vue'), meta: { title: 'Nội dung khóa học', backTo: '/cms/courses' } },
     { path: 'videos', component: () => import('../views/cms/VideoLibraryView.vue'), meta: { title: 'Thư viện video' } },

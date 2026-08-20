@@ -144,7 +144,9 @@
               <option value="INTERACTIVE_VIDEO">Video tương tác</option>
               <option value="VIDEO">Video</option>
               <option value="QUIZ">Bài kiểm tra</option>
-              <option value="DOCUMENT">Tài liệu</option>
+              <option value="DOCUMENT">Tài liệu PDF / file</option>
+              <option value="EDITOR">Bài học soạn thảo</option>
+              <option value="ASSIGNMENT">Bài tập nộp file</option>
             </select>
           </div>
           <div class="col-md-3">
@@ -168,6 +170,29 @@
               >Bài học bắt buộc</label
             >
           </div>
+          <div v-if="lessonForm.lessonType === 'EDITOR'" class="col-12">
+            <label class="form-label"><i class="bi bi-pencil-square"></i> Nội dung soạn thảo</label>
+            <div class="editor-toolbar">
+              <button type="button" title="Chữ đậm" @click="formatEditor('bold')"><i class="bi bi-type-bold"></i></button>
+              <button type="button" title="Chữ nghiêng" @click="formatEditor('italic')"><i class="bi bi-type-italic"></i></button>
+              <button type="button" title="Danh sách" @click="formatEditor('insertUnorderedList')"><i class="bi bi-list-ul"></i></button>
+              <button type="button" title="Tiêu đề" @click="formatEditor('formatBlock', 'h3')"><i class="bi bi-type-h3"></i></button>
+            </div>
+            <div ref="lessonEditor" class="lesson-rich-editor" contenteditable="true" @input="syncEditor"></div>
+          </div>
+          <template v-if="['DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType)">
+            <div class="col-12">
+              <label class="form-label"><i class="bi bi-paperclip"></i> File tài liệu / đề bài</label>
+              <input class="form-control" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.png,.jpg,.jpeg" @change="selectLessonFile" />
+              <small v-if="lessonForm.documentUrl" class="resource-path"><i class="bi bi-check-circle"></i> {{ lessonForm.documentUrl }}</small>
+            </div>
+          </template>
+          <template v-if="lessonForm.lessonType === 'ASSIGNMENT'">
+            <div class="col-md-6"><label class="form-label">Thư mục bài tập</label><input v-model.trim="lessonForm.assignmentFolderName" class="form-control" maxlength="250" placeholder="VD: Bai-tap-chuong-1" /></div>
+            <div class="col-md-6"><label class="form-label">Hạn nộp</label><input v-model="lessonForm.dueAt" class="form-control" type="datetime-local" /></div>
+            <div class="col-md-6"><label class="form-label">Dung lượng nộp tối đa (MB)</label><input v-model.number="lessonForm.maxSubmissionFileSizeMB" class="form-control" type="number" min="1" max="200" /></div>
+            <div class="col-md-6 check-row"><input id="allowLate" v-model="lessonForm.allowLateSubmission" class="form-check-input" type="checkbox" /><label for="allowLate">Cho phép nộp trễ</label></div>
+          </template>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-action-cancel" @click="lessonModal = false">
@@ -242,7 +267,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axiosClient from '../../api/axiosClient'
 import { formatInteractionTime } from '../../utils/learningRules'
@@ -262,6 +287,8 @@ const chapterModal = ref(false),
   targetLesson = ref(null),
   videoAssets = ref([]),
   videoSearch = ref('')
+const lessonEditor = ref(null),
+  lessonFile = ref(null)
 const chapterForm = reactive(blankChapter()),
   lessonForm = reactive(blankLesson())
 const pick = (source, ...names) =>
@@ -316,7 +343,13 @@ function mapLesson(row, index) {
     videoId: Number(pick(row, 'VideoId', 'videoId') || 0),
     videoAssetId: Number(pick(row, 'VideoAssetId', 'videoAssetId') || 0),
     videoTitle: pick(row, 'VideoTitle', 'videoTitle') || '',
-    canEditVideo: Boolean(pick(row, 'CanEditVideo', 'canEditVideo'))
+    canEditVideo: Boolean(pick(row, 'CanEditVideo', 'canEditVideo')),
+    contentHtml: pick(row, 'ContentHtml', 'contentHtml') || '',
+    documentUrl: pick(row, 'DocumentUrl', 'documentUrl') || '',
+    assignmentFolderName: pick(row, 'AssignmentFolderName', 'assignmentFolderName') || '',
+    dueAt: toLocalDateTime(pick(row, 'DueAt', 'dueAt')),
+    maxSubmissionFileSizeMB: Number(pick(row, 'MaxSubmissionFileSizeMB', 'maxSubmissionFileSizeMB') || 50),
+    allowLateSubmission: Boolean(pick(row, 'AllowLateSubmission', 'allowLateSubmission'))
   }
 }
 function blankChapter() {
@@ -333,7 +366,13 @@ function blankLesson() {
     sortOrder: 1,
     isRequired: true,
     passingScore: 0,
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    contentHtml: '',
+    documentUrl: '',
+    assignmentFolderName: '',
+    dueAt: '',
+    maxSubmissionFileSizeMB: 50,
+    allowLateSubmission: false
   }
 }
 function openChapter(item = null) {
@@ -357,7 +396,11 @@ function openLesson(chapter, item = null) {
     item ? { ...item } : { ...blankLesson(), chapterId: chapter.id, sortOrder: chapter.lessons.length + 1 }
   )
   lessonForm.chapterId = chapter.id
+  lessonFile.value = null
   lessonModal.value = true
+  nextTick(() => {
+    if (lessonEditor.value) lessonEditor.value.innerHTML = lessonForm.contentHtml || ''
+  })
 }
 async function saveChapter() {
   saving.value = true
@@ -390,13 +433,30 @@ async function saveLesson() {
       sortOrder: lessonForm.sortOrder,
       isRequired: lessonForm.isRequired,
       passingScore: Number(lessonForm.passingScore) || 0,
+      contentHtml: lessonForm.lessonType === 'EDITOR' ? lessonForm.contentHtml || null : null,
+      documentUrl: ['DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType) ? lessonForm.documentUrl || null : null,
+      assignmentFolderName: lessonForm.lessonType === 'ASSIGNMENT' ? lessonForm.assignmentFolderName || null : null,
+      dueAt: lessonForm.lessonType === 'ASSIGNMENT' && lessonForm.dueAt ? new Date(lessonForm.dueAt).toISOString() : null,
+      maxSubmissionFileSizeMB: Number(lessonForm.maxSubmissionFileSizeMB) || 50,
+      allowLateSubmission: lessonForm.lessonType === 'ASSIGNMENT' && lessonForm.allowLateSubmission,
       status: lessonForm.status
     }
-    if (lessonForm.id) await axiosClient.put(`/lessons/${lessonForm.id}`, body)
-    else await axiosClient.post(`/chapters/${lessonForm.chapterId}/lessons`, body)
+    let lessonId = lessonForm.id
+    if (lessonId) await axiosClient.put(`/lessons/${lessonId}`, body)
+    else {
+      const result = await axiosClient.post(`/chapters/${lessonForm.chapterId}/lessons`, body)
+      lessonId = Number(pick(result, 'id', 'Id'))
+    }
+    if (lessonFile.value && lessonId) {
+      const uploadBody = new FormData()
+      uploadBody.append('file', lessonFile.value)
+      const uploaded = await axiosClient.post(`/learning-files/lessons/${lessonId}/resource`, uploadBody)
+      body.documentUrl = pick(uploaded, 'fileUrl', 'FileUrl')
+      await axiosClient.put(`/lessons/${lessonId}`, body)
+    }
     lessonModal.value = false
     await load()
-    show('Đã lưu bài học vào SQL.')
+    show('Đã lưu bài học.')
   } catch (error) {
     show(error.message, 'danger')
   } finally {
@@ -461,8 +521,25 @@ async function attachVideo(asset) {
 }
 function lessonTypeLabel(type) {
   return (
-    { INTERACTIVE_VIDEO: 'Video tương tác', VIDEO: 'Video', QUIZ: 'Bài kiểm tra', DOCUMENT: 'Tài liệu' }[type] || type
+    { INTERACTIVE_VIDEO: 'Video tương tác', VIDEO: 'Video', QUIZ: 'Bài kiểm tra', DOCUMENT: 'Tài liệu', EDITOR: 'Bài soạn thảo', ASSIGNMENT: 'Bài tập nộp file' }[type] || type
   )
+}
+function selectLessonFile(event) {
+  lessonFile.value = event.target.files?.[0] || null
+}
+function syncEditor(event) {
+  lessonForm.contentHtml = event.currentTarget.innerHTML
+}
+function formatEditor(command, value = null) {
+  lessonEditor.value?.focus()
+  document.execCommand(command, false, value)
+  lessonForm.contentHtml = lessonEditor.value?.innerHTML || ''
+}
+function toLocalDateTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  const offset = date.getTimezoneOffset() * 60000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
 function show(text, type = 'success') {
   message.value = text

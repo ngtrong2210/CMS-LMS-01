@@ -228,6 +228,12 @@ Create Or Alter Procedure dbo.LMS_Lesson_Create
     @SortOrder Int,
     @IsRequired Bit,
     @PassingScore Decimal(5, 2) = Null,
+    @ContentHtml Nvarchar(Max) = Null,
+    @DocumentUrl Nvarchar(1000) = Null,
+    @AssignmentFolderName Nvarchar(250) = Null,
+    @DueAt Datetime2 = Null,
+    @MaxSubmissionFileSizeMB Int = 50,
+    @AllowLateSubmission Bit = 0,
     @Status Varchar(30),
     @ActorId Bigint,
     @IsAdmin Bit = 0
@@ -250,16 +256,17 @@ Begin
     1;
 
     If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
-    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT')
+    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT')
     Or @DurationSeconds < 0
     Or @SortOrder < 1
+    Or @MaxSubmissionFileSizeMB Not Between 1 And 200
     Or @PassingScore Not Between 0 And 100  Throw 50001,
     N'Dữ liệu bài học không hợp lệ.',
     1;
 
-    Insert dbo.Lessons (CourseId, ChapterId, Title, Description, LessonType, DurationSeconds, SortOrder, IsRequired, PassingScore, Status)
+    Insert dbo.Lessons (CourseId, ChapterId, Title, Description, LessonType, DurationSeconds, SortOrder, IsRequired, PassingScore, ContentHtml, DocumentUrl, AssignmentFolderName, DueAt, MaxSubmissionFileSizeMB, AllowLateSubmission, Status)
     Values
-        (@CourseId, @ChapterId, @Title, @Description, @LessonType, @DurationSeconds, @SortOrder, @IsRequired, @PassingScore, @Status);
+        (@CourseId, @ChapterId, @Title, @Description, @LessonType, @DurationSeconds, @SortOrder, @IsRequired, @PassingScore, @ContentHtml, @DocumentUrl, @AssignmentFolderName, @DueAt, @MaxSubmissionFileSizeMB, @AllowLateSubmission, @Status);
 
     Declare @Id Bigint = Scope_identity();
 
@@ -281,6 +288,12 @@ Create Or Alter Procedure dbo.LMS_Lesson_Update
     @SortOrder Int,
     @IsRequired Bit,
     @PassingScore Decimal(5, 2) = Null,
+    @ContentHtml Nvarchar(Max) = Null,
+    @DocumentUrl Nvarchar(1000) = Null,
+    @AssignmentFolderName Nvarchar(250) = Null,
+    @DueAt Datetime2 = Null,
+    @MaxSubmissionFileSizeMB Int = 50,
+    @AllowLateSubmission Bit = 0,
     @Status Varchar(30),
     @ActorId Bigint,
     @IsAdmin Bit = 0
@@ -289,9 +302,10 @@ Begin
     Set Nocount On;
 
     If Nullif(Ltrim(Rtrim(@Title)), '') Is Null
-    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT')
+    Or @LessonType Not In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT')
     Or @DurationSeconds < 0
     Or @SortOrder < 1
+    Or @MaxSubmissionFileSizeMB Not Between 1 And 200
     Or @PassingScore Not Between 0 And 100  Throw 50001,
     N'Dữ liệu bài học không hợp lệ.',
     1;
@@ -305,6 +319,12 @@ Begin
         SortOrder = @SortOrder,
         IsRequired = @IsRequired,
         PassingScore = @PassingScore,
+        ContentHtml = @ContentHtml,
+        DocumentUrl = @DocumentUrl,
+        AssignmentFolderName = @AssignmentFolderName,
+        DueAt = @DueAt,
+        MaxSubmissionFileSizeMB = @MaxSubmissionFileSizeMB,
+        AllowLateSubmission = @AllowLateSubmission,
         Status = @Status,
         UpdatedAt = Sysutcdatetime()
     From dbo.Lessons

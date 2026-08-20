@@ -49,6 +49,7 @@ public sealed class CourseSaveRequest
     public string? Description { get; init; }
     [Range(1, long.MaxValue)] public long TeacherId { get; init; }
     public long? CategoryId { get; init; }
+    public long? ClassSubjectId { get; init; }
     [Required, StringLength(50)] public string Level { get; init; } = "BEGINNER";
     [Range(0, 100)] public decimal PassingScore { get; init; }
     [RegularExpression("DRAFT|PUBLISHED|ARCHIVED")] public string Status { get; init; } = "DRAFT";
@@ -70,11 +71,17 @@ public sealed class LessonSaveRequest
 {
     [Required, StringLength(500)] public string Title { get; init; } = "";
     [StringLength(1000)] public string? Description { get; init; }
-    [RegularExpression("VIDEO|INTERACTIVE_VIDEO|QUIZ|DOCUMENT")] public string LessonType { get; init; } = "VIDEO";
+    [RegularExpression("VIDEO|INTERACTIVE_VIDEO|QUIZ|DOCUMENT|EDITOR|ASSIGNMENT")] public string LessonType { get; init; } = "VIDEO";
     [Range(0, int.MaxValue)] public int DurationSeconds { get; init; }
     [Range(1, int.MaxValue)] public int SortOrder { get; init; } = 1;
     public bool IsRequired { get; init; } = true;
     [Range(0, 100)] public decimal? PassingScore { get; init; }
+    public string? ContentHtml { get; init; }
+    [StringLength(1000)] public string? DocumentUrl { get; init; }
+    [StringLength(250)] public string? AssignmentFolderName { get; init; }
+    public DateTime? DueAt { get; init; }
+    [Range(1, 200)] public int MaxSubmissionFileSizeMB { get; init; } = 50;
+    public bool AllowLateSubmission { get; init; }
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
 }
 public sealed class VideoSaveRequest
@@ -162,3 +169,64 @@ public sealed class EnrollmentCreateRequest
     [Range(1, long.MaxValue)] public long CourseId { get; init; }
     [Range(1, long.MaxValue)] public long StudentId { get; init; }
 }
+
+public sealed class AcademicCatalogSaveRequest
+{
+    [RegularExpression("YEAR|SCIENCE|COHORT|SUBJECT|CLASS|CLASS_SUBJECT|TIMETABLE")] public string EntityType { get; init; } = "";
+    [Range(1, int.MaxValue)] public int DataGroupId { get; init; } = 1;
+    [StringLength(50)] public string? Code { get; init; }
+    [StringLength(500)] public string? Name { get; init; }
+    [StringLength(100)] public string? ShortName { get; init; }
+    [StringLength(50)] public string? ParentCode { get; init; }
+    public int? StartYear { get; init; }
+    public int? FinishYear { get; init; }
+    public DateTime? StartAt { get; init; }
+    public DateTime? FinishAt { get; init; }
+    public int? YearId { get; init; }
+    [Range(1, 3)] public byte? Semester { get; init; }
+    public long? ClassSubjectId { get; init; }
+    [StringLength(50)] public string? ClassId { get; init; }
+    [StringLength(50)] public string? SubjectId { get; init; }
+    [StringLength(50)] public string? TeacherId { get; init; }
+    [Range(0, 10000)] public int ClassSize { get; init; }
+    [Range(0, 50)] public byte CreditCount { get; init; }
+    [Range(0, 10000)] public int TheoryQuantity { get; init; }
+    [Range(0, 10000)] public int PracticeQuantity { get; init; }
+    public long? TimetableId { get; init; }
+    [Range(2, 8)] public byte? DayOfWeek { get; init; }
+    [Range(1, 30)] public byte? StartPeriod { get; init; }
+    [Range(1, 30)] public byte? EndPeriod { get; init; }
+    public TimeSpan? StartTime { get; init; }
+    public TimeSpan? EndTime { get; init; }
+    [StringLength(100)] public string? RoomName { get; init; }
+    public DateTime? EffectiveFrom { get; init; }
+    public DateTime? EffectiveTo { get; init; }
+}
+
+public sealed class AssignStudentsToClassRequest
+{
+    [Range(1, int.MaxValue)] public int DataGroupId { get; init; } = 1;
+    [Required, StringLength(50)] public string ClassId { get; init; } = "";
+    [Required, MinLength(1)] public IReadOnlyCollection<long> StudentUserIds { get; init; } = [];
+}
+
+public sealed class StudySessionStartRequest
+{
+    public long? CourseId { get; init; }
+    public long? ChapterId { get; init; }
+    public long? LessonId { get; init; }
+    [StringLength(1000)] public string? PageUrl { get; init; }
+    [StringLength(100)] public string? ClientSessionKey { get; init; }
+}
+
+public sealed class StudySessionEndRequest
+{
+    public bool IsCompleted { get; init; }
+}
+
+public sealed record AssignmentSubmissionFile(
+    string OriginalFileName,
+    string StoredFileName,
+    string FileUrl,
+    long FileSize,
+    string MimeType);
