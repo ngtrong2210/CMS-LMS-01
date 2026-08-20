@@ -260,6 +260,64 @@
               /><label for="allowLate">Cho phép nộp trễ</label>
             </div>
           </template>
+          <template v-if="lessonForm.lessonType === 'QUIZ'">
+            <div class="col-md-4">
+              <label class="form-label"><i class="bi bi-bullseye"></i> Điểm đạt (%)</label
+              ><input
+                v-model.number="lessonForm.quizPassingScore"
+                class="form-control"
+                type="number"
+                min="0"
+                max="100"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><i class="bi bi-clock"></i> Thời gian (phút)</label
+              ><input
+                v-model.number="lessonForm.quizTimeLimitMinutes"
+                class="form-control"
+                type="number"
+                min="1"
+                max="600"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><i class="bi bi-arrow-repeat"></i> Số lượt làm</label
+              ><input v-model.number="lessonForm.quizMaxAttempts" class="form-control" type="number" min="1" max="20" />
+            </div>
+            <div class="col-12 check-row">
+              <input
+                id="shuffleQuiz"
+                v-model="lessonForm.quizShuffleQuestions"
+                class="form-check-input"
+                type="checkbox"
+              />
+              <label for="shuffleQuiz">Đảo thứ tự câu hỏi khi học viên làm bài</label>
+            </div>
+            <div class="col-12">
+              <div class="quiz-bank-heading">
+                <label class="form-label mb-0"><i class="bi bi-patch-question"></i> Câu hỏi từ ngân hàng</label>
+                <RouterLink to="/cms/questions" class="btn btn-action-view btn-sm"
+                  ><i class="bi bi-plus-lg"></i> Quản lý ngân hàng</RouterLink
+                >
+              </div>
+              <div class="quiz-question-picker">
+                <label v-for="question in quizQuestionBank" :key="question.id" class="quiz-question-option">
+                  <input
+                    v-model="lessonForm.quizQuestionIds"
+                    :value="question.id"
+                    type="checkbox"
+                    class="form-check-input"
+                  />
+                  <span
+                    ><strong>{{ question.text }}</strong
+                    ><small>{{ questionTypeLabel(question.type) }} · {{ question.score }} điểm</small></span
+                  >
+                </label>
+                <p v-if="!quizQuestionBank.length" class="text-secondary mb-0">Ngân hàng chưa có câu hỏi hoạt động.</p>
+              </div>
+            </div>
+          </template>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-action-cancel" @click="lessonModal = false">
@@ -353,6 +411,7 @@ const chapterModal = ref(false),
   deleteTarget = ref(null),
   targetLesson = ref(null),
   videoAssets = ref([]),
+  quizQuestionBank = ref([]),
   videoSearch = ref('')
 const lessonEditor = ref(null),
   lessonFile = ref(null)
@@ -366,6 +425,12 @@ watch(videoSearch, () => {
   clearTimeout(videoTimer)
   videoTimer = setTimeout(loadVideoAssets, 250)
 })
+watch(
+  () => lessonForm.lessonType,
+  (type) => {
+    if (type === 'QUIZ' && !quizQuestionBank.value.length) void loadQuizEditor(0)
+  }
+)
 onMounted(load)
 
 async function load() {
@@ -445,7 +510,12 @@ function blankLesson() {
     assignmentMaxScore: 100,
     maxSubmissionAttempts: 3,
     maxSubmissionFileSizeMB: 50,
-    allowLateSubmission: false
+    allowLateSubmission: false,
+    quizPassingScore: 50,
+    quizTimeLimitMinutes: 30,
+    quizMaxAttempts: 1,
+    quizShuffleQuestions: false,
+    quizQuestionIds: []
   }
 }
 function openChapter(item = null) {
@@ -463,13 +533,14 @@ function openChapter(item = null) {
   )
   chapterModal.value = true
 }
-function openLesson(chapter, item = null) {
+async function openLesson(chapter, item = null) {
   Object.assign(
     lessonForm,
     item ? { ...item } : { ...blankLesson(), chapterId: chapter.id, sortOrder: chapter.lessons.length + 1 }
   )
   lessonForm.chapterId = chapter.id
   lessonFile.value = null
+  if (lessonForm.lessonType === 'QUIZ') await loadQuizEditor(lessonForm.id)
   lessonModal.value = true
   nextTick(() => {
     if (lessonEditor.value) lessonEditor.value.innerHTML = lessonForm.contentHtml || ''
@@ -533,6 +604,17 @@ async function saveLesson() {
       const uploaded = await axiosClient.post(`/learning-files/lessons/${lessonId}/resource`, uploadBody)
       body.documentUrl = pick(uploaded, 'fileUrl', 'FileUrl')
       await axiosClient.put(`/lessons/${lessonId}`, body)
+    }
+    if (lessonForm.lessonType === 'QUIZ') {
+      await axiosClient.put(`/lessons/${lessonId}/quiz`, {
+        title: lessonForm.title,
+        description: lessonForm.description || null,
+        passingScore: Number(lessonForm.quizPassingScore) || 0,
+        timeLimitMinutes: Number(lessonForm.quizTimeLimitMinutes) || null,
+        maxAttempts: Number(lessonForm.quizMaxAttempts) || 1,
+        shuffleQuestions: lessonForm.quizShuffleQuestions,
+        questionIds: lessonForm.quizQuestionIds
+      })
     }
     lessonModal.value = false
     await load()
@@ -609,6 +691,36 @@ function lessonTypeLabel(type) {
       EDITOR: 'Bài soạn thảo',
       ASSIGNMENT: 'Bài tập nộp file'
     }[type] || type
+  )
+}
+function questionTypeLabel(type) {
+  return (
+    {
+      SINGLE_CHOICE: 'Một lựa chọn',
+      MULTIPLE_CHOICE: 'Nhiều lựa chọn',
+      TRUE_FALSE: 'Đúng / Sai',
+      SHORT_ANSWER: 'Trả lời ngắn'
+    }[type] || type
+  )
+}
+async function loadQuizEditor(lessonId) {
+  const bank = await axiosClient.get('/questions', { params: { pageSize: 100, _fresh: Date.now() } })
+  quizQuestionBank.value = (pick(bank, 'items', 'Items') || []).map((row) => ({
+    id: Number(pick(row, 'Id', 'id')),
+    text: pick(row, 'QuestionText', 'questionText') || '',
+    type: pick(row, 'QuestionType', 'questionType') || '',
+    score: Number(pick(row, 'DefaultScore', 'defaultScore') || 0)
+  }))
+  if (!lessonId) return
+  const data = await axiosClient.get(`/lessons/${lessonId}/quiz`)
+  const quiz = pick(data, 'Quiz', 'quiz')
+  if (!quiz) return
+  lessonForm.quizPassingScore = Number(pick(quiz, 'PassingScore', 'passingScore') || 50)
+  lessonForm.quizTimeLimitMinutes = Number(pick(quiz, 'TimeLimitMinutes', 'timeLimitMinutes') || 0) || null
+  lessonForm.quizMaxAttempts = Number(pick(quiz, 'MaxAttempts', 'maxAttempts') || 1)
+  lessonForm.quizShuffleQuestions = Boolean(pick(quiz, 'ShuffleQuestions', 'shuffleQuestions'))
+  lessonForm.quizQuestionIds = (pick(data, 'Questions', 'questions') || []).map((row) =>
+    Number(pick(row, 'QuestionID', 'questionID'))
   )
 }
 function selectLessonFile(event) {

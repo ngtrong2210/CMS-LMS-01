@@ -21,6 +21,79 @@
   font-weight: 700;
 }
 
+.quiz-content {
+  align-items: stretch;
+  overflow-y: auto;
+}
+
+.quiz-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.quiz-summary span {
+  background: #eaf4fb;
+  border-radius: 999px;
+  color: #005099;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+}
+
+.quiz-form {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.quiz-question-card {
+  background: #f7f9fb;
+  border: 0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.quiz-question-card legend {
+  color: #d3224d;
+  float: none;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+  width: auto;
+}
+
+.quiz-question-card > p {
+  color: #102f4d;
+  font-weight: 750;
+}
+
+.quiz-option {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.quiz-result {
+  align-items: center;
+  border-radius: 0.75rem;
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.quiz-result.passed {
+  background: #e4f6ee;
+  color: #07875a;
+}
+
+.quiz-result.failed {
+  background: #fff0f2;
+  color: #d3224d;
+}
+
 .lesson-completion {
   align-items: center;
   display: flex;

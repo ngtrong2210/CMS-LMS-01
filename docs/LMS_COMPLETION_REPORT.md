@@ -21,6 +21,7 @@ Khi nhấn **Soạn bài**, thủ tục `LMS_ClassSubject_Workspace_Ensure` sẽ
 - `DOCUMENT`: tài liệu PDF/DOCX/PPTX được lưu trong `Media/File`.
 - `EDITOR`: nội dung HTML do giáo viên soạn; phía học viên luôn hiển thị qua bộ lọc HTML an toàn.
 - `ASSIGNMENT`: bài tập có thời gian mở, hạn nộp, số lần nộp, dung lượng file và điểm tối đa.
+- `QUIZ`: giáo viên chọn câu từ ngân hàng, cấu hình điểm đạt/thời gian/lượt làm; backend giữ đáp án và tự chấm khi học viên nộp.
 
 ## Luồng bài tập và chấm điểm
 
@@ -39,11 +40,16 @@ Giảng viên dùng trang `/cms/assignments` để lọc theo môn học lớp/t
 - `POST /api/lms/lessons/{id}/submissions`: nộp bài.
 - `GET /api/teaching/assignment-submissions`: danh sách bài nộp thuộc quyền giảng viên.
 - `PUT /api/teaching/assignment-submissions/{id}/grade`: chấm điểm hoặc trả bổ sung.
+- `GET|PUT /api/lessons/{id}/quiz`: tải và lưu cấu hình quiz cho giáo viên.
+- `GET /api/lms/lessons/{id}/quiz`: tải đề không chứa đáp án đúng.
+- `POST /api/lms/lessons/{id}/quiz-attempts`: bắt đầu lượt làm.
+- `POST /api/lms/quiz-attempts/{id}/submit`: nộp và chấm quiz hoàn toàn tại backend.
 
 ## Migration và dữ liệu mẫu
 
 - `009_CompleteClassSubjectLearningFlow.sql`: mở rộng cấu hình bài tập, file bài nộp và tổng hợp thời gian học.
 - `010_ClassSubjectContentDemoData.sql`: tạo không gian nội dung, chương mở đầu, bài đọc, bài tập và bài nộp mẫu cho các môn học lớp hiện có. Script dùng `Not Exists`, vì vậy có thể chạy lại an toàn.
+- `011_QuizLearningFlow.sql`: tạo quiz, câu hỏi trong quiz, lượt làm, đáp án từng lượt và gắn dữ liệu mẫu từ ngân hàng câu hỏi.
 
 ## Kết quả kiểm tra
 
@@ -52,4 +58,4 @@ Giảng viên dùng trang `/cms/assignments` để lọc theo môn học lớp/t
 - Frontend production build thành công.
 - Unit test backend: 2/2 đạt.
 - Test frontend: 17/17 đạt.
-- Integration test API/SQL: 34/34 đạt.
+- Integration test API/SQL: 35/35 đạt.

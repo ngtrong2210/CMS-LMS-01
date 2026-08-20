@@ -48,6 +48,14 @@ public interface ITeachingService
     Task<IReadOnlyCollection<object>> GetAssignmentSubmissionsAsync(long? classSubjectId, string? status, string? search, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
     Task<object> GradeAssignmentSubmissionAsync(long assignmentSubmissionId, AssignmentGradeRequest request, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
 }
+public interface IQuizService
+{
+    Task<object> GetForTeacherAsync(long lessonId, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<object> SaveAsync(long lessonId, QuizSaveRequest request, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<object> GetForStudentAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
+    Task<object> StartAttemptAsync(long lessonId, long studentId, CancellationToken cancellationToken = default);
+    Task<object> SubmitAttemptAsync(long quizAttemptId, long studentId, QuizSubmitRequest request, CancellationToken cancellationToken = default);
+}
 public interface IReportService { Task<DashboardDto> GetDashboardAsync(CancellationToken cancellationToken = default); Task<IReadOnlyCollection<object>> GetReportAsync(string report, CancellationToken cancellationToken = default); }
 public interface ISearchService { Task<IReadOnlyCollection<object>> SearchAsync(string search, long actorId, bool isAdmin, int limit = 60, CancellationToken cancellationToken = default); }
 public interface INotificationService

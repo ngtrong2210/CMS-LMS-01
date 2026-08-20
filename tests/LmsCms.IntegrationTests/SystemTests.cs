@@ -90,6 +90,32 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.Forbidden, studentResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task QuizPlayer_ReturnsQuestionsWithoutAnswerKey()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var connectionFactory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = connectionFactory.CreateConnection();
+        var lessonId = await connection.QuerySingleAsync<long>("""
+            SELECT TOP(1) q.LessonID
+            FROM dbo.LMS_Quizzes q
+                INNER JOIN dbo.SIM_Lessons l ON l.LessonID=q.LessonID
+                INNER JOIN dbo.SIM_Courses c ON c.CourseID=l.CourseID
+                INNER JOIN dbo.SYS_Users u ON u.Username='student'
+                INNER JOIN dbo.LMS_Enrollments e ON e.CourseID=c.CourseID AND e.StudentUserID=u.UserID AND e.Status<>'CANCELLED'
+            WHERE q.Status='ACTIVE' AND c.Status='PUBLISHED'
+            ORDER BY q.QuizID
+            """);
+
+        await AuthorizeAs("student");
+        var response = await _client.GetAsync($"/api/lms/lessons/{lessonId}/quiz");
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("QuestionText", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IsCorrect", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("AnswerKey", body, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData("admin", "ADMIN")]
     [InlineData("teacher", "TEACHER")]

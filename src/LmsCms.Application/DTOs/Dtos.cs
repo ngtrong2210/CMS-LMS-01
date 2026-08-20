@@ -234,6 +234,28 @@ public sealed class AssignmentGradeRequest
     [RegularExpression("GRADE|RETURN")] public string Action { get; init; } = "GRADE";
 }
 
+public sealed class QuizSaveRequest
+{
+    [Required, StringLength(500)] public string Title { get; init; } = string.Empty;
+    [StringLength(2000)] public string? Description { get; init; }
+    [Range(0, 100)] public decimal PassingScore { get; init; } = 50;
+    [Range(1, 600)] public int? TimeLimitMinutes { get; init; }
+    [Range(1, 20)] public int MaxAttempts { get; init; } = 1;
+    public bool ShuffleQuestions { get; init; }
+    [MinLength(1)] public IReadOnlyCollection<long> QuestionIds { get; init; } = Array.Empty<long>();
+}
+
+public sealed class QuizAnswerRequest
+{
+    [Range(1, long.MaxValue)] public long QuestionId { get; init; }
+    public string? AnswerText { get; init; }
+}
+
+public sealed class QuizSubmitRequest
+{
+    [MinLength(1)] public IReadOnlyCollection<QuizAnswerRequest> Answers { get; init; } = Array.Empty<QuizAnswerRequest>();
+}
+
 public sealed record AssignmentSubmissionFile(
     string OriginalFileName,
     string StoredFileName,

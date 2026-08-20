@@ -6,3 +6,38 @@
   letter-spacing: 0.08em;
   margin-bottom: 0.3rem;
 }
+
+.quiz-bank-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.quiz-question-picker {
+  background: #f7f9fb;
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.4rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.65rem;
+}
+
+.quiz-question-option {
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.quiz-question-option span {
+  display: grid;
+}
+
+.quiz-question-option small {
+  color: #6c7a86;
+}

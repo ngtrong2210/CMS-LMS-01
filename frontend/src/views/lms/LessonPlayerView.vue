@@ -129,10 +129,89 @@
                 </div>
               </div>
             </article>
-            <article v-else class="learning-content document-content">
+            <article v-else-if="lesson.type === 'QUIZ'" class="learning-content quiz-content">
               <div class="content-type-icon"><i class="bi bi-ui-checks"></i></div>
-              <h2>Bài kiểm tra</h2>
-              <p>Nội dung kiểm tra sẽ được mở tại đây.</p>
+              <h2>{{ quiz.title || lesson.title }}</h2>
+              <p>{{ quiz.description || 'Hoàn thành các câu hỏi và nộp bài để nhận kết quả.' }}</p>
+              <div class="quiz-summary">
+                <span><i class="bi bi-patch-question"></i> {{ quizQuestions.length }} câu</span>
+                <span
+                  ><i class="bi bi-clock"></i>
+                  {{ quiz.timeLimitMinutes ? `${quiz.timeLimitMinutes} phút` : 'Không giới hạn' }}</span
+                >
+                <span><i class="bi bi-arrow-repeat"></i> {{ quiz.attemptCount }}/{{ quiz.maxAttempts }} lượt</span>
+                <span><i class="bi bi-bullseye"></i> Đạt từ {{ quiz.passingScore }}%</span>
+              </div>
+              <button
+                v-if="!quizAttemptId"
+                class="btn btn-action-save"
+                :disabled="quiz.attemptCount >= quiz.maxAttempts || quizBusy"
+                @click="startQuiz"
+              >
+                <i class="bi bi-play-fill"></i> Bắt đầu làm bài
+              </button>
+              <form v-else class="quiz-form" @submit.prevent="submitQuiz">
+                <fieldset
+                  v-for="(question, questionIndex) in quizQuestions"
+                  :key="question.id"
+                  class="quiz-question-card"
+                >
+                  <legend>Câu {{ questionIndex + 1 }} · {{ question.score }} điểm</legend>
+                  <p>{{ question.text }}</p>
+                  <template v-if="question.type === 'MULTIPLE_CHOICE'">
+                    <label v-for="option in question.options" :key="option.code" class="quiz-option">
+                      <input v-model="quizAnswers[question.id]" :value="option.code" type="checkbox" />
+                      {{ option.text }}
+                    </label>
+                  </template>
+                  <template v-else-if="['SINGLE_CHOICE', 'TRUE_FALSE'].includes(question.type)">
+                    <label v-for="option in question.options" :key="option.code" class="quiz-option">
+                      <input
+                        v-model="quizAnswers[question.id]"
+                        :value="option.code"
+                        type="radio"
+                        :name="`quiz-${question.id}`"
+                      />
+                      {{ option.text }}
+                    </label>
+                  </template>
+                  <textarea
+                    v-else
+                    v-model.trim="quizAnswers[question.id]"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Nhập câu trả lời..."
+                  ></textarea>
+                </fieldset>
+                <button class="btn btn-action-save" :disabled="quizBusy">
+                  <i class="bi bi-send-check"></i> Nộp bài kiểm tra
+                </button>
+              </form>
+              <div v-if="quizResult" :class="['quiz-result', quizResult.passed ? 'passed' : 'failed']">
+                <i :class="['bi', quizResult.passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill']"></i>
+                <strong>{{ quizResult.scorePercent }}% · {{ quizResult.passed ? 'Đạt' : 'Chưa đạt' }}</strong>
+                <span>{{ quizResult.score }}/{{ quizResult.maxScore }} điểm</span>
+              </div>
+              <div v-if="quizAttempts.length" class="submission-history quiz-history">
+                <h3>Lịch sử làm bài</h3>
+                <div v-for="attempt in quizAttempts" :key="attempt.id">
+                  <span class="attempt">Lần {{ attempt.number }}</span>
+                  <div>
+                    <strong>{{ attempt.status === 'SUBMITTED' ? `${attempt.scorePercent}%` : 'Đang làm' }}</strong
+                    ><small>{{ dateTimeText(attempt.submittedAt || attempt.startedAt) }}</small>
+                  </div>
+                  <span
+                    v-if="attempt.passed != null"
+                    :class="['submission-score', attempt.passed ? 'text-success' : 'text-danger']"
+                    >{{ attempt.passed ? 'Đạt' : 'Chưa đạt' }}</span
+                  >
+                </div>
+              </div>
+            </article>
+            <article v-else class="learning-content document-content">
+              <div class="content-type-icon"><i class="bi bi-info-circle"></i></div>
+              <h2>Nội dung bài học</h2>
+              <p>Loại bài học này chưa có nội dung phù hợp.</p>
             </article>
           </div>
           <div class="lesson-meta">
@@ -233,6 +312,21 @@ const route = useRoute(),
   submissionFile = ref(null),
   submitting = ref(false),
   completing = ref(false)
+const quiz = reactive({
+  id: 0,
+  title: '',
+  description: '',
+  passingScore: 50,
+  timeLimitMinutes: null,
+  maxAttempts: 1,
+  attemptCount: 0
+})
+const quizQuestions = ref([]),
+  quizAttempts = ref([]),
+  quizAttemptId = ref(0),
+  quizAnswers = reactive({}),
+  quizResult = ref(null),
+  quizBusy = ref(false)
 const lesson = reactive({
     id: 0,
     title: '',
@@ -390,6 +484,8 @@ async function loadPlayer() {
     submissionFile.value = null
     if (lesson.type === 'ASSIGNMENT') await loadSubmissions()
     else submissions.value = []
+    if (lesson.type === 'QUIZ') await loadQuiz()
+    else resetQuiz()
     await startStudySession()
   } catch (e) {
     error.value = e.message
@@ -493,6 +589,99 @@ async function markLessonComplete() {
     await loadPlayer()
   } finally {
     completing.value = false
+  }
+}
+function resetQuiz() {
+  Object.assign(quiz, {
+    id: 0,
+    title: '',
+    description: '',
+    passingScore: 50,
+    timeLimitMinutes: null,
+    maxAttempts: 1,
+    attemptCount: 0
+  })
+  quizQuestions.value = []
+  quizAttempts.value = []
+  quizAttemptId.value = 0
+  quizResult.value = null
+  Object.keys(quizAnswers).forEach((key) => delete quizAnswers[key])
+}
+async function loadQuiz() {
+  resetQuiz()
+  const data = await axiosClient.get(`/lms/lessons/${lesson.id}/quiz`, { params: { _fresh: Date.now() } })
+  const config = pick(data, 'Quiz', 'quiz') || {}
+  Object.assign(quiz, {
+    id: Number(pick(config, 'QuizID', 'quizID')),
+    title: pick(config, 'Title', 'title') || lesson.title,
+    description: pick(config, 'Description', 'description') || '',
+    passingScore: Number(pick(config, 'PassingScore', 'passingScore') || 50),
+    timeLimitMinutes: Number(pick(config, 'TimeLimitMinutes', 'timeLimitMinutes') || 0) || null,
+    maxAttempts: Number(pick(config, 'MaxAttempts', 'maxAttempts') || 1),
+    attemptCount: Number(pick(config, 'AttemptCount', 'attemptCount') || 0)
+  })
+  quizQuestions.value = (pick(data, 'Questions', 'questions') || []).map((row) => ({
+    id: Number(pick(row, 'QuestionID', 'questionID')),
+    type: pick(row, 'QuestionType', 'questionType'),
+    text: pick(row, 'QuestionText', 'questionText'),
+    score: Number(pick(row, 'Score', 'score') || 0),
+    options: parseQuizOptions(pick(row, 'Options', 'options'))
+  }))
+  quizAttempts.value = (pick(data, 'Attempts', 'attempts') || []).map((row) => ({
+    id: Number(pick(row, 'QuizAttemptID', 'quizAttemptID')),
+    number: Number(pick(row, 'AttemptNumber', 'attemptNumber')),
+    startedAt: pick(row, 'StartedAt', 'startedAt'),
+    submittedAt: pick(row, 'SubmittedAt', 'submittedAt'),
+    scorePercent: pick(row, 'ScorePercent', 'scorePercent'),
+    passed: pick(row, 'Passed', 'passed'),
+    status: pick(row, 'AttemptStatus', 'attemptStatus')
+  }))
+  const active = quizAttempts.value.find((attempt) => attempt.status === 'IN_PROGRESS')
+  quizAttemptId.value = active?.id || 0
+  quizQuestions.value.forEach((question) => (quizAnswers[question.id] = question.type === 'MULTIPLE_CHOICE' ? [] : ''))
+}
+function parseQuizOptions(value) {
+  const rows = typeof value === 'string' ? JSON.parse(value || '[]') : value || []
+  return rows.map((row) => ({
+    code: pick(row, 'OptionCode', 'optionCode'),
+    text: pick(row, 'OptionText', 'optionText')
+  }))
+}
+async function startQuiz() {
+  quizBusy.value = true
+  try {
+    const result = await axiosClient.post(`/lms/lessons/${lesson.id}/quiz-attempts`)
+    quizAttemptId.value = Number(pick(result, 'QuizAttemptID', 'quizAttemptID'))
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    quizBusy.value = false
+  }
+}
+async function submitQuiz() {
+  quizBusy.value = true
+  try {
+    const answers = quizQuestions.value.map((question) => ({
+      questionId: question.id,
+      answerText: Array.isArray(quizAnswers[question.id])
+        ? [...quizAnswers[question.id]].sort().join('|')
+        : quizAnswers[question.id] || ''
+    }))
+    const result = await axiosClient.post(`/lms/quiz-attempts/${quizAttemptId.value}/submit`, { answers })
+    const completedResult = {
+      score: Number(pick(result, 'Score', 'score') || 0),
+      maxScore: Number(pick(result, 'MaxScore', 'maxScore') || 0),
+      scorePercent: Number(pick(result, 'ScorePercent', 'scorePercent') || 0),
+      passed: Boolean(pick(result, 'Passed', 'passed'))
+    }
+    quizAttemptId.value = 0
+    await loadQuiz()
+    quizResult.value = completedResult
+    await stopStudySession(true)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    quizBusy.value = false
   }
 }
 function formatStudyTime(seconds) {
