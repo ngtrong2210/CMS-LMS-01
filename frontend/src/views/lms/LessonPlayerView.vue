@@ -44,18 +44,39 @@
               <div class="lesson-html" v-html="sanitizedContentHtml"></div>
             </article>
             <article v-else-if="lesson.type === 'DOCUMENT'" class="learning-content document-content">
-              <div class="content-type-icon"><i class="bi bi-file-earmark-pdf"></i></div>
-              <h2>Tài liệu bài học</h2>
-              <p>Đọc tài liệu và duy trì trang học để hệ thống ghi nhận thời gian.</p>
-              <a
-                v-if="lesson.documentUrl"
-                class="btn btn-action-view"
-                :href="resolveApiAssetUrl(lesson.documentUrl)"
-                target="_blank"
-                rel="noopener"
-                ><i class="bi bi-box-arrow-up-right"></i> Mở tài liệu</a
-              >
-              <span v-else class="text-secondary">Giảng viên chưa cập nhật file tài liệu.</span>
+              <div class="document-heading">
+                <span class="content-type-icon"><i class="bi bi-file-earmark-pdf"></i></span>
+                <div>
+                  <h2>Tài liệu bài học</h2>
+                  <p>Đọc trực tiếp trên hệ thống hoặc mở file toàn màn hình.</p>
+                </div>
+                <div v-if="lesson.documentUrl" class="document-actions">
+                  <a class="btn btn-action-view" :href="documentAssetUrl" target="_blank" rel="noopener">
+                    <i class="bi bi-arrows-fullscreen"></i> Mở toàn màn hình
+                  </a>
+                  <a class="btn btn-action-save" :href="documentAssetUrl" target="_blank" rel="noopener" download>
+                    <i class="bi bi-download"></i> Tải tài liệu
+                  </a>
+                </div>
+              </div>
+              <div v-if="lesson.documentUrl" class="document-viewer">
+                <iframe
+                  v-if="isPdfDocument"
+                  :src="documentAssetUrl"
+                  :title="`Tài liệu ${lesson.title}`"
+                  loading="eager"
+                ></iframe>
+                <div v-else class="document-file-card">
+                  <i class="bi bi-file-earmark-arrow-down"></i>
+                  <strong>{{ documentFileName }}</strong>
+                  <span>Định dạng này cần mở bằng ứng dụng phù hợp trên thiết bị.</span>
+                </div>
+              </div>
+              <div v-else class="document-empty">
+                <i class="bi bi-file-earmark-x"></i>
+                <strong>Chưa có file tài liệu</strong>
+                <span>Giảng viên chưa cập nhật tài liệu cho bài học này.</span>
+              </div>
             </article>
             <article v-else-if="lesson.type === 'ASSIGNMENT'" class="learning-content assignment-content">
               <div class="assignment-heading">
@@ -80,35 +101,61 @@
                 <i class="bi bi-info-circle"></i> {{ assignmentAvailability }}
               </div>
               <form v-else class="assignment-form" @submit.prevent="submitAssignment">
-                <label
-                  ><span>Nội dung ghi chú</span
-                  ><textarea
+                <div class="submission-heading">
+                  <div>
+                    <small>NỘP BÀI</small>
+                    <h3>Chọn cách hoàn thành bài tập</h3>
+                  </div>
+                  <span>{{ lesson.maxSubmissionAttempts }} lần nộp tối đa</span>
+                </div>
+                <div class="submission-mode-switch" role="group" aria-label="Cách nộp bài">
+                  <button
+                    type="button"
+                    :class="{ active: submissionMode === 'editor' }"
+                    @click="submissionMode = 'editor'"
+                  >
+                    <i class="bi bi-pencil-square"></i
+                    ><span><strong>Soạn trực tuyến</strong><small>Nhập bài làm ngay trên hệ thống</small></span>
+                  </button>
+                  <button type="button" :class="{ active: submissionMode === 'file' }" @click="submissionMode = 'file'">
+                    <i class="bi bi-cloud-arrow-up"></i
+                    ><span><strong>Tải file bài làm</strong><small>PDF, Word, Excel, ZIP hoặc ảnh</small></span>
+                  </button>
+                </div>
+                <label v-if="submissionMode === 'editor'" class="submission-editor">
+                  <span>Nội dung bài làm</span>
+                  <textarea
                     v-model.trim="submissionText"
                     class="form-control"
-                    rows="4"
-                    placeholder="Mô tả bài làm hoặc đường dẫn bổ sung..."
+                    rows="7"
+                    placeholder="Nhập nội dung bài làm của bạn tại đây..."
                   ></textarea>
                 </label>
-                <label
-                  ><span>File bài làm</span
-                  ><input
-                    class="form-control"
+                <label v-else class="submission-upload">
+                  <input
+                    class="visually-hidden"
                     type="file"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.png,.jpg,.jpeg"
                     @change="selectSubmissionFile"
-                  /><small>Tối đa {{ lesson.maxSubmissionFileSizeMB }} MB</small></label
-                >
+                  />
+                  <i class="bi bi-cloud-arrow-up"></i>
+                  <strong>{{ submissionFile?.name || 'Chọn file bài làm' }}</strong>
+                  <span>Kéo thả hoặc bấm để chọn file · tối đa {{ lesson.maxSubmissionFileSizeMB }} MB</span>
+                </label>
+                <div v-if="assignmentMessage" class="assignment-success">
+                  <i class="bi bi-check-circle-fill"></i> {{ assignmentMessage }}
+                </div>
                 <div class="assignment-actions">
                   <button
                     type="button"
                     class="btn btn-action-view"
-                    :disabled="submitting || (!submissionText && !submissionFile)"
+                    :disabled="submitting || !canSubmitAssignment"
                     @click="saveAssignmentDraft"
                   >
                     <i class="bi bi-floppy"></i> Lưu nháp</button
-                  ><button class="btn btn-action-save" :disabled="submitting || (!submissionText && !submissionFile)">
+                  ><button class="btn btn-action-save assignment-submit" :disabled="submitting || !canSubmitAssignment">
                     <span v-if="submitting" class="spinner-border spinner-border-sm"></span
-                    ><i v-else class="bi bi-send"></i> Nộp bài
+                    ><i v-else class="bi bi-send-check"></i> Nộp bài ngay
                   </button>
                 </div>
               </form>
@@ -310,6 +357,8 @@ const route = useRoute(),
   submissions = ref([]),
   submissionText = ref(''),
   submissionFile = ref(null),
+  submissionMode = ref('editor'),
+  assignmentMessage = ref(''),
   submitting = ref(false),
   completing = ref(false)
 const quiz = reactive({
@@ -363,6 +412,15 @@ const currentScore = ref(0),
   savingProgress = ref(false)
 const lessonCount = computed(() => chapters.value.reduce((total, chapter) => total + chapter.lessons.length, 0)),
   isVideoLesson = computed(() => ['VIDEO', 'INTERACTIVE_VIDEO'].includes(lesson.type)),
+  documentAssetUrl = computed(() => resolveApiAssetUrl(lesson.documentUrl)),
+  documentFileName = computed(() => {
+    const path = String(lesson.documentUrl || '').split('?')[0]
+    return decodeURIComponent(path.split('/').pop() || 'Tài liệu bài học')
+  }),
+  isPdfDocument = computed(() => /\.pdf(?:$|[?#])/i.test(lesson.documentUrl || '')),
+  canSubmitAssignment = computed(() =>
+    submissionMode.value === 'file' ? Boolean(submissionFile.value) : Boolean(submissionText.value.trim())
+  ),
   sanitizedContentHtml = computed(() =>
     sanitizeLearningHtml(lesson.contentHtml || '<p>Bài học chưa có nội dung soạn thảo.</p>')
   ),
@@ -482,6 +540,8 @@ async function loadPlayer() {
     }
     submissionText.value = ''
     submissionFile.value = null
+    submissionMode.value = 'editor'
+    assignmentMessage.value = ''
     if (lesson.type === 'ASSIGNMENT') await loadSubmissions()
     else submissions.value = []
     if (lesson.type === 'QUIZ') await loadQuiz()
@@ -540,13 +600,20 @@ async function loadSubmissions() {
     feedback: pick(row, 'Feedback', 'feedback') || ''
   }))
   const draft = submissions.value.find((item) => item.status === 'DRAFT')
-  if (draft && !submissionText.value) submissionText.value = draft.submissionText
+  if (draft && !submissionText.value) {
+    submissionText.value = draft.submissionText
+    if (draft.submissionText) submissionMode.value = 'editor'
+  }
 }
 function selectSubmissionFile(event) {
   submissionFile.value = event.target.files?.[0] || null
+  if (submissionFile.value) submissionMode.value = 'file'
+  assignmentMessage.value = ''
 }
 async function submitAssignment() {
   submitting.value = true
+  error.value = ''
+  assignmentMessage.value = ''
   try {
     const body = new FormData()
     if (submissionText.value) body.append('submissionText', submissionText.value)
@@ -554,6 +621,8 @@ async function submitAssignment() {
     await axiosClient.post(`/lms/lessons/${lesson.id}/submissions`, body)
     submissionText.value = ''
     submissionFile.value = null
+    submissionMode.value = 'editor'
+    assignmentMessage.value = 'Bài làm đã được nộp thành công.'
     await loadSubmissions()
   } catch (e) {
     error.value = e.message
@@ -563,9 +632,12 @@ async function submitAssignment() {
 }
 async function saveAssignmentDraft() {
   await saveAssignment('/submission-draft', false)
+  if (!error.value) assignmentMessage.value = 'Đã lưu nháp bài làm.'
 }
 async function saveAssignment(path, clearAfterSave) {
   submitting.value = true
+  error.value = ''
+  assignmentMessage.value = ''
   try {
     const body = new FormData()
     if (submissionText.value) body.append('submissionText', submissionText.value)

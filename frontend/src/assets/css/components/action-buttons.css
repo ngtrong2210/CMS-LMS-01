@@ -143,8 +143,7 @@
   border-color: #dfe7e4;
 }
 
-.btn-icon,
-.table .btn-sm:has(> i:only-child) {
+.btn-icon {
   width: 34px;
   padding-right: 0;
   padding-left: 0;

@@ -11,4 +11,5 @@
 @import './components/notification-center.css';
 @import './components/subject-authoring.css';
 @import './components/student-learning-actions.css';
+@import './components/typography.css';
 @import './core/responsive.css';

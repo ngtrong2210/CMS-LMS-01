@@ -19,6 +19,16 @@
   min-width: 980px;
 }
 
+.timetable-table .action-cell {
+  min-width: 120px;
+  width: 120px;
+}
+
+.timetable-table .action-cell .btn {
+  width: auto;
+  white-space: nowrap;
+}
+
 @media (max-width: 767px) {
   .timetable-heading {
     align-items: flex-start;

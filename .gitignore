@@ -24,6 +24,9 @@ src/LmsCms.Api/wwwroot/Media/Image/*
 !src/LmsCms.Api/wwwroot/Media/Image/.gitkeep
 src/LmsCms.Api/wwwroot/Media/File/*
 !src/LmsCms.Api/wwwroot/Media/File/.gitkeep
+!src/LmsCms.Api/wwwroot/Media/File/Lessons/
+!src/LmsCms.Api/wwwroot/Media/File/Lessons/Demo/
+!src/LmsCms.Api/wwwroot/Media/File/Lessons/Demo/*.pdf
 src/LmsCms.Api/wwwroot/Media/Thumbnail/*
 !src/LmsCms.Api/wwwroot/Media/Thumbnail/.gitkeep
 src/LmsCms.Api/wwwroot/Media/Audio/*

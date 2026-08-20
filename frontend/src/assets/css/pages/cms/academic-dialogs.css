@@ -1,0 +1,77 @@
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  overflow-y: auto;
+  background: rgba(5, 24, 35, 0.68);
+}
+
+.academic-modal {
+  margin: auto;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(5, 24, 35, 0.24);
+}
+
+.modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.modal-heading > div {
+  min-width: 0;
+}
+
+.modal-heading small {
+  display: block;
+  color: var(--eduvers-base);
+}
+
+.modal-heading h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1.35rem;
+}
+
+.modal-heading p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.modal-heading .btn-close {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 575px) {
+  .modal-mask {
+    align-items: start;
+    padding: 0.75rem;
+  }
+
+  .academic-modal {
+    width: 100%;
+    padding: 1.25rem;
+  }
+
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+  }
+}

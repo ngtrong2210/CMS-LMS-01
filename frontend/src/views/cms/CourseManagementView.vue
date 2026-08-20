@@ -22,17 +22,6 @@
       {{ message }}
     </div>
 
-    <div class="workflow-strip app-card">
-      <div v-for="(step, index) in workflow" :key="step.label" class="workflow-step">
-        <span>{{ index + 1 }}</span>
-        <div>
-          <strong>{{ step.label }}</strong
-          ><small>{{ step.hint }}</small>
-        </div>
-        <i v-if="index < workflow.length - 1" class="bi bi-arrow-right"></i>
-      </div>
-    </div>
-
     <div class="app-card workspace-filters">
       <label class="search-field"
         ><span>Tìm nhanh</span>
@@ -89,7 +78,7 @@
               <th>Giảng viên</th>
               <th>Nội dung</th>
               <th>Học viên</th>
-              <th class="text-end">Thao tác</th>
+              <th class="text-end action-cell">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -125,7 +114,7 @@
                 <strong>{{ item.studentCount }}</strong
                 ><small>học viên của lớp</small>
               </td>
-              <td class="text-end text-nowrap">
+              <td class="text-end action-cell">
                 <RouterLink
                   v-if="item.onlineCourseId"
                   class="btn btn-action-view btn-sm"
@@ -226,12 +215,6 @@ const settings = reactive({
   passingScore: 50,
   status: 'DRAFT'
 })
-const workflow = [
-  { label: 'Chọn năm học', hint: 'Đúng đợt đào tạo' },
-  { label: 'Chọn lớp và môn', hint: 'Theo phân công' },
-  { label: 'Soạn chương và bài', hint: 'Video · PDF · Editor · Bài tập' },
-  { label: 'Xuất bản', hint: 'Học viên của lớp nhìn thấy' }
-]
 const pick = (source, ...names) =>
   names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
 const searchState = computed({ get: () => filters.search, set: (value) => (filters.search = value) })

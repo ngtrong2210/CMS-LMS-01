@@ -142,7 +142,7 @@ const menu = [
   {
     label: 'Tổ chức đào tạo',
     items: [
-      { to: '/cms/academic', text: 'Năm · Lớp · Môn học', icon: 'bi-diagram-3' },
+      { to: '/cms/academic', text: 'Cơ cấu đào tạo', icon: 'bi-diagram-3' },
       { to: '/cms/courses', text: 'Soạn môn học lớp', icon: 'bi-journal-bookmark' }
     ]
   },

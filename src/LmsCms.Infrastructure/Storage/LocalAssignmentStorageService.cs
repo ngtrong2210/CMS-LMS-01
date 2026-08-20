@@ -30,7 +30,7 @@ public sealed class LocalAssignmentStorageService : IAssignmentStorageService
     }
 
     public Task<AssignmentSubmissionFile> SaveTeacherResourceAsync(long lessonId, Stream content, string originalFileName, string contentType, long fileSize, CancellationToken cancellationToken = default) =>
-        SaveAsync(Path.Combine("Assignments", lessonId.ToString(), "Teacher"), content, originalFileName, contentType, fileSize, cancellationToken);
+        SaveAsync(Path.Combine("Lessons", lessonId.ToString(), "Teacher"), content, originalFileName, contentType, fileSize, cancellationToken);
 
     public Task<AssignmentSubmissionFile> SaveStudentSubmissionAsync(long lessonId, long studentUserId, Stream content, string originalFileName, string contentType, long fileSize, CancellationToken cancellationToken = default) =>
         SaveAsync(Path.Combine("Assignments", lessonId.ToString(), "Students", studentUserId.ToString()), content, originalFileName, contentType, fileSize, cancellationToken);
