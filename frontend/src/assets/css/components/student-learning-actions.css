@@ -99,12 +99,15 @@
 }
 
 .quiz-question-card legend {
-  color: #d3224d;
+  background: #eaf4fb;
+  border-radius: 0.45rem;
+  color: #005099;
   float: none;
   font-size: 0.78rem;
   font-weight: 700;
-  margin-bottom: 0.35rem;
-  width: auto;
+  margin-bottom: 0.65rem;
+  padding: 0.35rem 0.6rem;
+  width: fit-content;
 }
 
 .quiz-question-card > p {
@@ -112,11 +115,30 @@
   font-weight: 600;
 }
 
+.quiz-options-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .quiz-option {
   align-items: flex-start;
+  background: #fff;
+  border-radius: 0.6rem;
   display: flex;
   gap: 0.6rem;
-  margin-top: 0.5rem;
+  margin: 0;
+  min-width: 0;
+  padding: 0.75rem 0.8rem;
+}
+
+.quiz-option input {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+}
+
+.quiz-option span {
+  min-width: 0;
 }
 
 .quiz-result {
@@ -159,5 +181,9 @@
   .lesson-completion {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .quiz-options-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -409,23 +409,20 @@
                 >
                   <legend>Câu {{ questionIndex + 1 }} · {{ question.score }} điểm</legend>
                   <p>{{ question.text }}</p>
-                  <template v-if="question.type === 'MULTIPLE_CHOICE'">
-                    <label v-for="option in question.options" :key="option.code" class="quiz-option">
-                      <input v-model="quizAnswers[question.id]" :value="option.code" type="checkbox" />
-                      {{ option.text }}
-                    </label>
-                  </template>
-                  <template v-else-if="['SINGLE_CHOICE', 'TRUE_FALSE'].includes(question.type)">
+                  <div
+                    v-if="['MULTIPLE_CHOICE', 'SINGLE_CHOICE', 'TRUE_FALSE'].includes(question.type)"
+                    class="quiz-options-grid"
+                  >
                     <label v-for="option in question.options" :key="option.code" class="quiz-option">
                       <input
                         v-model="quizAnswers[question.id]"
                         :value="option.code"
-                        type="radio"
-                        :name="`quiz-${question.id}`"
+                        :type="question.type === 'MULTIPLE_CHOICE' ? 'checkbox' : 'radio'"
+                        :name="question.type === 'MULTIPLE_CHOICE' ? undefined : `quiz-${question.id}`"
                       />
-                      {{ option.text }}
+                      <span>{{ option.text }}</span>
                     </label>
-                  </template>
+                  </div>
                   <textarea
                     v-else
                     v-model.trim="quizAnswers[question.id]"
@@ -980,12 +977,7 @@ async function startStudySession() {
       studySessionSeconds.value += 1
       studySeconds.value += 1
     }
-    if (
-      isActive &&
-      studySessionSeconds.value > 0 &&
-      studySessionSeconds.value % 30 === 0 &&
-      studySessionId.value
-    ) {
+    if (isActive && studySessionSeconds.value > 0 && studySessionSeconds.value % 30 === 0 && studySessionId.value) {
       try {
         await axiosClient.put(`/lms/study-sessions/${studySessionId.value}/heartbeat`)
       } catch {

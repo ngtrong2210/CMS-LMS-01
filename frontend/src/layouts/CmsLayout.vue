@@ -82,9 +82,9 @@
         </RouterView>
       </main>
     </div>
-    <div id="mobileMenu" class="offcanvas offcanvas-start mobile-sidebar">
+    <div id="mobileMenu" ref="mobileMenuElement" class="offcanvas offcanvas-start mobile-sidebar">
       <div class="offcanvas-header">
-        <RouterLink class="brand" to="/cms/dashboard" data-bs-dismiss="offcanvas"
+        <RouterLink class="brand" to="/cms/dashboard" @click="closeMobileMenu"
           ><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers" /></RouterLink
         ><button class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>
       </div>
@@ -96,7 +96,7 @@
             :key="item.to"
             class="side-link"
             :to="item.to"
-            data-bs-dismiss="offcanvas"
+            @click="closeMobileMenu"
             ><i :class="['bi', item.icon]"></i>{{ item.text }}</RouterLink
           ></template
         >
@@ -105,6 +105,7 @@
   </div>
 </template>
 <script setup>
+import { Offcanvas } from 'bootstrap'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NotificationCenter from '../components/feedback/NotificationCenter.vue'
@@ -115,6 +116,7 @@ const route = useRoute(),
 const sectionTitle = computed(() => route.params.section || 'Quản trị')
 const sidebarCollapsed = ref(localStorage.getItem('cms_sidebar_collapsed') === '1')
 const sidebarScrolling = ref(false)
+const mobileMenuElement = ref(null)
 const globalSearch = ref(String(route.query.q || ''))
 const cachedPages = [
   'CourseManagementView',
@@ -191,6 +193,10 @@ function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value
   localStorage.setItem('cms_sidebar_collapsed', sidebarCollapsed.value ? '1' : '0')
 }
+function closeMobileMenu() {
+  const instance = mobileMenuElement.value ? Offcanvas.getInstance(mobileMenuElement.value) : null
+  instance?.hide()
+}
 let sidebarScrollTimer
 function showSidebarScrollbar() {
   sidebarScrolling.value = true
@@ -202,5 +208,6 @@ watch(
   () => route.query.q,
   (value) => (globalSearch.value = String(value || ''))
 )
+watch(() => route.fullPath, closeMobileMenu)
 </script>
 <style scoped src="../assets/css/layouts/cms-layout.css"></style>

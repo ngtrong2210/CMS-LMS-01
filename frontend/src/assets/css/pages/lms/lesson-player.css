@@ -180,8 +180,22 @@
 .current-lesson-heading.lesson-type-blue-surface { background: #eaf3fb; }
 .current-lesson-heading.lesson-type-cyan-surface { background: #e6f6f8; }
 .current-lesson-heading.lesson-type-red-surface { background: #fbecec; }
-.current-lesson-heading.lesson-type-orange-surface { background: #fff2e5; }
-.current-lesson-heading.lesson-type-purple-surface { background: #f1edfa; }
+.current-lesson-heading.lesson-type-orange-surface {
+  background: #d96b0b;
+}
+.current-lesson-heading.lesson-type-orange-surface h1,
+.current-lesson-heading.lesson-type-orange-surface small,
+.current-lesson-heading.lesson-type-orange-surface .lesson-type-icon {
+  color: #fff;
+}
+.current-lesson-heading.lesson-type-purple-surface {
+  background: #6f42c1;
+}
+.current-lesson-heading.lesson-type-purple-surface h1,
+.current-lesson-heading.lesson-type-purple-surface small,
+.current-lesson-heading.lesson-type-purple-surface .lesson-type-icon {
+  color: #fff;
+}
 .current-lesson-heading.lesson-type-green-surface { background: #e7f6f0; }
 .current-lesson-heading.lesson-type-slate-surface { background: #eef2f4; }
 .current-lesson-heading.lesson-type-teal-surface {
@@ -1465,8 +1479,11 @@
   color: #123552;
 }
 .lesson-player-page .assignment-heading {
+  border: 2px solid #d96b0b;
+  border-radius: 14px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 1.2rem;
 }
 .lesson-player-page .assignment-heading .assignment-deadline {
   align-items: center;
