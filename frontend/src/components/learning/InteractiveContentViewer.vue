@@ -25,10 +25,7 @@
                 <span>Câu {{ String(index + 1).padStart(2, '0') }}</span>
                 <div>
                   <strong>{{ question.text }}</strong>
-                  <small
-                    >{{ question.required ? 'Bắt buộc' : 'Không bắt buộc' }} · {{ question.score }} điểm ·
-                    {{ question.attempts }}/{{ question.attemptLimit }} lượt</small
-                  >
+                  <small>{{ question.required ? 'Bắt buộc' : 'Không bắt buộc' }} · {{ question.score }} điểm</small>
                 </div>
               </div>
               <div v-if="question.type === 'MULTIPLE_CHOICE'" class="content-answer-options">
@@ -81,6 +78,7 @@
               <div class="question-actions">
                 <span v-if="question.answered"><i class="bi bi-cloud-check"></i> Đáp án đã được lưu</span>
                 <button
+                  v-if="!question.answered"
                   class="btn btn-action-save"
                   type="button"
                   :disabled="busyQuestionId === question.id || !hasDraft(question) || !canAnswer(question)"
@@ -88,7 +86,7 @@
                 >
                   <span v-if="busyQuestionId === question.id" class="spinner-border spinner-border-sm"></span>
                   <i v-else class="bi bi-send-check"></i>
-                  {{ question.answered && question.allowRetry ? 'Thử lại' : 'Kiểm tra đáp án' }}
+                  Kiểm tra đáp án
                 </button>
               </div>
             </article>
@@ -283,10 +281,7 @@ async function load() {
         type,
         text: pick(row, 'QuestionText', 'questionText') || `Câu hỏi ${index + 1}`,
         required: Boolean(pick(row, 'Required', 'required')),
-        allowRetry: Boolean(pick(row, 'AllowRetry', 'allowRetry')),
         score: Number(pick(row, 'Score', 'score') || 0),
-        attemptLimit: Number(pick(row, 'AttemptLimit', 'attemptLimit') || 1),
-        attempts: Number(pick(answer, 'AttemptNumber', 'attemptNumber') || 0),
         answered: Boolean(answer),
         isCorrect: pick(answer, 'IsCorrect', 'isCorrect'),
         resultVisible:
@@ -333,7 +328,7 @@ function selectMobileQuestion(id) {
   mobileSidebarOpen.value = false
 }
 function canAnswer(question) {
-  return question.attempts < question.attemptLimit && (!question.answered || question.allowRetry)
+  return !question.answered
 }
 function hasDraft(question) {
   const value = draftAnswers[question.id]
@@ -351,7 +346,6 @@ async function submitAnswer(question) {
       timeSpentSeconds: null
     })
     question.answered = true
-    question.attempts = Number(pick(result, 'AttemptNumber', 'attemptNumber') || question.attempts + 1)
     question.isCorrect = pick(result, 'IsCorrect', 'isCorrect')
     question.resultVisible = question.isCorrect !== undefined && question.isCorrect !== null
     question.explanation = pick(result, 'Explanation', 'explanation') || ''

@@ -14,12 +14,14 @@ public sealed class TeachingController(ITeachingService teaching) : ControllerBa
     private bool IsAdmin => User.IsInRole("ADMIN");
 
     [HttpGet("assignment-submissions")]
-    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<object>>>> GetAssignmentSubmissions(
+    public async Task<ActionResult<ApiResponse<PagedResult<object>>>> GetAssignmentSubmissions(
         [FromQuery] long? classSubjectId,
         [FromQuery] string? status,
         [FromQuery] string? search,
-        CancellationToken cancellationToken) =>
-        Ok(ApiResponse<IReadOnlyCollection<object>>.Ok(await teaching.GetAssignmentSubmissionsAsync(classSubjectId, status, search, UserId, IsAdmin, cancellationToken)));
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default) =>
+        Ok(ApiResponse<PagedResult<object>>.Ok(await teaching.GetAssignmentSubmissionsAsync(classSubjectId, status, search, page, pageSize, UserId, IsAdmin, cancellationToken)));
 
     [HttpPut("assignment-submissions/{assignmentSubmissionId:long}/grade")]
     public async Task<ActionResult<ApiResponse<object>>> Grade(

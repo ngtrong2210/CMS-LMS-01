@@ -11,9 +11,10 @@ describe('lessonTypes', () => {
     expect(lessonTypeClass('INTERACTIVE_VIDEO')).toBe('lesson-type-blue')
   })
 
-  it('phân biệt bài tập, tài liệu và bài kiểm tra', () => {
+  it('gộp tài liệu cũ vào bài học và vẫn phân biệt bài tập, bài kiểm tra', () => {
     expect(lessonTypeClass('ASSIGNMENT')).toBe('lesson-type-orange')
-    expect(lessonTypeClass('DOCUMENT')).toBe('lesson-type-red')
+    expect(lessonTypeMeta('DOCUMENT')).toEqual(lessonTypeMeta('EDITOR'))
+    expect(lessonTypeClass('DOCUMENT')).toBe('lesson-type-cyan')
     expect(lessonTypeClass('QUIZ')).toBe('lesson-type-purple')
   })
 

@@ -16,69 +16,116 @@
       {{ message }}
     </div>
     <div v-if="loading" class="app-card p-5 text-center"><span class="spinner-border text-success"></span></div>
-    <div v-else class="builder">
-      <article v-for="(chapter, index) in chapters" :key="chapter.id" class="app-card chapter-card">
-        <header>
-          <span class="number">{{ index + 1 }}</span>
-          <div class="chapter-copy">
-            <strong>{{ chapter.title }}</strong
-            ><small
-              >{{ chapter.lessons.length }} bài học • {{ chapter.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm ẩn' }}</small
-            >
-          </div>
-          <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-action-edit btn-sm" title="Sửa chương" @click="openChapter(chapter)">
-              <i class="bi bi-pencil"></i></button
-            ><button class="btn btn-action-delete btn-sm" title="Xóa chương" @click="askDelete('chapter', chapter)">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </header>
-        <div v-for="lesson in chapter.lessons" :key="lesson.id" class="lesson">
-          <span :class="['type', { 'type-interactive-content': lesson.lessonType === 'INTERACTIVE_CONTENT' }]"
-            ><i :class="['bi', lessonTypeIcon(lesson.lessonType)]"></i
-          ></span>
-          <div class="lesson-copy">
-            <strong>{{ lesson.title }}</strong
-            ><small
-              >{{ lessonTypeLabel(lesson.lessonType) }} • {{ formatTime(lesson.durationSeconds)
-              }}<template v-if="lesson.videoTitle"> • {{ lesson.videoTitle }}</template></small
-            >
-          </div>
-          <span :class="['badge', lesson.status === 'ACTIVE' ? 'badge-soft-success' : 'badge-soft-warning']">{{
-            lesson.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm ẩn'
-          }}</span>
-          <div class="lesson-actions">
-            <RouterLink
-              v-if="lesson.videoId && lesson.canEditVideo"
-              class="btn btn-action-view btn-sm"
-              :to="`/cms/videos/${lesson.videoId}/editor`"
-              title="Biên tập video mẫu"
-              ><i class="bi bi-sliders"></i></RouterLink
-            ><button
-              v-if="lesson.lessonType.includes('VIDEO')"
-              class="btn btn-blue btn-sm"
-              :title="lesson.videoId ? 'Đổi video tham chiếu' : 'Chọn video từ thư viện'"
-              @click="openVideoPicker(lesson)"
-            >
-              <i class="bi bi-collection-play"></i></button
-            ><button class="btn btn-action-edit btn-sm" title="Sửa bài học" @click="openLesson(chapter, lesson)">
-              <i class="bi bi-pencil"></i></button
-            ><button class="btn btn-action-delete btn-sm" title="Xóa bài học" @click="askDelete('lesson', lesson)">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
+    <template v-else>
+      <div v-if="chapters.length" class="chapter-display-toolbar app-card">
+        <div>
+          <i class="bi bi-layout-text-sidebar-reverse"></i>
+          <span
+            ><strong>{{ chapters.length }} chương</strong
+            ><small>Chọn chương cần soạn để giảm chiều dài danh sách.</small></span
+          >
         </div>
-        <div v-if="!chapter.lessons.length" class="empty-lessons">Chương này chưa có bài học.</div>
-        <button class="add-lesson" @click="openLesson(chapter)"><i class="bi bi-plus-circle"></i> Thêm bài học</button>
-      </article>
-      <div v-if="!chapters.length" class="app-card empty-state">
-        <i class="bi bi-journal-plus"></i>
-        <h2>Chưa có chương</h2>
-        <p>Tạo chương đầu tiên để bắt đầu xây dựng nội dung môn học lớp.</p>
-        <button class="btn btn-action-create" @click="openChapter()"><i class="bi bi-plus-lg"></i> Thêm chương</button>
+        <div class="chapter-display-actions">
+          <button type="button" class="btn btn-action-view btn-sm" @click="expandAllChapters">
+            <i class="bi bi-arrows-expand"></i> Mở tất cả
+          </button>
+          <button type="button" class="btn btn-action-cancel btn-sm" @click="collapseAllChapters">
+            <i class="bi bi-arrows-collapse"></i> Thu gọn tất cả
+          </button>
+        </div>
       </div>
-    </div>
+      <div class="builder">
+        <article
+          v-for="(chapter, index) in chapters"
+          :key="chapter.id"
+          :class="['app-card', 'chapter-card', { 'is-collapsed': isChapterCollapsed(chapter.id) }]"
+        >
+          <header>
+            <span class="number">{{ index + 1 }}</span>
+            <div class="chapter-copy">
+              <strong>{{ chapter.title }}</strong
+              ><small
+                >{{ chapter.lessons.length }} bài học •
+                {{ chapter.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm ẩn' }}</small
+              >
+            </div>
+            <button
+              type="button"
+              class="chapter-toggle"
+              :title="isChapterCollapsed(chapter.id) ? 'Mở nội dung chương' : 'Thu gọn chương'"
+              :aria-label="isChapterCollapsed(chapter.id) ? `Mở ${chapter.title}` : `Thu gọn ${chapter.title}`"
+              :aria-expanded="!isChapterCollapsed(chapter.id)"
+              @click="toggleChapter(chapter.id)"
+            >
+              <i :class="['bi', isChapterCollapsed(chapter.id) ? 'bi-chevron-down' : 'bi-chevron-up']"></i>
+            </button>
+            <div class="chapter-header-actions ms-auto">
+              <button
+                class="btn btn-action-create btn-sm chapter-add-button"
+                title="Thêm bài học"
+                @click="openLesson(chapter)"
+              >
+                <i class="bi bi-plus-lg"></i><span>Thêm bài học</span>
+              </button>
+              <button class="btn btn-action-edit btn-sm" title="Sửa chương" @click="openChapter(chapter)">
+                <i class="bi bi-pencil"></i></button
+              ><button class="btn btn-action-delete btn-sm" title="Xóa chương" @click="askDelete('chapter', chapter)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </header>
+          <div v-show="!isChapterCollapsed(chapter.id)" class="chapter-lessons">
+            <div v-for="lesson in chapter.lessons" :key="lesson.id" class="lesson">
+              <span :class="['type', lessonTypeClass(lesson.lessonType)]"
+                ><i :class="['bi', lessonTypeIcon(lesson.lessonType)]"></i
+              ></span>
+              <div class="lesson-copy">
+                <strong>{{ lesson.title }}</strong
+                ><small
+                  >{{ lessonTypeLabel(lesson.lessonType) }} • {{ formatTime(lesson.durationSeconds)
+                  }}<template v-if="lesson.videoTitle"> • {{ lesson.videoTitle }}</template></small
+                >
+              </div>
+              <span :class="['badge', lesson.status === 'ACTIVE' ? 'badge-soft-success' : 'badge-soft-warning']">{{
+                lesson.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm ẩn'
+              }}</span>
+              <div class="lesson-actions">
+                <RouterLink
+                  v-if="lesson.videoId && lesson.canEditVideo"
+                  class="btn btn-action-view btn-sm"
+                  :to="`/cms/videos/${lesson.videoId}/editor`"
+                  title="Biên tập video mẫu"
+                  ><i class="bi bi-sliders"></i></RouterLink
+                ><button
+                  v-if="lesson.lessonType.includes('VIDEO')"
+                  class="btn btn-blue btn-sm"
+                  :title="lesson.videoId ? 'Đổi video tham chiếu' : 'Chọn video từ thư viện'"
+                  @click="openVideoPicker(lesson)"
+                >
+                  <i class="bi bi-collection-play"></i></button
+                ><button class="btn btn-action-edit btn-sm" title="Sửa bài học" @click="openLesson(chapter, lesson)">
+                  <i class="bi bi-pencil"></i></button
+                ><button class="btn btn-action-delete btn-sm" title="Xóa bài học" @click="askDelete('lesson', lesson)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div v-if="!chapter.lessons.length" class="empty-lessons">Chương này chưa có bài học.</div>
+            <button class="add-lesson" @click="openLesson(chapter)">
+              <i class="bi bi-plus-circle"></i> Thêm bài học
+            </button>
+          </div>
+        </article>
+        <div v-if="!chapters.length" class="app-card empty-state">
+          <i class="bi bi-journal-plus"></i>
+          <h2>Chưa có chương</h2>
+          <p>Tạo chương đầu tiên để bắt đầu xây dựng nội dung môn học lớp.</p>
+          <button class="btn btn-action-create" @click="openChapter()">
+            <i class="bi bi-plus-lg"></i> Thêm chương
+          </button>
+        </div>
+      </div>
+    </template>
 
     <div v-if="chapterModal" class="modal-mask" @click.self="chapterModal = false">
       <form class="app-card form-modal" @submit.prevent="saveChapter">
@@ -126,7 +173,7 @@
         :class="[
           'app-card',
           'form-modal',
-          { 'interactive-form-modal': lessonForm.lessonType === 'INTERACTIVE_CONTENT' }
+          { 'fullscreen-form-modal': ['INTERACTIVE_CONTENT', 'QUIZ'].includes(lessonForm.lessonType) }
         ]"
         @submit.prevent="saveLesson"
       >
@@ -150,8 +197,7 @@
                   <option value="INTERACTIVE_VIDEO">Video tương tác</option>
                   <option value="VIDEO">Video</option>
                   <option value="QUIZ">Bài kiểm tra</option>
-                  <option value="DOCUMENT">Tài liệu PDF / file</option>
-                  <option value="EDITOR">Bài học soạn thảo</option>
+                  <option value="EDITOR">Bài học (soạn thảo + tài liệu)</option>
                   <option value="INTERACTIVE_CONTENT">Bài học tương tác</option>
                   <option value="ASSIGNMENT">Bài tập nộp file</option>
                 </select>
@@ -181,7 +227,7 @@
               </label>
             </div>
           </div>
-          <div v-if="['EDITOR', 'INTERACTIVE_CONTENT'].includes(lessonForm.lessonType)" class="col-12">
+          <div v-if="['EDITOR', 'DOCUMENT', 'INTERACTIVE_CONTENT'].includes(lessonForm.lessonType)" class="col-12">
             <label class="form-label"><i class="bi bi-pencil-square"></i> Nội dung soạn thảo</label>
             <div class="editor-toolbar">
               <button type="button" title="Chữ đậm" @click="formatEditor('bold')">
@@ -285,12 +331,16 @@
                       <small>{{ questionTypeLabel(question.type) }} · Mặc định {{ question.score }} điểm</small>
                     </span>
                   </label>
-                  <p v-if="!interactiveQuestionLoading && !interactiveQuestionBank.length" class="interactive-bank-state">
+                  <p
+                    v-if="!interactiveQuestionLoading && !interactiveQuestionBank.length"
+                    class="interactive-bank-state"
+                  >
                     Không tìm thấy câu hỏi phù hợp.
                   </p>
                 </div>
                 <small v-if="interactiveQuestionTotal > interactiveQuestionBank.length" class="interactive-result-note">
-                  Đang hiển thị {{ interactiveQuestionBank.length }}/{{ interactiveQuestionTotal }} câu. Hãy tìm kiếm hoặc lọc loại để thu hẹp kết quả.
+                  Đang hiển thị {{ interactiveQuestionBank.length }}/{{ interactiveQuestionTotal }} câu. Hãy tìm kiếm
+                  hoặc lọc loại để thu hẹp kết quả.
                 </small>
               </section>
 
@@ -359,9 +409,9 @@
               </section>
             </div>
           </template>
-          <template v-if="['DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType)">
+          <template v-if="['EDITOR', 'DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType)">
             <div class="col-12">
-              <label class="form-label"><i class="bi bi-paperclip"></i> File tài liệu / đề bài</label>
+              <label class="form-label"><i class="bi bi-paperclip"></i> Tài liệu đính kèm</label>
               <input
                 class="form-control"
                 type="file"
@@ -371,6 +421,9 @@
               <small v-if="lessonForm.documentUrl" class="resource-path"
                 ><i class="bi bi-check-circle"></i> {{ lessonForm.documentUrl }}</small
               >
+              <small v-else-if="lessonForm.lessonType === 'EDITOR'" class="form-text">
+                Không bắt buộc. Có thể vừa soạn nội dung phía trên, vừa đính kèm PDF, Word hoặc tài liệu khác.
+              </small>
             </div>
           </template>
           <template v-if="lessonForm.lessonType === 'ASSIGNMENT'">
@@ -467,25 +520,57 @@
             <div class="col-12">
               <div class="quiz-bank-heading">
                 <label class="form-label mb-0"><i class="bi bi-patch-question"></i> Câu hỏi từ ngân hàng</label>
-                <RouterLink to="/cms/questions" class="btn btn-action-view btn-sm"
-                  ><i class="bi bi-plus-lg"></i> Quản lý ngân hàng</RouterLink
-                >
+                <div class="quiz-bank-heading__actions">
+                  <span class="quiz-bank-selected">{{ lessonForm.quizQuestionIds.length }} đã chọn</span>
+                  <RouterLink to="/cms/questions" class="btn btn-action-view btn-sm"
+                    ><i class="bi bi-plus-lg"></i> Quản lý ngân hàng</RouterLink
+                  >
+                </div>
+              </div>
+              <div class="quiz-bank-toolbar">
+                <label class="quiz-search-box">
+                  <i class="bi bi-search"></i>
+                  <input
+                    v-model.trim="quizQuestionSearch"
+                    class="form-control"
+                    placeholder="Tìm nhanh theo nội dung câu hỏi..."
+                    aria-label="Tìm nhanh câu hỏi trong ngân hàng"
+                  />
+                </label>
+                <select v-model="quizQuestionType" class="form-select" aria-label="Lọc loại câu hỏi bài kiểm tra">
+                  <option value="">Tất cả loại câu hỏi</option>
+                  <option value="SINGLE_CHOICE">Một lựa chọn</option>
+                  <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
+                  <option value="TRUE_FALSE">Đúng / Sai</option>
+                  <option value="SHORT_ANSWER">Trả lời ngắn</option>
+                </select>
               </div>
               <div class="quiz-question-picker">
-                <label v-for="question in quizQuestionBank" :key="question.id" class="quiz-question-option">
-                  <input
-                    v-model="lessonForm.quizQuestionIds"
-                    :value="question.id"
-                    type="checkbox"
-                    class="form-check-input"
-                  />
-                  <span
-                    ><strong>{{ question.text }}</strong
-                    ><small>{{ questionTypeLabel(question.type) }} · {{ question.score }} điểm</small></span
-                  >
-                </label>
-                <p v-if="!quizQuestionBank.length" class="text-secondary mb-0">Ngân hàng chưa có câu hỏi hoạt động.</p>
+                <div v-if="quizQuestionLoading" class="quiz-bank-state">
+                  <span class="spinner-border spinner-border-sm"></span> Đang tìm câu hỏi...
+                </div>
+                <template v-else>
+                  <label v-for="question in quizQuestionBank" :key="question.id" class="quiz-question-option">
+                    <input
+                      v-model="lessonForm.quizQuestionIds"
+                      :value="question.id"
+                      type="checkbox"
+                      class="form-check-input"
+                    />
+                    <span
+                      ><strong>{{ question.text }}</strong
+                      ><small>{{ questionTypeLabel(question.type) }} · {{ question.score }} điểm</small></span
+                    >
+                  </label>
+                  <p v-if="!quizQuestionBank.length" class="quiz-bank-state mb-0">
+                    Không tìm thấy câu hỏi phù hợp với bộ lọc.
+                  </p>
+                </template>
               </div>
+              <small v-if="quizQuestionTotal > quizQuestionBank.length" class="quiz-bank-result-note">
+                Đang hiển thị {{ quizQuestionBank.length }}/{{ quizQuestionTotal }} câu. Hãy nhập từ khóa hoặc chọn loại
+                câu hỏi để thu hẹp kết quả.
+              </small>
             </div>
           </template>
         </div>
@@ -671,7 +756,8 @@
           }}
         </p>
         <div class="modal-actions">
-          <button class="btn btn-action-cancel btn-action-outline" @click="deleteTarget = null"><i class="bi bi-x-lg"></i> Hủy</button
+          <button class="btn btn-action-cancel btn-action-outline" @click="deleteTarget = null">
+            <i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-action-delete" :disabled="saving" @click="removeTarget">
             <i class="bi bi-trash"></i> Xóa
           </button>
@@ -708,6 +794,10 @@ const chapterModal = ref(false),
   quickQuestionModal = ref(false),
   previewInteractive = ref(false),
   videoSearch = ref(''),
+  quizQuestionSearch = ref(''),
+  quizQuestionType = ref(''),
+  quizQuestionTotal = ref(0),
+  quizQuestionLoading = ref(false),
   interactiveQuestionSearch = ref(''),
   interactiveQuestionType = ref(''),
   interactiveQuestionTotal = ref(0),
@@ -717,14 +807,23 @@ const lessonEditor = ref(null),
 const chapterForm = reactive(blankChapter()),
   lessonForm = reactive(blankLesson()),
   quickQuestion = reactive(blankQuickQuestion())
+const collapsedChapterIds = ref(new Set())
+const chapterCollapseStorageKey = `cms-content:${courseId}:collapsed-chapters`
 const pick = (source, ...names) =>
   names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
 const formatTime = formatInteractionTime
 let videoTimer
+let quizQuestionTimer
 let interactiveQuestionTimer
+let chapterCollapseStateLoaded = false
 watch(videoSearch, () => {
   clearTimeout(videoTimer)
   videoTimer = setTimeout(loadVideoAssets, 250)
+})
+watch([quizQuestionSearch, quizQuestionType], () => {
+  clearTimeout(quizQuestionTimer)
+  if (lessonForm.lessonType !== 'QUIZ' || !lessonModal.value) return
+  quizQuestionTimer = setTimeout(loadQuizQuestionBank, 250)
 })
 watch([interactiveQuestionSearch, interactiveQuestionType], () => {
   clearTimeout(interactiveQuestionTimer)
@@ -760,11 +859,60 @@ async function load() {
         lessons: lessonRows.filter((x) => Number(pick(x, 'ChapterId', 'chapterId')) === id).map(mapLesson)
       }
     })
+    syncChapterCollapseState()
   } catch (error) {
     show(error.message, 'danger')
   } finally {
     loading.value = false
   }
+}
+function syncChapterCollapseState() {
+  const validIds = new Set(chapters.value.map((chapter) => chapter.id))
+  if (!chapterCollapseStateLoaded) {
+    try {
+      const stored = sessionStorage.getItem(chapterCollapseStorageKey)
+      collapsedChapterIds.value =
+        stored === null
+          ? new Set(validIds)
+          : new Set(
+              JSON.parse(stored)
+                .map(Number)
+                .filter((id) => validIds.has(id))
+            )
+    } catch {
+      collapsedChapterIds.value = new Set(validIds)
+    }
+    chapterCollapseStateLoaded = true
+  } else {
+    collapsedChapterIds.value = new Set([...collapsedChapterIds.value].filter((id) => validIds.has(id)))
+  }
+  persistChapterCollapseState()
+}
+function persistChapterCollapseState() {
+  try {
+    sessionStorage.setItem(chapterCollapseStorageKey, JSON.stringify([...collapsedChapterIds.value]))
+  } catch {
+    // Trình duyệt có thể chặn sessionStorage; chức năng thu gọn vẫn hoạt động trong trang hiện tại.
+  }
+}
+function isChapterCollapsed(chapterId) {
+  return collapsedChapterIds.value.has(Number(chapterId))
+}
+function toggleChapter(chapterId) {
+  const next = new Set(collapsedChapterIds.value)
+  const id = Number(chapterId)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  collapsedChapterIds.value = next
+  persistChapterCollapseState()
+}
+function collapseAllChapters() {
+  collapsedChapterIds.value = new Set(chapters.value.map((chapter) => chapter.id))
+  persistChapterCollapseState()
+}
+function expandAllChapters() {
+  collapsedChapterIds.value = new Set()
+  persistChapterCollapseState()
 }
 function mapLesson(row, index) {
   return {
@@ -870,6 +1018,8 @@ async function openLesson(chapter, item = null) {
     item ? { ...item } : { ...blankLesson(), chapterId: chapter.id, sortOrder: chapter.lessons.length + 1 }
   )
   lessonForm.chapterId = chapter.id
+  // Dữ liệu DOCUMENT cũ được mở bằng loại Bài học hợp nhất và sẽ chuyển sang EDITOR khi lưu.
+  if (lessonForm.lessonType === 'DOCUMENT') lessonForm.lessonType = 'EDITOR'
   lessonFile.value = null
   if (lessonForm.lessonType === 'QUIZ') await loadQuizEditor(lessonForm.id)
   if (lessonForm.lessonType === 'INTERACTIVE_CONTENT') await loadInteractiveEditor(lessonForm.id)
@@ -909,10 +1059,12 @@ async function saveLesson() {
       sortOrder: lessonForm.sortOrder,
       isRequired: lessonForm.isRequired,
       passingScore: Number(lessonForm.passingScore) || 0,
-      contentHtml: ['EDITOR', 'INTERACTIVE_CONTENT'].includes(lessonForm.lessonType)
+      contentHtml: ['EDITOR', 'DOCUMENT', 'INTERACTIVE_CONTENT'].includes(lessonForm.lessonType)
         ? lessonForm.contentHtml || null
         : null,
-      documentUrl: ['DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType) ? lessonForm.documentUrl || null : null,
+      documentUrl: ['EDITOR', 'DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType)
+        ? lessonForm.documentUrl || null
+        : null,
       assignmentFolderName: lessonForm.lessonType === 'ASSIGNMENT' ? lessonForm.assignmentFolderName || null : null,
       assignmentStartAt:
         lessonForm.lessonType === 'ASSIGNMENT' && lessonForm.assignmentStartAt
@@ -1022,17 +1174,30 @@ function lessonTypeLabel(type) {
       INTERACTIVE_VIDEO: 'Video tương tác',
       VIDEO: 'Video',
       QUIZ: 'Bài kiểm tra',
-      DOCUMENT: 'Tài liệu',
-      EDITOR: 'Bài soạn thảo',
+      DOCUMENT: 'Bài học',
+      EDITOR: 'Bài học',
       ASSIGNMENT: 'Bài tập nộp file',
       INTERACTIVE_CONTENT: 'Bài học tương tác'
     }[type] || type
   )
 }
 function lessonTypeIcon(type) {
-  if (type === 'INTERACTIVE_CONTENT') return 'bi-lightning-charge-fill'
-  if (String(type || '').includes('VIDEO')) return 'bi-play-btn'
-  return 'bi-file-earmark-text'
+  return (
+    {
+      INTERACTIVE_VIDEO: 'bi-play-circle',
+      VIDEO: 'bi-camera-video',
+      QUIZ: 'bi-ui-checks-grid',
+      DOCUMENT: 'bi-file-earmark-pdf',
+      EDITOR: 'bi-journal-text',
+      ASSIGNMENT: 'bi-clipboard2-check',
+      INTERACTIVE_CONTENT: 'bi-journal-check'
+    }[type] || 'bi-file-earmark-text'
+  )
+}
+function lessonTypeClass(type) {
+  return `type-${String(type || 'document')
+    .toLowerCase()
+    .replaceAll('_', '-')}`
 }
 function questionTypeLabel(type) {
   return (
@@ -1045,13 +1210,9 @@ function questionTypeLabel(type) {
   )
 }
 async function loadQuizEditor(lessonId) {
-  const bank = await axiosClient.get('/questions', { params: { pageSize: 100, _fresh: Date.now() } })
-  quizQuestionBank.value = (pick(bank, 'items', 'Items') || []).map((row) => ({
-    id: Number(pick(row, 'Id', 'id')),
-    text: pick(row, 'QuestionText', 'questionText') || '',
-    type: pick(row, 'QuestionType', 'questionType') || '',
-    score: Number(pick(row, 'DefaultScore', 'defaultScore') || 0)
-  }))
+  quizQuestionSearch.value = ''
+  quizQuestionType.value = ''
+  await loadQuizQuestionBank()
   if (!lessonId) return
   const data = await axiosClient.get(`/lessons/${lessonId}/quiz`)
   const quiz = pick(data, 'Quiz', 'quiz')
@@ -1063,6 +1224,33 @@ async function loadQuizEditor(lessonId) {
   lessonForm.quizQuestionIds = (pick(data, 'Questions', 'questions') || []).map((row) =>
     Number(pick(row, 'QuestionID', 'questionID'))
   )
+}
+async function loadQuizQuestionBank() {
+  quizQuestionLoading.value = true
+  try {
+    const bank = await axiosClient.get('/questions', {
+      params: {
+        search: quizQuestionSearch.value || undefined,
+        type: quizQuestionType.value || undefined,
+        page: 1,
+        pageSize: 100,
+        _fresh: Date.now()
+      }
+    })
+    quizQuestionBank.value = (pick(bank, 'items', 'Items') || []).map((row) => ({
+      id: Number(pick(row, 'Id', 'id')),
+      text: pick(row, 'QuestionText', 'questionText') || '',
+      type: pick(row, 'QuestionType', 'questionType') || '',
+      score: Number(pick(row, 'DefaultScore', 'defaultScore') || 0)
+    }))
+    quizQuestionTotal.value = Number(pick(bank, 'total', 'Total') || quizQuestionBank.value.length)
+  } catch (error) {
+    quizQuestionBank.value = []
+    quizQuestionTotal.value = 0
+    show(error.message, 'danger')
+  } finally {
+    quizQuestionLoading.value = false
+  }
 }
 async function loadInteractiveEditor(lessonId) {
   interactiveQuestionSearch.value = ''

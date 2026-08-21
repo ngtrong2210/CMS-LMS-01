@@ -15,7 +15,6 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const map = {
   lessons: ['Chương và bài học', 'bi-list-task'],
-  enrollments: ['Ghi danh khóa học', 'bi-person-plus'],
   users: ['Quản lý người dùng', 'bi-person-gear'],
   roles: ['Vai trò và phân quyền', 'bi-shield-check'],
   settings: ['Cài đặt hệ thống', 'bi-gear']

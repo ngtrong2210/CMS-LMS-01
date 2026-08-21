@@ -17,26 +17,20 @@
       {{ message }}
     </div>
 
-    <div class="grading-summary">
-      <article v-for="card in summaryCards" :key="card.label" class="app-card">
-        <span :class="card.tone"><i :class="['bi', card.icon]"></i></span>
-        <div>
-          <strong>{{ card.value }}</strong
-          ><small>{{ card.label }}</small>
-        </div>
-      </article>
-    </div>
-
-    <div class="app-card grading-filters">
+    <form class="app-card grading-filters" @submit.prevent="applyFilters">
       <label class="grading-search"
         ><span>Tìm học viên hoặc bài tập</span>
-        <div>
-          <i class="bi bi-search"></i
-          ><input
-            v-model.trim="filters.search"
-            class="form-control"
-            placeholder="Mã sinh viên, họ tên, tên bài tập..."
-          /></div
+        <div class="grading-search-control">
+          <div>
+            <i class="bi bi-search"></i
+            ><input
+              v-model.trim="filters.search"
+              class="form-control"
+              placeholder="Mã sinh viên, họ tên, môn học, tên bài tập..."
+            />
+          </div>
+          <button type="submit" class="btn btn-action-view"><i class="bi bi-search"></i> Tìm kiếm</button>
+        </div
       ></label>
       <label
         ><span>Môn học lớp</span
@@ -55,7 +49,15 @@
           <option value="DRAFT">Bản nháp</option>
         </select></label
       >
-    </div>
+      <label
+        ><span>Số dòng mỗi trang</span
+        ><select v-model.number="paging.pageSize" class="form-select">
+          <option :value="10">10 dòng</option>
+          <option :value="20">20 dòng</option>
+          <option :value="50">50 dòng</option>
+        </select></label
+      >
+    </form>
 
     <div class="app-card grading-table-card">
       <div class="table-responsive">
@@ -75,7 +77,7 @@
           </thead>
           <tbody>
             <tr v-for="(item, index) in submissions" :key="item.id">
-              <td>{{ index + 1 }}</td>
+              <td>{{ (paging.page - 1) * paging.pageSize + index + 1 }}</td>
               <td>
                 <strong>{{ item.studentName }}</strong
                 ><small>{{ item.studentCode || `User #${item.studentUserId}` }} · {{ item.className }}</small>
@@ -112,6 +114,15 @@
         </table>
       </div>
       <div v-if="loading" class="text-center p-4"><span class="spinner-border text-brand"></span></div>
+      <AppPagination
+        v-else
+        :page="paging.page"
+        :total-pages="totalPages"
+        :shown-count="submissions.length"
+        :total-items="paging.totalItems"
+        @previous="changePage(-1)"
+        @next="changePage(1)"
+      />
     </div>
 
     <div v-if="selected" class="modal-mask" @click.self="selected = null">
@@ -188,6 +199,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import axiosClient from '../../api/axiosClient'
 import { resolveApiAssetUrl } from '../../api/apiConfig'
 import { useListViewState } from '../../composables/useListViewState'
+import AppPagination from '../../components/navigation/AppPagination.vue'
 
 const loading = ref(true)
 const saving = ref(false)
@@ -197,6 +209,7 @@ const selected = ref(null)
 const message = ref('')
 const messageType = ref('success')
 const filters = reactive({ search: '', classSubjectId: '', status: '' })
+const paging = reactive({ page: 1, pageSize: 20, totalItems: 0 })
 const gradeForm = reactive({ score: null, feedback: '' })
 const pick = (source, ...names) =>
   names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
@@ -206,37 +219,27 @@ const classSubjectState = computed({
   set: (value) => (filters.classSubjectId = value)
 })
 const statusState = computed({ get: () => filters.status, set: (value) => (filters.status = value) })
+const pageState = computed({ get: () => paging.page, set: (value) => (paging.page = Number(value) || 1) })
+const pageSizeState = computed({
+  get: () => paging.pageSize,
+  set: (value) => (paging.pageSize = Number(value) || 20)
+})
 useListViewState('cms-assignment-grading', {
   search: searchState,
   classSubjectId: classSubjectState,
-  status: statusState
+  status: statusState,
+  page: pageState,
+  pageSize: pageSizeState
 })
 
-const summaryCards = computed(() => [
-  { label: 'Tổng bài nộp', value: submissions.value.length, icon: 'bi-inbox', tone: 'blue' },
-  {
-    label: 'Chờ chấm',
-    value: submissions.value.filter((x) => x.status === 'SUBMITTED').length,
-    icon: 'bi-hourglass-split',
-    tone: 'orange'
-  },
-  {
-    label: 'Đã chấm',
-    value: submissions.value.filter((x) => x.status === 'GRADED').length,
-    icon: 'bi-check2-circle',
-    tone: 'green'
-  },
-  { label: 'Nộp trễ', value: submissions.value.filter((x) => x.isLate).length, icon: 'bi-clock-history', tone: 'red' }
-])
+const totalPages = computed(() => Math.max(1, Math.ceil(paging.totalItems / paging.pageSize)))
 
-let timer
 watch(
-  filters,
+  [() => filters.classSubjectId, () => filters.status, () => paging.pageSize],
   () => {
-    clearTimeout(timer)
-    timer = setTimeout(loadSubmissions, 250)
+    paging.page = 1
+    void loadSubmissions()
   },
-  { deep: true }
 )
 onMounted(async () => {
   await loadClassSubjects()
@@ -265,15 +268,36 @@ async function loadSubmissions() {
         classSubjectId: filters.classSubjectId || undefined,
         status: filters.status || undefined,
         search: filters.search || undefined,
+        page: paging.page,
+        pageSize: paging.pageSize,
         _fresh: Date.now()
       }
     })
-    submissions.value = (Array.isArray(rows) ? rows : []).map(mapSubmission)
+    const items = pick(rows, 'Items', 'items') || (Array.isArray(rows) ? rows : [])
+    submissions.value = items.map(mapSubmission)
+    paging.totalItems = Number(pick(rows, 'TotalItems', 'totalItems') ?? submissions.value.length)
+    const lastPage = Math.max(1, Math.ceil(paging.totalItems / paging.pageSize))
+    if (paging.page > lastPage) {
+      paging.page = lastPage
+      await loadSubmissions()
+    }
   } catch (error) {
     show(error.message, 'danger')
   } finally {
     loading.value = false
   }
+}
+
+function applyFilters() {
+  paging.page = 1
+  void loadSubmissions()
+}
+
+function changePage(offset) {
+  const nextPage = paging.page + offset
+  if (nextPage < 1 || nextPage > totalPages.value) return
+  paging.page = nextPage
+  void loadSubmissions()
 }
 
 function mapSubmission(row) {

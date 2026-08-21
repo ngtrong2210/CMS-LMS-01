@@ -14,8 +14,8 @@
 }
 .discussion-heading span {
   color: var(--discussion-primary);
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 0.07em;
 }
 .discussion-heading h2 {
@@ -63,7 +63,7 @@
   border: 0;
   border-radius: 8px;
   font-size: 0.78rem;
-  font-weight: 750;
+  font-weight: 600;
   padding: 9px 13px;
 }
 .btn-comment-primary { background: var(--discussion-primary); color: #fff; }
@@ -90,7 +90,7 @@
   color: var(--discussion-navy);
   display: flex;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
   height: 38px;
   justify-content: center;
   overflow: hidden;
@@ -109,11 +109,11 @@
   gap: 7px;
 }
 .comment-body header strong { color: var(--discussion-navy); font-size: 0.83rem; }
-.comment-body time { color: #89979f; font-size: 0.68rem; }
+.comment-body time { color: #89979f; font-size: 0.75rem; }
 .comment-role {
   border-radius: 12px;
-  font-size: 0.58rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   padding: 2px 6px;
   text-transform: uppercase;
 }
@@ -144,7 +144,7 @@
 }
 .comment-actions button:hover { color: var(--discussion-primary); }
 .comment-actions button.danger { color: #cd1b1b; }
-.comment-actions > span { color: #8a989f; font-size: 0.65rem; }
+.comment-actions > span { color: #8a989f; font-size: 0.75rem; }
 .comment-replies { margin-top: 6px; }
 .comment-reply-form {
   background: #f6f8f9;
@@ -178,7 +178,7 @@
   border: 0;
   color: var(--discussion-primary);
   font-size: 0.76rem;
-  font-weight: 750;
+  font-weight: 600;
 }
 .discussion-load-more { display: block; margin: 14px auto 0; }
 .app-modal-backdrop {
@@ -211,7 +211,7 @@
   margin-bottom: 14px;
   width: 46px;
 }
-.app-confirm-modal > small { color: #d3224d; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; }
+.app-confirm-modal > small { color: #d3224d; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; }
 .app-confirm-modal h3 { color: var(--discussion-navy); font-size: 1.18rem; margin: 4px 0 8px; }
 .app-confirm-modal p { color: var(--discussion-muted); font-size: 0.82rem; }
 .app-confirm-modal > div:last-child { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }

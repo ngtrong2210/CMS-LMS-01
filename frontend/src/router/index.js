@@ -100,10 +100,27 @@ const routes = [
       { path: 'students', component: () => import('../views/cms/StudentsView.vue'), meta: { title: 'Học viên' } },
       {
         path: 'enrollments',
-        component: () => import('../views/cms/EnrollmentManagementView.vue'),
-        meta: { title: 'Phân lớp và ghi danh' }
+        redirect: '/cms/academic'
       },
       { path: 'reports', component: () => import('../views/cms/ReportsView.vue'), meta: { title: 'Báo cáo' } },
+      {
+        path: 'users',
+        name: 'UsersManagementView',
+        component: () => import('../views/cms/UsersManagementView.vue'),
+        meta: { title: 'Người dùng', admin: true }
+      },
+      {
+        path: 'roles',
+        name: 'RoleManagementView',
+        component: () => import('../views/cms/RoleManagementView.vue'),
+        meta: { title: 'Phân quyền', admin: true }
+      },
+      {
+        path: 'settings',
+        name: 'SystemSettingsView',
+        component: () => import('../views/cms/SystemSettingsView.vue'),
+        meta: { title: 'Cài đặt', admin: true }
+      },
       { path: ':section', component: () => import('../views/cms/GenericCmsView.vue') }
     ]
   },
@@ -129,6 +146,7 @@ router.beforeEach((to) => {
   if (to.meta.auth && !auth.isAuthenticated) return '/login'
   if (to.meta.role === 'STUDENT' && !auth.isStudent) return '/403'
   if (to.meta.cms && !auth.isCmsUser) return '/403'
+  if (to.meta.admin && !auth.isAdmin) return '/403'
   if (to.meta.guest && auth.isAuthenticated) return auth.isStudent ? '/lms/dashboard' : '/cms/dashboard'
 })
 export default router

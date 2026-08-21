@@ -23,7 +23,7 @@
         <div class="goal">
           <span class="goal-ring">{{ Math.round(courses[0]?.progress || 0) }}<small>%</small></span>
           <div>
-            <strong>Tiến độ gần nhất</strong><small>{{ courses[0]?.title || 'Chưa có khóa học' }}</small>
+            <strong>Tiến độ gần nhất</strong><small>{{ courses[0]?.title || 'Chưa có môn học lớp' }}</small>
           </div>
         </div>
       </div>
@@ -64,14 +64,14 @@
                 <div class="progress-bar" :style="{ width: course.progress + '%' }"></div>
               </div>
               <RouterLink class="btn btn-action-view btn-sm" :to="`/lms/courses/${course.id}`"
-                ><i class="bi bi-arrow-right-circle"></i> Mở khóa học</RouterLink
+                ><i class="bi bi-arrow-right-circle"></i> Mở môn học</RouterLink
               >
             </div>
           </article>
         </div>
       </div>
       <div v-else class="app-card p-5 text-center text-secondary">
-        Bạn chưa được ghi danh vào khóa học nào.
+        Bạn chưa được phân vào môn học lớp nào.
       </div></template
     >
   </section>

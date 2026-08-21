@@ -49,7 +49,7 @@ public interface ILearningService
 }
 public interface ITeachingService
 {
-    Task<IReadOnlyCollection<object>> GetAssignmentSubmissionsAsync(long? classSubjectId, string? status, string? search, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<PagedResult<object>> GetAssignmentSubmissionsAsync(long? classSubjectId, string? status, string? search, int page, int pageSize, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
     Task<object> GradeAssignmentSubmissionAsync(long assignmentSubmissionId, AssignmentGradeRequest request, long actorId, bool isAdmin, CancellationToken cancellationToken = default);
 }
 public interface IQuizService
@@ -74,6 +74,19 @@ public interface ILessonCommentService
     Task<long> CreateAsync(long lessonId, LessonCommentCreateRequest request, long actorUserId, bool isAdmin, bool isTeacher, CancellationToken cancellationToken = default);
     Task<long> UpdateAsync(long lessonCommentId, LessonCommentUpdateRequest request, long actorUserId, CancellationToken cancellationToken = default);
     Task<long> DeleteAsync(long lessonCommentId, long actorUserId, bool isAdmin, bool isTeacher, CancellationToken cancellationToken = default);
+}
+public interface ISystemAdministrationService
+{
+    Task<PagedResult<object>> GetUsersAsync(string? search, string? roleCode, string? status, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<object?> GetUserAsync(long userId, CancellationToken cancellationToken = default);
+    Task<long> CreateUserAsync(UserSaveRequest request, long actorUserId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateUserAsync(long userId, UserSaveRequest request, long actorUserId, CancellationToken cancellationToken = default);
+    Task<bool> SetUserStatusAsync(long userId, string status, long actorUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<object>> GetRolesAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<object>> GetRolePermissionsAsync(long roleId, CancellationToken cancellationToken = default);
+    Task<bool> SaveRolePermissionsAsync(long roleId, RolePermissionsSaveRequest request, long actorUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<object>> GetSettingsAsync(CancellationToken cancellationToken = default);
+    Task<int> SaveSettingsAsync(SystemSettingsSaveRequest request, long actorUserId, CancellationToken cancellationToken = default);
 }
 public interface IContentService
 {

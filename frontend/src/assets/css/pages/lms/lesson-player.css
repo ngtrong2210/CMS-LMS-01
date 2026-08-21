@@ -32,7 +32,7 @@
   align-items: center;
   color: var(--player-navy);
   display: inline-flex;
-  font-weight: 750;
+  font-weight: 600;
   gap: 8px;
   white-space: nowrap;
 }
@@ -53,7 +53,7 @@
   color: var(--player-navy);
   display: block;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -188,7 +188,7 @@
 .current-lesson-heading h1 {
   color: var(--player-navy);
   font-size: 1.08rem;
-  font-weight: 800;
+  font-weight: 700;
   margin: 2px 0 0;
 }
 .current-lesson-heading small {
@@ -202,7 +202,7 @@
   border-radius: 20px;
   color: #07875a;
   font-size: 0.74rem;
-  font-weight: 750;
+  font-weight: 600;
   padding: 6px 10px;
 }
 .lesson-type-icon {
@@ -325,7 +325,7 @@
 }
 .chapter-toggle small {
   color: rgba(255, 255, 255, 0.78);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   margin-top: 3px;
 }
 .chapter-lessons {
@@ -375,7 +375,7 @@
   white-space: nowrap;
 }
 .chapter a small {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   margin-top: 2px;
 }
 .lesson-status-complete { color: #07875a; }
@@ -395,18 +395,18 @@
   border-radius: 8px;
   color: #5e707b;
   font-size: 0.82rem;
-  font-weight: 750;
+  font-weight: 600;
   padding: 9px 14px;
 }
 .lesson-tabs button.active {
-  background: var(--player-navy);
+  background: #d3224d;
   color: #fff;
 }
 .lesson-tabs button span {
   background: var(--player-primary);
   border-radius: 20px;
   color: #fff;
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   margin-left: 5px;
   padding: 2px 6px;
 }
@@ -429,7 +429,7 @@
   background: var(--player-primary);
   border-radius: 8px;
   color: #fff;
-  font-weight: 750;
+  font-weight: 600;
   padding: 9px 13px;
 }
 .lesson-navigation {
@@ -458,7 +458,7 @@
 }
 .lesson-navigation small {
   color: var(--player-muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   margin-bottom: 3px;
 }
 .lesson-navigation strong {
@@ -474,8 +474,8 @@
 }
 .assignment-heading > div > small {
   color: var(--player-primary);
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 0.06em;
 }
 .assignment-metadata {
@@ -539,8 +539,8 @@
   background: #005099;
   border-radius: 999px;
   color: #fff;
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   padding: 4px 9px;
 }
 .assignment-document-preview > iframe {
@@ -568,7 +568,7 @@
   background: #fff;
   box-shadow: 0 12px 32px rgba(18, 53, 82, 0.1);
   color: #172b3a;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-family-base);
   line-height: 1.65;
   margin: 0 auto;
   max-width: 900px;
@@ -638,8 +638,8 @@
 }
 .app-confirm-modal > small {
   color: var(--player-primary);
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 0.06em;
 }
 .app-confirm-modal h3 {
@@ -666,13 +666,13 @@
   justify-content: space-between;
   padding: 4px 0;
 }
-.assignment-confirm dd { font-weight: 750; margin: 0; }
+.assignment-confirm dd { font-weight: 600; margin: 0; }
 .btn-comment-primary,
 .btn-comment-plain {
   border: 0;
   border-radius: 8px;
   font-size: 0.78rem;
-  font-weight: 750;
+  font-weight: 600;
   padding: 9px 13px;
 }
 .btn-comment-primary { background: var(--player-primary); color: #fff; }
@@ -806,7 +806,7 @@
 }
 .lesson-meta h1 {
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0.5rem 0;
 }
 .lesson-meta p {
@@ -872,7 +872,7 @@
   align-items: center;
 }
 .interaction-list button > span {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--eduvers-black);
 }
 .interaction-list button small {
@@ -903,7 +903,7 @@
 }
 .question-modal h2 {
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: 700;
   margin-top: 1rem;
 }
 .close {
@@ -932,7 +932,7 @@
   background: white;
   display: grid;
   place-items: center;
-  font-weight: 800;
+  font-weight: 700;
 }
 .answer-result {
   text-align: center;
@@ -1026,6 +1026,10 @@
 .document-heading p {
   color: #6e7d82;
   margin: 4px 0 0;
+}
+.combined-lesson-document {
+  margin-top: 32px;
+  padding-top: 24px;
 }
 .document-actions {
   display: flex;
@@ -1328,7 +1332,7 @@
   border-radius: 8px;
   color: #fff;
   font-size: 0.75rem;
-  font-weight: 750;
+  font-weight: 600;
   margin-left: auto;
   padding: 8px 11px;
 }
@@ -1345,7 +1349,7 @@
   color: #005099;
   cursor: pointer;
   font-size: 0.78rem;
-  font-weight: 750;
+  font-weight: 600;
   list-style: none;
   padding: 10px 12px;
 }
@@ -1390,7 +1394,7 @@
 }
 .submission-score {
   color: #07875a;
-  font-weight: 800;
+  font-weight: 700;
   margin-left: auto;
 }
 @media (max-width: 760px) {
@@ -1456,6 +1460,27 @@
 .lesson-player-page .assignment-heading {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.lesson-player-page .assignment-heading .assignment-deadline {
+  align-items: center;
+  background: #d3224d;
+  border-radius: 8px;
+  color: #fff;
+  display: inline-flex;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  gap: 0.5rem;
+  line-height: 1.4;
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.8rem;
+  width: fit-content;
+}
+.lesson-player-page .assignment-heading .assignment-deadline > i {
+  color: #fff;
+  font-size: 1rem;
+}
+.lesson-player-page .assignment-heading .assignment-deadline-open {
+  background: #07875a;
 }
 .lesson-player-page .assignment-resource {
   background: #fff;

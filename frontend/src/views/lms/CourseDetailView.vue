@@ -39,7 +39,7 @@
                       <h4>{{ formatDuration(totalDuration) }}</h4>
                     </li>
                     <li>
-                      <p>Đánh giá khóa học</p>
+                      <p>Đánh giá môn học</p>
                       <ul class="course-details__ratting list-unstyled">
                         <li v-for="star in 5" :key="star">
                           <span><i class="bi bi-star-fill"></i></span>
@@ -52,7 +52,7 @@
 
               <div class="course-details__main-tab-box">
                 <div class="course-details__curriculam">
-                  <h2 class="course-details__curriculam-title">Nội dung khóa học</h2>
+                  <h2 class="course-details__curriculam-title">Nội dung môn học</h2>
                   <p class="course-details__curriculam-text">{{ course.description }}</p>
                   <div v-if="chapters.length" class="accordion accordion-flush" id="courseContent">
                     <div v-for="(chapter, index) in chapters" :key="chapter.id" class="accordion-item">
@@ -137,7 +137,7 @@
                 <div class="progress-bar" :style="{ width: course.progress + '%' }"></div>
               </div>
               <div class="course-details__info-list">
-                <h3 class="course-details__info-list-title">Thông tin khóa học</h3>
+                <h3 class="course-details__info-list-title">Thông tin môn học</h3>
                 <ul class="course-details__info-list-1 list-unstyled">
                   <li>
                     <p><i class="bi bi-journal-text"></i>Bài học</p>

@@ -13,12 +13,12 @@
   .preview-header small
 ) {
   font-family: var(--font-body);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-style: normal;
-  font-weight: 650;
+  font-weight: var(--font-weight-semibold);
   font-synthesis: none;
   font-variant-caps: normal;
-  line-height: 1.5;
+  line-height: var(--line-height-ui);
   letter-spacing: 0;
   text-transform: none;
 }

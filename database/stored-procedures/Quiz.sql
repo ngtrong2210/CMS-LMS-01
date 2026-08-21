@@ -175,8 +175,11 @@ Begin
     Set Nocount On;
 
     Declare @QuizID Bigint;
+    Declare @TimeLimitMinutes Int;
 
-    Select @QuizID = dbo.LMS_Quizzes.QuizID
+    Select
+        @QuizID = dbo.LMS_Quizzes.QuizID,
+        @TimeLimitMinutes = dbo.LMS_Quizzes.TimeLimitMinutes
     From dbo.LMS_Quizzes
         Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.LessonID = dbo.LMS_Quizzes.LessonID
         Inner Join dbo.SIM_Courses On dbo.SIM_Courses.CourseID = dbo.SIM_Lessons.CourseID
@@ -208,7 +211,7 @@ Begin
             From dbo.LMS_Quizzes
             Where (dbo.LMS_Quizzes.QuizID = @QuizID)
                 And (dbo.LMS_Quizzes.TimeLimitMinutes Is Not Null)
-                And (Dateadd(Minute, dbo.LMS_Quizzes.TimeLimitMinutes + 1, dbo.LMS_QuizAttempts.StartedAt) < Sysutcdatetime())
+                And (Dateadd(Minute, dbo.LMS_Quizzes.TimeLimitMinutes, dbo.LMS_QuizAttempts.StartedAt) <= Sysutcdatetime())
         );
 
     Select
@@ -262,7 +265,8 @@ Begin
         dbo.LMS_QuizAttempts.MaxScore,
         dbo.LMS_QuizAttempts.ScorePercent,
         dbo.LMS_QuizAttempts.Passed,
-        dbo.LMS_QuizAttempts.AttemptStatus
+        dbo.LMS_QuizAttempts.AttemptStatus,
+        Case When @TimeLimitMinutes Is Null Or dbo.LMS_QuizAttempts.AttemptStatus <> 'IN_PROGRESS' Then Null When Dateadd(Minute, @TimeLimitMinutes, dbo.LMS_QuizAttempts.StartedAt) <= Sysutcdatetime() Then 0 Else Datediff(Second, Sysutcdatetime(), Dateadd(Minute, @TimeLimitMinutes, dbo.LMS_QuizAttempts.StartedAt)) End RemainingSeconds
     From dbo.LMS_QuizAttempts
     Where (dbo.LMS_QuizAttempts.QuizID = @QuizID)
         And (dbo.LMS_QuizAttempts.StudentUserID = @StudentUserID)
@@ -312,7 +316,7 @@ Begin
         Where (QuizID = @QuizID)
             And (StudentUserID = @StudentUserID)
             And (AttemptStatus = 'IN_PROGRESS')
-            And (Dateadd(Minute, @TimeLimitMinutes + 1, StartedAt) < Sysutcdatetime());
+            And (Dateadd(Minute, @TimeLimitMinutes, StartedAt) <= Sysutcdatetime());
 
     Declare @QuizAttemptID Bigint = (Select Top (1) QuizAttemptID From dbo.LMS_QuizAttempts With (Updlock, Holdlock) Where QuizID = @QuizID And StudentUserID = @StudentUserID And AttemptStatus = 'IN_PROGRESS' Order By AttemptNumber Desc);
 
@@ -334,7 +338,8 @@ Begin
     Select
         dbo.LMS_QuizAttempts.QuizAttemptID,
         dbo.LMS_QuizAttempts.AttemptNumber,
-        dbo.LMS_QuizAttempts.StartedAt
+        dbo.LMS_QuizAttempts.StartedAt,
+        Case When @TimeLimitMinutes Is Null Then Null Else Datediff(Second, Sysutcdatetime(), Dateadd(Minute, @TimeLimitMinutes, dbo.LMS_QuizAttempts.StartedAt)) End RemainingSeconds
     From dbo.LMS_QuizAttempts
     Where (dbo.LMS_QuizAttempts.QuizAttemptID = @QuizAttemptID);
 End
@@ -373,7 +378,7 @@ Begin
     If @QuizID Is Null
         Throw 50002, N'Lượt làm bài không tồn tại hoặc đã được nộp.', 1;
 
-    If @TimeLimitMinutes Is Not Null And Dateadd(Minute, @TimeLimitMinutes + 1, @StartedAt) < Sysutcdatetime()
+    If @TimeLimitMinutes Is Not Null And Dateadd(Second, 15, Dateadd(Minute, @TimeLimitMinutes, @StartedAt)) < Sysutcdatetime()
         Throw 50004, N'Lượt làm bài đã hết thời gian.', 1;
 
     Create Table #tblAnswer

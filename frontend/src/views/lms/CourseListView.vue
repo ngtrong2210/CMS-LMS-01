@@ -3,10 +3,10 @@
     <header class="mb-5">
       <div class="section-title text-left">
         <div class="section-title__tagline-box">
-          <span class="section-title__tagline">KHÓA HỌC TRỰC TUYẾN</span>
+          <span class="section-title__tagline">MÔN HỌC THEO LỚP</span>
         </div>
         <h1 class="section-title__title">Môn học của tôi</h1>
-        <p class="mt-2">Theo dõi và tiếp tục các khóa học đã ghi danh.</p>
+        <p class="mt-2">Theo dõi và tiếp tục các môn học lớp đã được phân.</p>
       </div>
     </header>
 
@@ -14,8 +14,8 @@
       <aside class="col-xl-4 col-lg-5">
         <div class="course-grid__sidebar">
           <div class="course-grid__search course-grid__single">
-            <h3 class="mb-3">Tìm khóa học</h3>
-            <p class="course-grid__search-text">Tìm nhanh theo tên khóa học hoặc giảng viên.</p>
+            <h3 class="mb-3">Tìm môn học</h3>
+            <p class="course-grid__search-text">Tìm nhanh theo tên môn học hoặc giảng viên.</p>
             <form @submit.prevent>
               <input v-model="search" type="search" placeholder="Nhập từ khóa..." />
               <button type="submit">Tìm <i class="bi bi-search"></i></button>
@@ -40,7 +40,7 @@
       <div class="col-xl-8 col-lg-7">
         <div class="course-list__right">
           <div class="course-list__right-top">
-            <p class="course-list__right-top-text">Hiển thị {{ filtered.length }} khóa học</p>
+            <p class="course-list__right-top-text">Hiển thị {{ filtered.length }} môn học</p>
             <div class="course-list__right-top-btn">
               <span><i class="bi bi-view-list"></i></span>
             </div>
@@ -55,7 +55,7 @@
           </div>
           <div v-else-if="!filtered.length" class="text-center py-5">
             <i class="bi bi-journal-x fs-1"></i>
-            <p class="mt-2 mb-0">Không có khóa học phù hợp.</p>
+            <p class="mt-2 mb-0">Không có môn học phù hợp.</p>
           </div>
 
           <template v-else>
@@ -104,7 +104,7 @@
                 <div class="course-list__btn-and-client-info">
                   <div class="course-list__btn-box">
                     <RouterLink :to="`/lms/courses/${course.id}`" class="thm-btn"
-                      >Xem khóa học <i class="bi bi-arrow-right"></i
+                      >Xem môn học <i class="bi bi-arrow-right"></i
                     ></RouterLink>
                   </div>
                   <div class="course-list__client-box">

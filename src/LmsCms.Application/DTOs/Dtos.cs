@@ -40,6 +40,97 @@ public sealed class NotificationListItemDto
     public string? ActorAvatarUrl { get; init; }
 }
 public sealed record NotificationFeedDto(IReadOnlyCollection<NotificationListItemDto> Items, int UnreadCount);
+public sealed class UserSaveRequest
+{
+    [Required, StringLength(100, MinimumLength = 3)] public string Username { get; init; } = "";
+    [StringLength(100, MinimumLength = 6)] public string? Password { get; init; }
+    [Required, StringLength(250)] public string FullName { get; init; } = "";
+    [Required, EmailAddress, StringLength(250)] public string Email { get; init; } = "";
+    [StringLength(100)] public string? StudentCode { get; init; }
+    [StringLength(100)] public string? TeacherCode { get; init; }
+    [StringLength(1000)] public string? AvatarUrl { get; init; }
+    [RegularExpression("ACTIVE|INACTIVE|LOCKED")] public string Status { get; init; } = "ACTIVE";
+    [Required, MinLength(1)] public IReadOnlyCollection<string> RoleCodes { get; init; } = [];
+}
+public sealed class SystemUserListItemDto
+{
+    public long UserId { get; init; }
+    public string Username { get; init; } = "";
+    public string FullName { get; init; } = "";
+    public string Email { get; init; } = "";
+    public string? StudentCode { get; init; }
+    public string? TeacherCode { get; init; }
+    public string? AvatarUrl { get; init; }
+    public string Status { get; init; } = "";
+    public DateTime? LastLoginAt { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public string RoleCodes { get; init; } = "";
+    public string RoleNames { get; init; } = "";
+}
+public sealed class SystemUserDetailDto
+{
+    public long UserId { get; init; }
+    public string Username { get; init; } = "";
+    public string FullName { get; init; } = "";
+    public string Email { get; init; } = "";
+    public string? StudentCode { get; init; }
+    public string? TeacherCode { get; init; }
+    public string? AvatarUrl { get; init; }
+    public string Status { get; init; } = "";
+    public DateTime? LastLoginAt { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime? UpdatedAt { get; init; }
+}
+public sealed class SystemRoleDto
+{
+    public long RoleId { get; init; }
+    public string Code { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string? Description { get; init; }
+    public string Status { get; init; } = "";
+    public int UserCount { get; init; }
+    public int PermissionCount { get; init; }
+}
+public sealed class SystemPermissionDto
+{
+    public long PermissionId { get; init; }
+    public string Code { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Module { get; init; } = "";
+    public string? Description { get; init; }
+    public bool IsGranted { get; set; }
+}
+public sealed class SystemSettingDto
+{
+    public long SystemSettingId { get; init; }
+    public string SettingKey { get; init; } = "";
+    public string SettingName { get; init; } = "";
+    public string? SettingValue { get; init; }
+    public string DataType { get; init; } = "";
+    public string Category { get; init; } = "";
+    public string? Description { get; init; }
+    public int SortOrder { get; init; }
+    public bool IsPublic { get; init; }
+    public DateTime? UpdatedAt { get; init; }
+    public string? UpdatedByName { get; init; }
+}
+public sealed class UserStatusRequest
+{
+    [RegularExpression("ACTIVE|INACTIVE|LOCKED")] public string Status { get; init; } = "ACTIVE";
+}
+public sealed class RolePermissionsSaveRequest
+{
+    public IReadOnlyCollection<string> PermissionCodes { get; init; } = [];
+}
+public sealed class SystemSettingSaveItem
+{
+    [Required, StringLength(100)] public string SettingKey { get; init; } = "";
+    [StringLength(4000)] public string? SettingValue { get; init; }
+}
+public sealed class SystemSettingsSaveRequest
+{
+    [Required, MinLength(1)] public IReadOnlyCollection<SystemSettingSaveItem> Items { get; init; } = [];
+}
 public sealed class LessonCommentDto
 {
     public long Id { get; init; }

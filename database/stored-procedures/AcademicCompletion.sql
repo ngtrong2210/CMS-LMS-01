@@ -378,10 +378,15 @@ Create Or Alter Procedure dbo.LMS_AssignmentSubmission_GetForTeacher
     @IsAdmin Bit = 0,
     @ClassSubjectID Bigint = Null,
     @Status Varchar(30) = Null,
-    @Search Nvarchar(250) = Null
+    @Search Nvarchar(250) = Null,
+    @Page Int = 1,
+    @PageSize Int = 20
 As
 Begin
     Set Nocount On;
+
+    Set @Page = Case When @Page < 1 Then 1 Else @Page End;
+    Set @PageSize = Case When @PageSize Between 1 And 100 Then @PageSize Else 20 End;
 
     Declare @SearchPattern Nvarchar(510) = N'%' + Replace(Replace(Replace(Isnull(@Search, N''), N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
 
@@ -412,7 +417,9 @@ Begin
         dbo.SIM_Class.ClassName,
         dbo.SIM_Subject.SubjectName,
         dbo.SIM_Year.YearName,
-        dbo.SIM_Class_Subject.Semester
+        dbo.SIM_Class_Subject.Semester,
+        Case When dbo.LMS_AssignmentSubmissions.SubmissionStatus In ('SUBMITTED', 'LATE') Then 0 Else 1 End SortPriority
+    Into #tblAssignmentSubmission
     From dbo.LMS_AssignmentSubmissions
         Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.LessonID = dbo.LMS_AssignmentSubmissions.LessonID
         Inner Join dbo.SIM_Chapters On dbo.SIM_Chapters.ChapterID = dbo.SIM_Lessons.ChapterID
@@ -425,10 +432,46 @@ Begin
     Where (@IsAdmin = 1 Or dbo.SIM_Courses.TeacherUserID = @ActorID)
         And (@ClassSubjectID Is Null Or dbo.SIM_Courses.ClassSubjectID = @ClassSubjectID)
         And (@Status Is Null Or @Status = '' Or dbo.LMS_AssignmentSubmissions.SubmissionStatus = @Status)
-        And (@Search Is Null Or @Search = '' Or dbo.SYS_Users.FullName Like @SearchPattern Or dbo.SYS_Users.StudentCode Like @SearchPattern Or dbo.SIM_Lessons.Title Like @SearchPattern)
+        And (@Search Is Null Or @Search = '' Or dbo.SYS_Users.FullName Like @SearchPattern Or dbo.SYS_Users.StudentCode Like @SearchPattern Or dbo.SIM_Lessons.Title Like @SearchPattern Or dbo.SIM_Subject.SubjectName Like @SearchPattern)
+
+    Select
+        AssignmentSubmissionID,
+        AttemptNumber,
+        SubmissionText,
+        FileUrl,
+        OriginalFileName,
+        FileSize,
+        MimeType,
+        SubmittedAt,
+        SubmissionStatus,
+        Score,
+        Feedback,
+        GradedAt,
+        IsLate,
+        LessonID,
+        LessonTitle,
+        AssignmentMaxScore,
+        ChapterTitle,
+        CourseID,
+        ClassSubjectID,
+        CourseTitle,
+        StudentUserID,
+        StudentCode,
+        StudentName,
+        ClassName,
+        SubjectName,
+        YearName,
+        Semester
+    From #tblAssignmentSubmission
     Order By
-        Case When dbo.LMS_AssignmentSubmissions.SubmissionStatus In ('SUBMITTED', 'LATE') Then 0 Else 1 End,
-        dbo.LMS_AssignmentSubmissions.SubmittedAt Desc;
+        SortPriority,
+        SubmittedAt Desc,
+        AssignmentSubmissionID Desc
+    Offset (@Page - 1) * @PageSize Rows
+    Fetch Next @PageSize Rows Only;
+
+    Select Count(1) TotalItems
+    From #tblAssignmentSubmission;
 End
 Go
 
@@ -561,7 +604,7 @@ Begin
         Inserted.ActiveDurationSeconds
     Into #tblClosedStudySession
     Where (StudentUserID = @StudentUserID)
-        And ((@LessonID Is Not Null And LessonID = @LessonID) Or (@LessonID Is Null And CourseID = @CourseID))
+        And (CourseID = @CourseID)
         And (EndedAt Is Null)
         And (IsAggregated = 0);
 
@@ -611,9 +654,18 @@ Begin
 
     Commit Transaction;
 
+    Declare @CourseActiveStudySeconds Int =
+    (
+        Select Coalesce(Sum(dbo.LMS_StudentLessonProgress.ActiveStudySeconds), 0)
+        From dbo.LMS_StudentLessonProgress
+        Where (dbo.LMS_StudentLessonProgress.StudentUserID = @StudentUserID)
+            And (dbo.LMS_StudentLessonProgress.CourseID = @CourseID)
+    );
+
     Select
         @StudySessionID StudySessionID,
-        Sysutcdatetime() StartedAt;
+        Sysutcdatetime() StartedAt,
+        @CourseActiveStudySeconds CourseActiveStudySeconds;
 End
 Go
 
@@ -696,10 +748,19 @@ Begin
 
     Commit Transaction;
 
+    Declare @CourseActiveStudySeconds Int =
+    (
+        Select Coalesce(Sum(dbo.LMS_StudentLessonProgress.ActiveStudySeconds), 0)
+        From dbo.LMS_StudentLessonProgress
+        Where (dbo.LMS_StudentLessonProgress.StudentUserID = @StudentUserID)
+            And (dbo.LMS_StudentLessonProgress.CourseID = @CourseID)
+    );
+
     Select
         ActiveDurationSeconds,
         EndedAt,
-        IsCompleted
+        IsCompleted,
+        @CourseActiveStudySeconds CourseActiveStudySeconds
     From dbo.LMS_StudySessions
     Where (StudySessionID = @StudySessionID)
         And (StudentUserID = @StudentUserID);

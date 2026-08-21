@@ -6,6 +6,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('lms_user') || 'null'))
   const isAuthenticated = computed(() => Boolean(user.value))
   const isStudent = computed(() => user.value?.role === 'STUDENT')
+  const isAdmin = computed(() => user.value?.role === 'ADMIN')
   const isCmsUser = computed(() => ['ADMIN','TEACHER'].includes(user.value?.role))
   async function login(username, password) {
     const response = await authService.login(username, password)
@@ -25,5 +26,5 @@ export const useAuthStore = defineStore('auth', () => {
   function hasPermission(permission) {
     return user.value?.permissions?.includes('*') || user.value?.permissions?.includes(permission)
   }
-  return { user, isAuthenticated, isStudent, isCmsUser, login, logout, hasPermission }
+  return { user, isAuthenticated, isStudent, isAdmin, isCmsUser, login, logout, hasPermission }
 })

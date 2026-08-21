@@ -2,7 +2,7 @@
   color: var(--eduvers-base);
   display: block;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.08em;
   margin-bottom: 0.3rem;
 }
@@ -14,6 +14,45 @@
   margin-bottom: 0.75rem;
 }
 
+.quiz-bank-heading__actions {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.quiz-bank-selected {
+  background: #e7f6ef;
+  border-radius: 999px;
+  color: #07875a;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 0.4rem 0.7rem;
+  white-space: nowrap;
+}
+
+.quiz-bank-toolbar {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.36fr);
+  margin-bottom: 0.75rem;
+}
+
+.quiz-search-box {
+  position: relative;
+}
+
+.quiz-search-box > i {
+  color: var(--text-muted);
+  left: 0.85rem;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.quiz-search-box .form-control {
+  padding-left: 2.4rem;
+}
+
 .quiz-question-picker {
   background: #f7f9fb;
   border-radius: 0.75rem;
@@ -22,6 +61,18 @@
   max-height: 260px;
   overflow-y: auto;
   padding: 0.65rem;
+}
+
+.fullscreen-form-modal .quiz-question-picker {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: none;
+  min-height: 320px;
+}
+
+@media (max-width: 900px) {
+  .fullscreen-form-modal .quiz-question-picker {
+    grid-template-columns: 1fr;
+  }
 }
 
 .quiz-question-option {
@@ -40,4 +91,42 @@
 
 .quiz-question-option small {
   color: #6c7a86;
+}
+
+.quiz-bank-state {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 0.55rem;
+  grid-column: 1 / -1;
+  justify-content: center;
+  min-height: 110px;
+  text-align: center;
+}
+
+.quiz-bank-result-note {
+  color: var(--text-muted);
+  display: block;
+  font-size: var(--font-size-xs);
+  margin-top: 0.55rem;
+}
+
+@media (max-width: 700px) {
+  .quiz-bank-heading,
+  .quiz-bank-heading__actions {
+    align-items: flex-start;
+  }
+
+  .quiz-bank-heading {
+    gap: 0.75rem;
+  }
+
+  .quiz-bank-heading__actions {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .quiz-bank-toolbar {
+    grid-template-columns: 1fr;
+  }
 }

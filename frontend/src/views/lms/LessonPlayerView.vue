@@ -12,7 +12,9 @@
         </div>
       </div>
       <div class="lesson-header-actions">
-        <span><i class="bi bi-clock"></i> {{ formatStudyTime(studySeconds) }}</span>
+        <span title="Tổng thời gian học trong môn học">
+          <i class="bi bi-clock"></i> {{ formatStudyTime(studySeconds) }}
+        </span>
         <button
           type="button"
           :title="focusMode ? 'Thoát chế độ tập trung' : 'Chế độ tập trung'"
@@ -33,7 +35,9 @@
       <i class="bi bi-exclamation-circle fs-1 text-danger"></i>
       <h1 class="h4 mt-3">Không thể mở bài học</h1>
       <p class="text-secondary">{{ error }}</p>
-      <button class="btn btn-action-refresh" @click="loadPlayer()"><i class="bi bi-arrow-clockwise"></i> Thử lại</button>
+      <button class="btn btn-action-refresh" @click="loadPlayer()">
+        <i class="bi bi-arrow-clockwise"></i> Thử lại
+      </button>
     </div>
     <template v-else>
       <div :class="['player-grid', { 'sidebar-closed': !sidebarOpen || focusMode }]">
@@ -45,12 +49,7 @@
               <small>Đang tải nội dung tiếp theo</small>
             </div>
           </Transition>
-          <div
-            :class="[
-              'current-lesson-heading',
-              `${lessonTypeClass(lesson.type)}-surface`,
-            ]"
-          >
+          <div :class="['current-lesson-heading', `${lessonTypeClass(lesson.type)}-surface`]">
             <span :class="['lesson-type-icon', lessonTypeClass(lesson.type)]">
               <i :class="['bi', lessonTypeMeta(lesson.type).icon]"></i>
             </span>
@@ -88,58 +87,60 @@
               @score-change="currentScore = $event"
               @completed="handleInteractiveCompleted"
             />
-            <article v-else-if="lesson.type === 'EDITOR'" class="learning-content editor-content">
-              <div class="content-type-icon"><i class="bi bi-journal-richtext"></i></div>
-              <div class="lesson-html" v-html="sanitizedContentHtml"></div>
-            </article>
-            <article v-else-if="lesson.type === 'DOCUMENT'" class="learning-content document-content">
-              <div class="document-heading">
-                <span class="content-type-icon"><i class="bi bi-file-earmark-pdf"></i></span>
-                <div>
-                  <h2>Tài liệu bài học</h2>
-                  <p>Đọc trực tiếp trên hệ thống hoặc mở file toàn màn hình.</p>
-                </div>
-                <div v-if="lesson.documentUrl" class="document-actions">
-                  <a class="btn btn-action-view" :href="documentAssetUrl" target="_blank" rel="noopener">
-                    <i class="bi bi-arrows-fullscreen"></i> Mở toàn màn hình
-                  </a>
-                  <a class="btn btn-action-save" :href="documentAssetUrl" target="_blank" rel="noopener" download>
-                    <i class="bi bi-download"></i> Tải tài liệu
-                  </a>
-                </div>
-              </div>
-              <div v-if="lesson.documentUrl" class="document-viewer">
-                <iframe
-                  v-if="isPdfDocument"
-                  :src="documentAssetUrl"
-                  :title="`Tài liệu ${lesson.title}`"
-                  loading="eager"
-                ></iframe>
-                <div v-else-if="isDocxDocument" class="docx-preview-shell">
-                  <div v-if="documentPreviewLoading" class="document-preview-status">
-                    <span class="spinner-border spinner-border-sm"></span> Đang mở nội dung Word...
+            <article
+              v-else-if="['EDITOR', 'DOCUMENT'].includes(lesson.type)"
+              class="learning-content editor-content document-content"
+            >
+              <div v-if="lesson.contentHtml" class="lesson-html" v-html="sanitizedContentHtml"></div>
+              <section v-if="lesson.documentUrl" :class="{ 'combined-lesson-document': lesson.contentHtml }">
+                <div class="document-heading">
+                  <span class="content-type-icon"><i class="bi bi-paperclip"></i></span>
+                  <div>
+                    <h2>Tài liệu đính kèm</h2>
+                    <p>Đọc trực tiếp trên hệ thống hoặc mở file toàn màn hình.</p>
                   </div>
-                  <article
-                    v-else-if="documentPreviewHtml"
-                    class="docx-preview-content"
-                    v-html="sanitizedDocumentPreviewHtml"
-                  ></article>
+                  <div class="document-actions">
+                    <a class="btn btn-action-view" :href="documentAssetUrl" target="_blank" rel="noopener">
+                      <i class="bi bi-arrows-fullscreen"></i> Mở toàn màn hình
+                    </a>
+                    <a class="btn btn-action-save" :href="documentAssetUrl" target="_blank" rel="noopener" download>
+                      <i class="bi bi-download"></i> Tải tài liệu
+                    </a>
+                  </div>
+                </div>
+                <div class="document-viewer">
+                  <iframe
+                    v-if="isPdfDocument"
+                    :src="documentAssetUrl"
+                    :title="`Tài liệu ${lesson.title}`"
+                    loading="eager"
+                  ></iframe>
+                  <div v-else-if="isDocxDocument" class="docx-preview-shell">
+                    <div v-if="documentPreviewLoading" class="document-preview-status">
+                      <span class="spinner-border spinner-border-sm"></span> Đang mở nội dung Word...
+                    </div>
+                    <article
+                      v-else-if="documentPreviewHtml"
+                      class="docx-preview-content"
+                      v-html="sanitizedDocumentPreviewHtml"
+                    ></article>
+                    <div v-else class="document-file-card">
+                      <i class="bi bi-file-earmark-word"></i>
+                      <strong>Không thể hiển thị nội dung Word</strong>
+                      <span>{{ documentPreviewError || 'Bạn vẫn có thể mở hoặc tải file gốc.' }}</span>
+                    </div>
+                  </div>
                   <div v-else class="document-file-card">
-                    <i class="bi bi-file-earmark-word"></i>
-                    <strong>Không thể hiển thị nội dung Word</strong>
-                    <span>{{ documentPreviewError || 'Bạn vẫn có thể mở hoặc tải file gốc.' }}</span>
+                    <i class="bi bi-file-earmark-arrow-down"></i>
+                    <strong>{{ documentFileName }}</strong>
+                    <span>Định dạng này cần mở bằng ứng dụng phù hợp trên thiết bị.</span>
                   </div>
                 </div>
-                <div v-else class="document-file-card">
-                  <i class="bi bi-file-earmark-arrow-down"></i>
-                  <strong>{{ documentFileName }}</strong>
-                  <span>Định dạng này cần mở bằng ứng dụng phù hợp trên thiết bị.</span>
-                </div>
-              </div>
-              <div v-else class="document-empty">
+              </section>
+              <div v-if="!lesson.contentHtml && !lesson.documentUrl" class="document-empty">
                 <i class="bi bi-file-earmark-x"></i>
-                <strong>Chưa có file tài liệu</strong>
-                <span>Giảng viên chưa cập nhật tài liệu cho bài học này.</span>
+                <strong>Bài học chưa có nội dung</strong>
+                <span>Giảng viên chưa soạn nội dung hoặc cập nhật tài liệu cho bài học này.</span>
               </div>
             </article>
             <article v-else-if="lesson.type === 'ASSIGNMENT'" class="learning-content assignment-content">
@@ -148,8 +149,14 @@
                 <div>
                   <small>Bài tập cần nộp</small>
                   <h2>{{ lesson.title }}</h2>
-                  <p v-if="lesson.dueAt">Hạn nộp: {{ dateTimeText(lesson.dueAt) }}</p>
-                  <p v-else>Không giới hạn thời gian nộp.</p>
+                  <p v-if="lesson.dueAt" class="assignment-deadline">
+                    <i class="bi bi-calendar2-event-fill"></i>
+                    <span>Hạn nộp: {{ dateTimeText(lesson.dueAt) }}</span>
+                  </p>
+                  <p v-else class="assignment-deadline assignment-deadline-open">
+                    <i class="bi bi-infinity"></i>
+                    <span>Không giới hạn thời gian nộp</span>
+                  </p>
                 </div>
                 <div class="assignment-metadata">
                   <span><i class="bi bi-star-fill"></i> {{ lesson.assignmentMaxScore }} điểm</span>
@@ -218,7 +225,9 @@
                 <div class="submission-heading">
                   <div>
                     <small>{{ isEditingSubmitted ? 'CHỈNH SỬA BÀI ĐÃ NỘP' : 'NỘP BÀI' }}</small>
-                    <h3>{{ isEditingSubmitted ? 'Cập nhật bài làm trước hạn nộp' : 'Chọn cách hoàn thành bài tập' }}</h3>
+                    <h3>
+                      {{ isEditingSubmitted ? 'Cập nhật bài làm trước hạn nộp' : 'Chọn cách hoàn thành bài tập' }}
+                    </h3>
                   </div>
                   <span v-if="isEditingSubmitted">Lần {{ editableSubmission.attemptNumber }}</span>
                   <span v-else>{{ lesson.maxSubmissionAttempts }} lần nộp tối đa</span>
@@ -272,7 +281,10 @@
                   rel="noopener"
                 >
                   <i class="bi bi-file-earmark-check-fill"></i>
-                  <span><strong>{{ editableSubmission.fileName }}</strong><small>File đang được lưu trong bài đã nộp</small></span>
+                  <span
+                    ><strong>{{ editableSubmission.fileName }}</strong
+                    ><small>File đang được lưu trong bài đã nộp</small></span
+                  >
                   <i class="bi bi-box-arrow-up-right"></i>
                 </a>
                 <button
@@ -341,7 +353,10 @@
                         rel="noopener"
                       >
                         <i class="bi bi-file-earmark-arrow-down-fill"></i>
-                        <span><strong>{{ item.fileName }}</strong><small>Mở hoặc tải file bài làm</small></span>
+                        <span
+                          ><strong>{{ item.fileName }}</strong
+                          ><small>Mở hoặc tải file bài làm</small></span
+                        >
                       </a>
                       <p v-if="!item.submissionText && !item.fileUrl" class="submission-detail-empty">
                         Bài nộp này không có nội dung hoặc file đính kèm.
@@ -358,6 +373,12 @@
               <div class="quiz-summary">
                 <span><i class="bi bi-patch-question"></i> {{ quizQuestions.length }} câu</span>
                 <span
+                  v-if="quizAttemptId && quiz.timeLimitMinutes"
+                  :class="['quiz-countdown', { 'is-urgent': quizSecondsRemaining <= 60 }]"
+                >
+                  <i class="bi bi-hourglass-split"></i> Còn lại {{ quizCountdownText }}
+                </span>
+                <span v-else
                   ><i class="bi bi-clock"></i>
                   {{ quiz.timeLimitMinutes ? `${quiz.timeLimitMinutes} phút` : 'Không giới hạn' }}</span
                 >
@@ -373,10 +394,18 @@
                 <i class="bi bi-play-fill"></i> Bắt đầu làm bài
               </button>
               <form v-else class="quiz-form" @submit.prevent="submitQuiz">
+                <div v-if="quiz.timeLimitMinutes" class="quiz-timer-notice">
+                  <i class="bi bi-shield-check"></i>
+                  <span>
+                    <strong>Bài làm sẽ tự động được nộp khi hết giờ</strong>
+                    <small>Đáp án đã chọn tại thời điểm đồng hồ về 00:00 sẽ được gửi để chấm điểm.</small>
+                  </span>
+                </div>
                 <fieldset
                   v-for="(question, questionIndex) in quizQuestions"
                   :key="question.id"
                   class="quiz-question-card"
+                  :disabled="quizBusy"
                 >
                   <legend>Câu {{ questionIndex + 1 }} · {{ question.score }} điểm</legend>
                   <p>{{ question.text }}</p>
@@ -409,6 +438,9 @@
                   <i class="bi bi-send-check"></i> Nộp bài kiểm tra
                 </button>
               </form>
+              <div v-if="quizAutoSubmitNotice" class="quiz-auto-submit-notice">
+                <i class="bi bi-clock-history"></i> {{ quizAutoSubmitNotice }}
+              </div>
               <div v-if="quizResult" :class="['quiz-result', quizResult.passed ? 'passed' : 'failed']">
                 <i :class="['bi', quizResult.passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill']"></i>
                 <strong>{{ quizResult.scorePercent }}% · {{ quizResult.passed ? 'Đạt' : 'Chưa đạt' }}</strong>
@@ -648,6 +680,7 @@ const route = useRoute(),
   playerKey = ref(0),
   studySessionId = ref(''),
   studySeconds = ref(0),
+  studySessionSeconds = ref(0),
   submissions = ref([]),
   submissionText = ref(''),
   submissionFile = ref(null),
@@ -678,6 +711,8 @@ const quiz = reactive({
 const quizQuestions = ref([]),
   quizAttempts = ref([]),
   quizAttemptId = ref(0),
+  quizSecondsRemaining = ref(0),
+  quizAutoSubmitNotice = ref(''),
   quizAnswers = reactive({}),
   quizResult = ref(null),
   quizBusy = ref(false)
@@ -715,6 +750,11 @@ const formatTime = formatInteractionTime
 const currentScore = ref(0),
   lastSavedAt = ref(0),
   savingProgress = ref(false)
+const quizCountdownText = computed(() => {
+  const seconds = Math.max(0, Number(quizSecondsRemaining.value) || 0)
+  const minutes = Math.floor(seconds / 60)
+  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+})
 const lessonCount = computed(() => chapters.value.reduce((total, chapter) => total + chapter.lessons.length, 0)),
   isVideoLesson = computed(() => ['VIDEO', 'INTERACTIVE_VIDEO'].includes(lesson.type)),
   documentAssetUrl = computed(() => resolveApiAssetUrl(lesson.documentUrl)),
@@ -726,12 +766,8 @@ const lessonCount = computed(() => chapters.value.reduce((total, chapter) => tot
   isDocxDocument = computed(() => /\.docx(?:$|[?#])/i.test(lesson.documentUrl || '')),
   sanitizedDocumentPreviewHtml = computed(() => sanitizeLearningHtml(documentPreviewHtml.value)),
   latestSubmission = computed(() => submissions.value[0] || null),
-  editableSubmission = computed(() =>
-    canEditSubmission(latestSubmission.value) ? latestSubmission.value : null
-  ),
-  isEditingSubmitted = computed(() =>
-    ['SUBMITTED', 'RETURNED'].includes(editableSubmission.value?.status)
-  ),
+  editableSubmission = computed(() => (canEditSubmission(latestSubmission.value) ? latestSubmission.value : null)),
+  isEditingSubmitted = computed(() => ['SUBMITTED', 'RETURNED'].includes(editableSubmission.value?.status)),
   canSubmitAssignment = computed(() =>
     submissionMode.value === 'file' ? Boolean(submissionFile.value) : Boolean(submissionText.value.trim())
   ),
@@ -778,6 +814,8 @@ const lessonCount = computed(() => chapters.value.reduce((total, chapter) => tot
   )
 const activityEvents = ['mousemove', 'keydown', 'click', 'scroll']
 let lastActivityAt = Date.now()
+let quizCountdownTimer
+let quizCountdownDeadline = 0
 const recordActivity = () => (lastActivityAt = Date.now())
 onMounted(() => {
   activityEvents.forEach((eventName) => window.addEventListener(eventName, recordActivity, { passive: true }))
@@ -785,6 +823,7 @@ onMounted(() => {
   loadPlayer()
 })
 onBeforeUnmount(() => {
+  stopQuizCountdown()
   activityEvents.forEach((eventName) => window.removeEventListener(eventName, recordActivity))
   playerRef.value?.pause()
   void saveProgress()
@@ -793,6 +832,7 @@ onBeforeUnmount(() => {
 watch(
   () => route.params.lessonId,
   () => {
+    stopQuizCountdown()
     playerRef.value?.pause()
     activeTab.value = 'overview'
     showSubmitConfirm.value = false
@@ -925,7 +965,7 @@ async function loadDocumentPreview() {
 let studyTimer
 async function startStudySession() {
   clearInterval(studyTimer)
-  studySeconds.value = 0
+  studySessionSeconds.value = 0
   const result = await axiosClient.post('/lms/study-sessions', {
     courseId: course.id,
     lessonId: lesson.id,
@@ -933,10 +973,19 @@ async function startStudySession() {
     clientSessionKey: window.crypto?.randomUUID?.() || String(Date.now())
   })
   studySessionId.value = pick(result, 'StudySessionID', 'studySessionID') || ''
+  studySeconds.value = Number(pick(result, 'CourseActiveStudySeconds', 'courseActiveStudySeconds') || 0)
   studyTimer = setInterval(async () => {
     const isActive = document.visibilityState === 'visible' && Date.now() - lastActivityAt < 90000
-    if (isActive) studySeconds.value += 1
-    if (isActive && studySeconds.value > 0 && studySeconds.value % 30 === 0 && studySessionId.value) {
+    if (isActive) {
+      studySessionSeconds.value += 1
+      studySeconds.value += 1
+    }
+    if (
+      isActive &&
+      studySessionSeconds.value > 0 &&
+      studySessionSeconds.value % 30 === 0 &&
+      studySessionId.value
+    ) {
       try {
         await axiosClient.put(`/lms/study-sessions/${studySessionId.value}/heartbeat`)
       } catch {
@@ -951,9 +1000,13 @@ async function stopStudySession(isCompleted) {
   studySessionId.value = ''
   if (!id) return
   try {
-    await axiosClient.post(`/lms/study-sessions/${id}/end`, { isCompleted })
+    const result = await axiosClient.post(`/lms/study-sessions/${id}/end`, { isCompleted })
+    const courseTotal = pick(result, 'CourseActiveStudySeconds', 'courseActiveStudySeconds')
+    if (courseTotal !== undefined && courseTotal !== null) studySeconds.value = Number(courseTotal)
   } catch {
     // Trình duyệt có thể đang đóng nên không làm gián đoạn trải nghiệm học.
+  } finally {
+    studySessionSeconds.value = 0
   }
 }
 async function loadSubmissions() {
@@ -1061,6 +1114,7 @@ async function handleInteractiveCompleted() {
   }
 }
 function resetQuiz() {
+  stopQuizCountdown()
   Object.assign(quiz, {
     id: 0,
     title: '',
@@ -1073,6 +1127,7 @@ function resetQuiz() {
   quizQuestions.value = []
   quizAttempts.value = []
   quizAttemptId.value = 0
+  quizAutoSubmitNotice.value = ''
   quizResult.value = null
   Object.keys(quizAnswers).forEach((key) => delete quizAnswers[key])
 }
@@ -1103,11 +1158,13 @@ async function loadQuiz() {
     submittedAt: pick(row, 'SubmittedAt', 'submittedAt'),
     scorePercent: pick(row, 'ScorePercent', 'scorePercent'),
     passed: pick(row, 'Passed', 'passed'),
-    status: pick(row, 'AttemptStatus', 'attemptStatus')
+    status: pick(row, 'AttemptStatus', 'attemptStatus'),
+    remainingSeconds: pick(row, 'RemainingSeconds', 'remainingSeconds')
   }))
   const active = quizAttempts.value.find((attempt) => attempt.status === 'IN_PROGRESS')
   quizAttemptId.value = active?.id || 0
   quizQuestions.value.forEach((question) => (quizAnswers[question.id] = question.type === 'MULTIPLE_CHOICE' ? [] : ''))
+  if (active && quiz.timeLimitMinutes) startQuizCountdown(resolveQuizRemainingSeconds(active))
 }
 function parseQuizOptions(value) {
   const rows = typeof value === 'string' ? JSON.parse(value || '[]') : value || []
@@ -1121,13 +1178,21 @@ async function startQuiz() {
   try {
     const result = await axiosClient.post(`/lms/lessons/${lesson.id}/quiz-attempts`)
     quizAttemptId.value = Number(pick(result, 'QuizAttemptID', 'quizAttemptID'))
+    quizAutoSubmitNotice.value = ''
+    if (quiz.timeLimitMinutes) {
+      const serverRemaining = Number(pick(result, 'RemainingSeconds', 'remainingSeconds'))
+      startQuizCountdown(Number.isFinite(serverRemaining) ? serverRemaining : quiz.timeLimitMinutes * 60)
+    }
   } catch (e) {
     error.value = e.message
   } finally {
     quizBusy.value = false
   }
 }
-async function submitQuiz() {
+async function submitQuiz(mode = 'manual') {
+  if (quizBusy.value || !quizAttemptId.value) return
+  const automatic = mode === 'automatic'
+  stopQuizCountdown(false)
   quizBusy.value = true
   try {
     const answers = quizQuestions.value.map((question) => ({
@@ -1146,16 +1211,60 @@ async function submitQuiz() {
     quizAttemptId.value = 0
     await loadQuiz()
     quizResult.value = completedResult
+    if (automatic) quizAutoSubmitNotice.value = 'Đã hết thời gian. Hệ thống đã tự động nộp và chấm bài.'
     await stopStudySession(true)
   } catch (e) {
-    error.value = e.message
+    if (automatic) {
+      try {
+        await loadQuiz()
+      } finally {
+        quizAutoSubmitNotice.value = 'Đã hết thời gian. Lượt làm bài đã được hệ thống đóng.'
+      }
+    } else {
+      error.value = e.message
+      const remaining = Math.max(0, Math.ceil((quizCountdownDeadline - Date.now()) / 1000))
+      if (quizAttemptId.value && quiz.timeLimitMinutes) startQuizCountdown(remaining)
+    }
   } finally {
     quizBusy.value = false
   }
 }
+function resolveQuizRemainingSeconds(attempt) {
+  const serverRemaining = Number(attempt?.remainingSeconds)
+  if (Number.isFinite(serverRemaining)) return Math.max(0, serverRemaining)
+  const rawStartedAt = String(attempt?.startedAt || '')
+  if (!rawStartedAt) return Number(quiz.timeLimitMinutes || 0) * 60
+  const normalizedStartedAt = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(rawStartedAt) ? rawStartedAt : `${rawStartedAt}Z`
+  const startedAt = Date.parse(normalizedStartedAt)
+  if (!Number.isFinite(startedAt)) return Number(quiz.timeLimitMinutes || 0) * 60
+  return Math.max(0, Math.ceil((startedAt + Number(quiz.timeLimitMinutes || 0) * 60000 - Date.now()) / 1000))
+}
+function startQuizCountdown(seconds) {
+  stopQuizCountdown(false)
+  quizCountdownDeadline = Date.now() + Math.max(0, Number(seconds) || 0) * 1000
+  const updateCountdown = () => {
+    quizSecondsRemaining.value = Math.max(0, Math.ceil((quizCountdownDeadline - Date.now()) / 1000))
+    if (quizSecondsRemaining.value > 0) return
+    stopQuizCountdown(false)
+    if (quizAttemptId.value && !quizBusy.value) void submitQuiz('automatic')
+  }
+  updateCountdown()
+  if (quizSecondsRemaining.value > 0) quizCountdownTimer = window.setInterval(updateCountdown, 1000)
+}
+function stopQuizCountdown(reset = true) {
+  if (quizCountdownTimer) window.clearInterval(quizCountdownTimer)
+  quizCountdownTimer = undefined
+  if (reset) {
+    quizSecondsRemaining.value = 0
+    quizCountdownDeadline = 0
+  }
+}
 function formatStudyTime(seconds) {
-  const minutes = Math.floor(seconds / 60)
-  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+  const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const formatted = `${String(minutes).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`
+  return hours > 0 ? `${String(hours).padStart(2, '0')}:${formatted}` : formatted
 }
 function dateTimeText(value) {
   return value

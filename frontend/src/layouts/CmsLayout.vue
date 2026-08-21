@@ -123,10 +123,12 @@ const cachedPages = [
   'VideoLibraryView',
   'QuestionBankView',
   'StudentsView',
-  'EnrollmentManagementView',
   'ReportsView',
   'GlobalSearchView',
-  'GenericCmsView'
+  'GenericCmsView',
+  'UsersManagementView',
+  'RoleManagementView',
+  'SystemSettingsView'
 ]
 const avatarUrl = computed(
   () =>
@@ -137,7 +139,7 @@ const avatarUrl = computed(
     })[auth.user?.role] || '/images/avatar-admin.jpg'
 )
 const roleName = computed(() => ({ ADMIN: 'Quản trị viên', TEACHER: 'Giảng viên' })[auth.user?.role] || auth.user?.role)
-const menu = [
+const menu = computed(() => [
   { label: 'Tổng quan', items: [{ to: '/cms/dashboard', text: 'Bảng điều khiển', icon: 'bi-grid' }] },
   {
     label: 'Tổ chức đào tạo',
@@ -155,10 +157,7 @@ const menu = [
   },
   {
     label: 'Học viên',
-    items: [
-      { to: '/cms/students', text: 'Danh sách học viên', icon: 'bi-people' },
-      { to: '/cms/enrollments', text: 'Phân lớp và ghi danh', icon: 'bi-person-plus' }
-    ]
+    items: [{ to: '/cms/students', text: 'Danh sách học viên', icon: 'bi-people' }]
   },
   {
     label: 'Giảng dạy',
@@ -167,15 +166,19 @@ const menu = [
       { to: '/cms/reports', text: 'Tiến độ và báo cáo', icon: 'bi-bar-chart' }
     ]
   },
-  {
-    label: 'Hệ thống',
-    items: [
-      { to: '/cms/users', text: 'Người dùng', icon: 'bi-person-gear' },
-      { to: '/cms/roles', text: 'Phân quyền', icon: 'bi-shield-check' },
-      { to: '/cms/settings', text: 'Cài đặt', icon: 'bi-gear' }
-    ]
-  }
-]
+  ...(auth.isAdmin
+    ? [
+        {
+          label: 'Hệ thống',
+          items: [
+            { to: '/cms/users', text: 'Người dùng', icon: 'bi-person-gear' },
+            { to: '/cms/roles', text: 'Phân quyền', icon: 'bi-shield-check' },
+            { to: '/cms/settings', text: 'Cài đặt', icon: 'bi-gear' }
+          ]
+        }
+      ]
+    : [])
+])
 function signOut() {
   auth.logout()
   router.push('/login')
