@@ -37,7 +37,8 @@ Master migration: `database/production/PRODUCTION_SYNC_20260821.sql`.
 - Không drop database/table.
 - Không truncate/delete dữ liệu nghiệp vụ.
 - Không chạy demo seed.
-- Ghi audit số dòng từng bảng trước khi migration tại `artifacts/production/sql/pre-deploy-audit.txt`.
+- Ghi audit số dòng từng bảng trước và sau migration tại `artifacts/production/sql/pre-deploy-audit.json` và `post-deploy-audit.json`.
+- Dừng release nếu phát hiện số dòng của bất kỳ bảng hiện hữu nào bị giảm.
 - Stored procedure được đồng bộ bằng `Create Or Alter Procedure`.
 
 Rollback schema tự động không được sử dụng vì có thể nguy hiểm hơn thay đổi bổ sung. Nếu stored procedure cần rollback, deploy lại file từ commit production trước đó. Audit trước deploy dùng để đối chiếu dữ liệu, không phải bản backup đầy đủ.
