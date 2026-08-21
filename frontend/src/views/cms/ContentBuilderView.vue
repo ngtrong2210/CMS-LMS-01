@@ -49,17 +49,17 @@
                 {{ chapter.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm ẩn' }}</small
               >
             </div>
-            <button
-              type="button"
-              class="chapter-toggle"
-              :title="isChapterCollapsed(chapter.id) ? 'Mở nội dung chương' : 'Thu gọn chương'"
-              :aria-label="isChapterCollapsed(chapter.id) ? `Mở ${chapter.title}` : `Thu gọn ${chapter.title}`"
-              :aria-expanded="!isChapterCollapsed(chapter.id)"
-              @click="toggleChapter(chapter.id)"
-            >
-              <i :class="['bi', isChapterCollapsed(chapter.id) ? 'bi-chevron-down' : 'bi-chevron-up']"></i>
-            </button>
             <div class="chapter-header-actions ms-auto">
+              <button
+                type="button"
+                class="chapter-toggle"
+                :title="isChapterCollapsed(chapter.id) ? 'Mở nội dung chương' : 'Thu gọn chương'"
+                :aria-label="isChapterCollapsed(chapter.id) ? `Mở ${chapter.title}` : `Thu gọn ${chapter.title}`"
+                :aria-expanded="!isChapterCollapsed(chapter.id)"
+                @click="toggleChapter(chapter.id)"
+              >
+                <i :class="['bi', isChapterCollapsed(chapter.id) ? 'bi-chevron-down' : 'bi-chevron-up']"></i>
+              </button>
               <button
                 class="btn btn-action-create btn-sm chapter-add-button"
                 title="Thêm bài học"
@@ -69,7 +69,11 @@
               </button>
               <button class="btn btn-action-edit btn-sm" title="Sửa chương" @click="openChapter(chapter)">
                 <i class="bi bi-pencil"></i></button
-              ><button class="btn btn-action-delete btn-sm" title="Xóa chương" @click="askDelete('chapter', chapter)">
+              ><button
+                class="btn btn-action-delete btn-action-outline btn-sm"
+                title="Xóa chương"
+                @click="askDelete('chapter', chapter)"
+              >
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -105,7 +109,11 @@
                   <i class="bi bi-collection-play"></i></button
                 ><button class="btn btn-action-edit btn-sm" title="Sửa bài học" @click="openLesson(chapter, lesson)">
                   <i class="bi bi-pencil"></i></button
-                ><button class="btn btn-action-delete btn-sm" title="Xóa bài học" @click="askDelete('lesson', lesson)">
+                ><button
+                  class="btn btn-action-delete btn-action-outline btn-sm"
+                  title="Xóa bài học"
+                  @click="askDelete('lesson', lesson)"
+                >
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
@@ -173,6 +181,7 @@
         :class="[
           'app-card',
           'form-modal',
+          'lesson-form-modal',
           { 'fullscreen-form-modal': ['INTERACTIVE_CONTENT', 'QUIZ'].includes(lessonForm.lessonType) }
         ]"
         @submit.prevent="saveLesson"
@@ -519,7 +528,10 @@
             </div>
             <div class="col-12">
               <div class="quiz-bank-heading">
-                <label class="form-label mb-0"><i class="bi bi-patch-question"></i> Câu hỏi từ ngân hàng</label>
+                <div>
+                  <span class="builder-eyebrow">SOẠN BÀI KIỂM TRA</span>
+                  <h3 class="mb-0">Câu hỏi trong bài</h3>
+                </div>
                 <div class="quiz-bank-heading__actions">
                   <span class="quiz-bank-selected">{{ lessonForm.quizQuestionIds.length }} đã chọn</span>
                   <RouterLink to="/cms/questions" class="btn btn-action-view btn-sm"
@@ -527,50 +539,121 @@
                   >
                 </div>
               </div>
-              <div class="quiz-bank-toolbar">
-                <label class="quiz-search-box">
-                  <i class="bi bi-search"></i>
-                  <input
-                    v-model.trim="quizQuestionSearch"
-                    class="form-control"
-                    placeholder="Tìm nhanh theo nội dung câu hỏi..."
-                    aria-label="Tìm nhanh câu hỏi trong ngân hàng"
-                  />
-                </label>
-                <select v-model="quizQuestionType" class="form-select" aria-label="Lọc loại câu hỏi bài kiểm tra">
-                  <option value="">Tất cả loại câu hỏi</option>
-                  <option value="SINGLE_CHOICE">Một lựa chọn</option>
-                  <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
-                  <option value="TRUE_FALSE">Đúng / Sai</option>
-                  <option value="SHORT_ANSWER">Trả lời ngắn</option>
-                </select>
-              </div>
-              <div class="quiz-question-picker">
-                <div v-if="quizQuestionLoading" class="quiz-bank-state">
-                  <span class="spinner-border spinner-border-sm"></span> Đang tìm câu hỏi...
-                </div>
-                <template v-else>
-                  <label v-for="question in quizQuestionBank" :key="question.id" class="quiz-question-option">
-                    <input
-                      v-model="lessonForm.quizQuestionIds"
-                      :value="question.id"
-                      type="checkbox"
-                      class="form-check-input"
-                    />
-                    <span
-                      ><strong>{{ question.text }}</strong
-                      ><small>{{ questionTypeLabel(question.type) }} · {{ question.score }} điểm</small></span
+              <div class="quiz-question-workspace">
+                <section class="quiz-bank-panel">
+                  <header class="quiz-workspace-heading">
+                    <div>
+                      <span>NGÂN HÀNG CÂU HỎI</span>
+                      <h4>Tìm và chọn câu hỏi</h4>
+                    </div>
+                    <strong>{{ quizQuestionTotal }} câu</strong>
+                  </header>
+                  <div class="quiz-bank-toolbar">
+                    <label class="quiz-search-box">
+                      <i class="bi bi-search"></i>
+                      <input
+                        v-model.trim="quizQuestionSearch"
+                        class="form-control"
+                        placeholder="Tìm nhanh theo nội dung câu hỏi..."
+                        aria-label="Tìm nhanh câu hỏi trong ngân hàng"
+                      />
+                    </label>
+                    <select v-model="quizQuestionType" class="form-select" aria-label="Lọc loại câu hỏi bài kiểm tra">
+                      <option value="">Tất cả loại câu hỏi</option>
+                      <option value="SINGLE_CHOICE">Một lựa chọn</option>
+                      <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
+                      <option value="TRUE_FALSE">Đúng / Sai</option>
+                      <option value="SHORT_ANSWER">Trả lời ngắn</option>
+                    </select>
+                  </div>
+                  <div class="quiz-question-picker">
+                    <div v-if="quizQuestionLoading" class="quiz-bank-state">
+                      <span class="spinner-border spinner-border-sm"></span> Đang tìm câu hỏi...
+                    </div>
+                    <template v-else>
+                      <label
+                        v-for="question in quizQuestionBank"
+                        :key="question.id"
+                        :class="['quiz-question-option', { 'is-selected': isQuizQuestionSelected(question.id) }]"
+                      >
+                        <input
+                          :checked="isQuizQuestionSelected(question.id)"
+                          type="checkbox"
+                          class="form-check-input"
+                          @change="toggleQuizQuestion(question, $event.target.checked)"
+                        />
+                        <span
+                          ><strong>{{ question.text }}</strong
+                          ><small>{{ questionTypeLabel(question.type) }} · {{ question.score }} điểm</small></span
+                        >
+                      </label>
+                      <p v-if="!quizQuestionBank.length" class="quiz-bank-state mb-0">
+                        Không tìm thấy câu hỏi phù hợp với bộ lọc.
+                      </p>
+                    </template>
+                  </div>
+                  <small v-if="quizQuestionTotal > quizQuestionBank.length" class="quiz-bank-result-note">
+                    Đang hiển thị {{ quizQuestionBank.length }}/{{ quizQuestionTotal }} câu. Hãy nhập từ khóa hoặc chọn
+                    loại câu hỏi để thu hẹp kết quả.
+                  </small>
+                </section>
+
+                <section class="quiz-selected-panel">
+                  <header class="quiz-workspace-heading">
+                    <div>
+                      <span>CÂU HỎI TRONG BÀI</span>
+                      <h4>Sắp xếp thứ tự làm bài</h4>
+                    </div>
+                    <strong>{{ quizSelectedQuestions.length }} đã chọn</strong>
+                  </header>
+                  <div v-if="quizSelectedQuestions.length" class="quiz-selected-list">
+                    <article
+                      v-for="(question, index) in quizSelectedQuestions"
+                      :key="question.id"
+                      class="quiz-selected-item"
                     >
-                  </label>
-                  <p v-if="!quizQuestionBank.length" class="quiz-bank-state mb-0">
-                    Không tìm thấy câu hỏi phù hợp với bộ lọc.
-                  </p>
-                </template>
+                      <span class="quiz-selected-order">{{ index + 1 }}</span>
+                      <div class="quiz-selected-copy">
+                        <strong>{{ question.text }}</strong>
+                        <small>{{ questionTypeLabel(question.type) }} · {{ question.score }} điểm</small>
+                      </div>
+                      <div class="quiz-order-actions" aria-label="Sắp xếp thứ tự câu hỏi">
+                        <button
+                          type="button"
+                          class="btn btn-action-view btn-sm"
+                          title="Đưa câu hỏi lên"
+                          :disabled="index === 0"
+                          @click="moveQuizQuestion(index, -1)"
+                        >
+                          <i class="bi bi-arrow-up"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-action-view btn-sm"
+                          title="Đưa câu hỏi xuống"
+                          :disabled="index === quizSelectedQuestions.length - 1"
+                          @click="moveQuizQuestion(index, 1)"
+                        >
+                          <i class="bi bi-arrow-down"></i>
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        class="btn btn-action-delete btn-action-outline btn-sm"
+                        title="Bỏ câu hỏi khỏi bài kiểm tra"
+                        @click="removeQuizQuestion(index)"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </article>
+                  </div>
+                  <div v-else class="quiz-selected-empty">
+                    <i class="bi bi-ui-checks-grid"></i>
+                    <strong>Chưa chọn câu hỏi</strong>
+                    <span>Tìm câu hỏi ở cột bên trái và tích chọn để thêm vào bài kiểm tra.</span>
+                  </div>
+                </section>
               </div>
-              <small v-if="quizQuestionTotal > quizQuestionBank.length" class="quiz-bank-result-note">
-                Đang hiển thị {{ quizQuestionBank.length }}/{{ quizQuestionTotal }} câu. Hãy nhập từ khóa hoặc chọn loại
-                câu hỏi để thu hẹp kết quả.
-              </small>
             </div>
           </template>
         </div>
@@ -789,6 +872,7 @@ const chapterModal = ref(false),
   targetLesson = ref(null),
   videoAssets = ref([]),
   quizQuestionBank = ref([]),
+  quizSelectedQuestions = ref([]),
   interactiveQuestionBank = ref([]),
   interactiveOriginalIds = ref([]),
   quickQuestionModal = ref(false),
@@ -1212,6 +1296,8 @@ function questionTypeLabel(type) {
 async function loadQuizEditor(lessonId) {
   quizQuestionSearch.value = ''
   quizQuestionType.value = ''
+  lessonForm.quizQuestionIds = []
+  quizSelectedQuestions.value = []
   await loadQuizQuestionBank()
   if (!lessonId) return
   const data = await axiosClient.get(`/lessons/${lessonId}/quiz`)
@@ -1221,9 +1307,8 @@ async function loadQuizEditor(lessonId) {
   lessonForm.quizTimeLimitMinutes = Number(pick(quiz, 'TimeLimitMinutes', 'timeLimitMinutes') || 0) || null
   lessonForm.quizMaxAttempts = Number(pick(quiz, 'MaxAttempts', 'maxAttempts') || 1)
   lessonForm.quizShuffleQuestions = Boolean(pick(quiz, 'ShuffleQuestions', 'shuffleQuestions'))
-  lessonForm.quizQuestionIds = (pick(data, 'Questions', 'questions') || []).map((row) =>
-    Number(pick(row, 'QuestionID', 'questionID'))
-  )
+  quizSelectedQuestions.value = (pick(data, 'Questions', 'questions') || []).map(mapQuizQuestion)
+  lessonForm.quizQuestionIds = quizSelectedQuestions.value.map((question) => question.id)
 }
 async function loadQuizQuestionBank() {
   quizQuestionLoading.value = true
@@ -1237,12 +1322,11 @@ async function loadQuizQuestionBank() {
         _fresh: Date.now()
       }
     })
-    quizQuestionBank.value = (pick(bank, 'items', 'Items') || []).map((row) => ({
-      id: Number(pick(row, 'Id', 'id')),
-      text: pick(row, 'QuestionText', 'questionText') || '',
-      type: pick(row, 'QuestionType', 'questionType') || '',
-      score: Number(pick(row, 'DefaultScore', 'defaultScore') || 0)
-    }))
+    quizQuestionBank.value = (pick(bank, 'items', 'Items') || []).map(mapQuizQuestion)
+    quizSelectedQuestions.value = quizSelectedQuestions.value.map((selected) => {
+      const current = quizQuestionBank.value.find((question) => question.id === selected.id)
+      return current || selected
+    })
     quizQuestionTotal.value = Number(pick(bank, 'total', 'Total') || quizQuestionBank.value.length)
   } catch (error) {
     quizQuestionBank.value = []
@@ -1251,6 +1335,43 @@ async function loadQuizQuestionBank() {
   } finally {
     quizQuestionLoading.value = false
   }
+}
+function mapQuizQuestion(row) {
+  const id = Number(pick(row, 'QuestionID', 'questionID', 'Id', 'id'))
+  return {
+    id,
+    text: pick(row, 'QuestionText', 'questionText') || `Câu hỏi #${id}`,
+    type: pick(row, 'QuestionType', 'questionType') || '',
+    score: Number(pick(row, 'Score', 'score', 'DefaultScore', 'defaultScore') || 0)
+  }
+}
+function isQuizQuestionSelected(questionId) {
+  return lessonForm.quizQuestionIds.includes(Number(questionId))
+}
+function toggleQuizQuestion(question, checked) {
+  const id = Number(question.id)
+  if (checked) {
+    if (!isQuizQuestionSelected(id)) lessonForm.quizQuestionIds.push(id)
+    if (!quizSelectedQuestions.value.some((item) => item.id === id)) {
+      quizSelectedQuestions.value.push({ ...question, id })
+    }
+    return
+  }
+  lessonForm.quizQuestionIds = lessonForm.quizQuestionIds.filter((item) => Number(item) !== id)
+  quizSelectedQuestions.value = quizSelectedQuestions.value.filter((item) => item.id !== id)
+}
+function moveQuizQuestion(index, offset) {
+  const target = index + offset
+  if (target < 0 || target >= quizSelectedQuestions.value.length) return
+  const next = [...quizSelectedQuestions.value]
+  const [question] = next.splice(index, 1)
+  next.splice(target, 0, question)
+  quizSelectedQuestions.value = next
+  lessonForm.quizQuestionIds = next.map((item) => item.id)
+}
+function removeQuizQuestion(index) {
+  const question = quizSelectedQuestions.value[index]
+  if (question) toggleQuizQuestion(question, false)
 }
 async function loadInteractiveEditor(lessonId) {
   interactiveQuestionSearch.value = ''

@@ -65,11 +65,31 @@
   display: flex;
   gap: 0.5rem;
 }
-.chapter-add-button {
+.btn.chapter-add-button {
   align-items: center;
+  color: #fff;
+  background: var(--brand-success);
+  border-color: var(--brand-success);
   display: inline-flex;
   gap: 0.4rem;
   white-space: nowrap;
+}
+.btn.chapter-add-button:hover,
+.btn.chapter-add-button:focus {
+  color: #fff;
+  background: var(--brand-success-dark);
+  border-color: var(--brand-success-dark);
+}
+.chapter-card .btn-action-delete.btn-action-outline {
+  color: var(--brand-red) !important;
+  background: #fff;
+  border-color: var(--brand-red);
+}
+.chapter-card .btn-action-delete.btn-action-outline:hover,
+.chapter-card .btn-action-delete.btn-action-outline:focus {
+  color: #fff !important;
+  background: var(--brand-red);
+  border-color: var(--brand-red);
 }
 .chapter-lessons {
   background: #fff;
@@ -180,6 +200,9 @@
   padding: 1.5rem;
   max-height: 94vh;
   overflow: auto;
+}
+.form-modal.lesson-form-modal:not(.fullscreen-form-modal) {
+  width: min(1040px, 96vw);
 }
 .modal-heading {
   display: flex;

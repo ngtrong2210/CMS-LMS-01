@@ -398,13 +398,12 @@
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 10px;
   color: var(--eduvers-base);
-  background: rgba(var(--eduvers-base-rgb), 0.1);
+  background: transparent;
 }
 .sidebar-toggle:hover {
-  color: #fff;
-  background: var(--eduvers-base);
+  color: var(--brand-red-dark);
+  background: transparent;
 }
 .sidebar-toggle-icon {
   width: 21px;
@@ -575,11 +574,11 @@
 }
 .sidebar-toggle {
   color: var(--eduvers-base);
-  background: rgba(var(--eduvers-base-rgb), 0.1);
+  background: transparent;
 }
 .sidebar-toggle:hover {
-  color: #fff;
-  background: var(--eduvers-base);
+  color: var(--brand-red-dark);
+  background: transparent;
 }
 .mobile-sidebar {
   color: var(--ink);
