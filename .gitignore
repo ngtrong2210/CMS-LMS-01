@@ -2,6 +2,7 @@
 **/obj/
 frontend/node_modules/
 frontend/dist/
+/artifacts/production/
 docs/.vite/
 .vite/
 logs/

@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <Content Update="appsettings.Local.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+    <!-- Production media is persistent user data and must never be shipped in a deploy package. -->
+    <Content Update="wwwroot\Media\**\*" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>

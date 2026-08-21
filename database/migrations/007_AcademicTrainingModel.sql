@@ -1,5 +1,7 @@
 Set Nocount On;
 Set Xact_abort On;
+Set Ansi_nulls On;
+Set Quoted_identifier On;
 
 /*
     Mô hình đào tạo dùng chung với dữ liệu quản lý sinh viên:
@@ -248,6 +250,7 @@ If Col_length(N'dbo.SIM_Courses', N'DataGroupID') Is Null
     Alter Table dbo.SIM_Courses Add DataGroupID Int Not Null Constraint DF_SIM_Courses_DataGroupID Default (1);
 If Col_length(N'dbo.SIM_Courses', N'ClassSubjectID') Is Null
     Alter Table dbo.SIM_Courses Add ClassSubjectID Bigint Null;
+Go
 
 If Not Exists (Select 1 From sys.foreign_keys Where name = N'FK_SIM_Courses_SIM_Class_Subject')
     Alter Table dbo.SIM_Courses Add Constraint FK_SIM_Courses_SIM_Class_Subject Foreign Key (DataGroupID, ClassSubjectID) References dbo.SIM_Class_Subject(DataGroupID, ClassSubjectID);
@@ -473,6 +476,11 @@ Values
     (N'SIM_Timetable', Null, N'[SIM] Thời khóa biểu học theo từng môn học lớp và khoảng thời gian hiệu lực.'),
     (N'SYS_PermissionCategory', Null, N'[SYS] Danh mục cấp cao dùng phân loại quyền hệ thống.'),
     (N'SYS_PermissionGroup', Null, N'[SYS] Nhóm quyền nghiệp vụ nằm trong một danh mục quyền.'),
+    (N'SYS_Users', N'DataGroupID', N'Mã đơn vị hoặc nhóm dữ liệu sở hữu tài khoản.'),
+    (N'SYS_Users', N'StudentID', N'Mã hồ sơ học viên liên kết với tài khoản, nếu người dùng là học viên.'),
+    (N'SYS_Users', N'TeacherID', N'Mã hồ sơ giảng viên liên kết với tài khoản, nếu người dùng là giảng viên.'),
+    (N'SYS_Permissions', N'PermissionCategoryID', N'Mã danh mục quyền chứa quyền chức năng này.'),
+    (N'SYS_Permissions', N'PermissionGroupID', N'Mã nhóm quyền nghiệp vụ chứa quyền chức năng này.'),
     (N'SIM_LessonResources', Null, N'[SIM] Các file, tài liệu hoặc liên kết đính kèm cho bài học.'),
     (N'LMS_AssignmentSubmissions', Null, N'[LMS] Bài làm học viên nộp cho bài tập, gồm file, nội dung và kết quả chấm.'),
     (N'LMS_StudySessions', Null, N'[LMS] Phiên đo thời gian học viên ở lại môn học, chương hoặc bài học.'),
