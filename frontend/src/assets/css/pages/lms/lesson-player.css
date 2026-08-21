@@ -492,8 +492,9 @@
 .assignment-metadata .open { color: #07875a; }
 .assignment-metadata .closed { color: #cd1b1b; }
 .assignment-requirements {
-  background: #f7f9fa;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #fffdf6 0%, #fff6e9 100%);
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(79, 63, 38, 0.08);
   margin: 22px 0;
   padding: 20px;
 }
@@ -1076,12 +1077,20 @@
   border-radius: 10px;
 }
 .assignment-content {
+  background:
+    radial-gradient(circle at 8% 2%, rgba(211, 34, 77, 0.1), transparent 28%),
+    radial-gradient(circle at 94% 14%, rgba(0, 80, 153, 0.1), transparent 26%),
+    linear-gradient(135deg, #fff3f6 0%, #edf5fb 52%, #fff8ed 100%);
   overflow: auto;
 }
 .assignment-heading {
   align-items: center;
+  background: linear-gradient(135deg, #fff 0%, #fff5f7 100%);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(38, 65, 84, 0.09);
   display: flex;
   gap: 16px;
+  padding: 1.25rem;
 }
 .assignment-heading h2,
 .assignment-heading p {
@@ -1104,9 +1113,10 @@
   text-decoration: none;
 }
 .assignment-form {
-  background: #f7f9f9;
-  border: 1px solid #e6ece9;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #eaf4fb 0%, #f4f8fb 100%);
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(18, 53, 82, 0.09);
   display: grid;
   gap: 14px;
   margin-top: 22px;
@@ -1299,17 +1309,23 @@
   min-width: 150px;
 }
 .submission-history {
+  background: linear-gradient(135deg, #f4effb 0%, #edf7f4 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(38, 65, 84, 0.08);
   margin-top: 25px;
+  padding: 1.15rem;
 }
 .submission-history h3 {
   font-size: 1rem;
 }
 .submission-history > div {
   align-items: center;
-  border-top: 1px solid #e8eded;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 10px;
   display: flex;
   gap: 12px;
-  padding: 12px 0;
+  margin-top: 0.65rem;
+  padding: 12px;
 }
 .submission-history > div > div {
   display: grid;
@@ -1340,7 +1356,7 @@
   margin-left: 0;
 }
 .submission-detail {
-  background: #f6f8f9;
+  background: #edf4f8;
   border-radius: 9px;
   margin-top: 11px;
   overflow: hidden;
