@@ -18,6 +18,7 @@
 - Frontend production: asset đang phục vụ trùng chính xác với bản build local (`index-D5jOVIRD.js`).
 - Vercel CLI: không tạo deployment mới vì tài khoản CLI hiện tại không có quyền với team `2nt1`; không ghi nhận sai thao tác này là đã chạy.
 - Git: commit nguồn release `331001d` đã push lên `origin/main`.
+- Kiểm chứng audit: commit `fbeacaf`; production giữ nguyên `49` bảng, `123` procedure và không bảng nào giảm số dòng (`ROW_COUNT_DECREASES: 0`).
 - Public smoke test: `/`, `/login`, `/cms/dashboard`, `/lms/courses` và backend `/health` đều HTTP 200.
 - API smoke test: đăng nhập và các luồng đọc chính của ADMIN, TEACHER, STUDENT đều thành công.
 - Media smoke test: file mẫu `/Media/Video/demo/z5.mp4` còn tồn tại và trả HTTP 200 sau deploy.

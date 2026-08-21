@@ -55,6 +55,7 @@ Không commit connection string, JWT key, FTP password hoặc Vercel token. Cấ
 
 - Commit nguồn: `331001d` trên nhánh `main`.
 - SQL master hoàn tất với marker `PRODUCTION_SYNC_COMPLETED`.
+- Audit idempotent tại commit `fbeacaf`: trước/sau đều có `49` bảng, `123` procedure; không có bảng giảm số dòng.
 - Backend package được giải nén thành công trên SmarterASP.NET và không chứa thư mục Media.
 - Health check backend và SQL Server đều `Healthy`.
 - Asset frontend production trùng với bản build local: `index-D5jOVIRD.js`.
