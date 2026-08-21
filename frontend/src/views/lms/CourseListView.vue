@@ -71,11 +71,11 @@
                     <p>{{ course.progress }}% hoàn thành</p>
                   </div>
                   <div class="course-list__heart">
-                    <RouterLink :to="`/lms/courses/${course.id}`"><i class="bi bi-bookmark"></i></RouterLink>
+                    <RouterLink :to="courseLessonLink(course)"><i class="bi bi-bookmark"></i></RouterLink>
                   </div>
                 </div>
                 <h2 class="course-list__title">
-                  <RouterLink :to="`/lms/courses/${course.id}`">{{ course.title }}</RouterLink>
+                  <RouterLink :to="courseLessonLink(course)">{{ course.title }}</RouterLink>
                 </h2>
                 <div class="course-list__ratting-box">
                   <div class="course-list__ratting">
@@ -103,8 +103,8 @@
                 </ul>
                 <div class="course-list__btn-and-client-info">
                   <div class="course-list__btn-box">
-                    <RouterLink :to="`/lms/courses/${course.id}`" class="thm-btn"
-                      >Xem môn học <i class="bi bi-arrow-right"></i
+                    <RouterLink :to="courseLessonLink(course)" class="thm-btn"
+                      >Mở môn học <i class="bi bi-arrow-right"></i
                     ></RouterLink>
                   </div>
                   <div class="course-list__client-box">
@@ -172,6 +172,7 @@ async function loadCourses() {
       category: pick(row, 'CategoryName', 'categoryName') || 'Môn học lớp',
       lessons: Number(pick(row, 'LessonCount', 'lessonCount') || 0),
       progress: Number(pick(row, 'ProgressPercent', 'progressPercent') || 0),
+      continueLessonId: Number(pick(row, 'ContinueLessonId', 'continueLessonId') || 0),
       enrollmentStatus: pick(row, 'EnrollmentStatus', 'enrollmentStatus') || 'ENROLLED',
       color: colors[index % colors.length]
     }))
@@ -180,5 +181,10 @@ async function loadCourses() {
   } finally {
     loading.value = false
   }
+}
+function courseLessonLink(course) {
+  return course?.continueLessonId
+    ? `/lms/courses/${course.id}/lessons/${course.continueLessonId}`
+    : `/lms/courses/${course.id}`
 }
 </script>

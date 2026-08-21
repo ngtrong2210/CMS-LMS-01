@@ -1,5 +1,35 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import axiosClient from '../api/axiosClient'
 import { useAuthStore } from '../stores/authStore'
+
+const pick = (source, ...names) =>
+  names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
+
+async function redirectCourseToCurrentLesson(to) {
+  const courseId = Number(to.params.courseId)
+  if (!courseId) return { path: '/lms/courses', replace: true }
+
+  try {
+    const courseRows = await axiosClient.get('/lms/courses', { params: { _fresh: Date.now() } })
+    const course = (Array.isArray(courseRows) ? courseRows : []).find(
+      (row) => Number(pick(row, 'Id', 'id')) === courseId
+    )
+    let lessonId = Number(pick(course, 'ContinueLessonId', 'continueLessonId') || 0)
+
+    if (!lessonId) {
+      const detail = await axiosClient.get(`/lms/courses/${courseId}`, { params: { _fresh: Date.now() } })
+      const lessons = pick(detail, 'lessons', 'Lessons') || []
+      const currentLesson = lessons.find((lesson) => !Boolean(pick(lesson, 'Completed', 'completed'))) || lessons[0]
+      lessonId = Number(pick(currentLesson, 'Id', 'id') || 0)
+    }
+
+    return lessonId
+      ? { path: `/lms/courses/${courseId}/lessons/${lessonId}`, replace: true }
+      : { path: '/lms/courses', replace: true }
+  } catch {
+    return { path: '/lms/courses', replace: true }
+  }
+}
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -22,15 +52,16 @@ const routes = [
       },
       {
         path: 'courses/:courseId',
-        component: () => import('../views/lms/CourseDetailView.vue'),
-        meta: { title: 'Chi tiết môn học', backTo: '/lms/courses' }
+        component: () => import('../views/lms/CourseListView.vue'),
+        beforeEnter: redirectCourseToCurrentLesson,
+        meta: { title: 'Mở môn học', backTo: '/lms/courses' }
       },
       {
         path: 'courses/:courseId/lessons/:lessonId',
         component: () => import('../views/lms/LessonPlayerView.vue'),
         meta: {
           title: 'Bài học',
-          backTo: (route) => `/lms/courses/${route.params.courseId}`,
+          backTo: '/lms/courses',
           hideBack: true,
           fullWidth: true,
           immersive: true

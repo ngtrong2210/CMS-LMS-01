@@ -1,9 +1,10 @@
 <template>
   <div :class="['cms-shell', 'cms-theme', { 'sidebar-collapsed': sidebarCollapsed }]">
     <aside class="sidebar d-none d-lg-flex flex-column">
-      <RouterLink class="brand px-4" to="/cms/dashboard"
-        ><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers"
-      /></RouterLink>
+      <RouterLink class="brand brand-lockup px-4" to="/cms/dashboard" aria-label="Thiên Hà Số">
+        <img class="brand-symbol" src="/images/brand/thien-ha-so.png" alt="" />
+        <span class="brand-name">Thiên Hà Số</span>
+      </RouterLink>
       <nav :class="['px-3', 'overflow-auto', { scrolling: sidebarScrolling }]" @scroll="showSidebarScrollbar">
         <template v-for="group in menu" :key="group.label">
           <div class="menu-label">{{ group.label }}</div>
@@ -84,9 +85,11 @@
     </div>
     <div id="mobileMenu" ref="mobileMenuElement" class="offcanvas offcanvas-start mobile-sidebar">
       <div class="offcanvas-header">
-        <RouterLink class="brand" to="/cms/dashboard" @click="closeMobileMenu"
-          ><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers" /></RouterLink
-        ><button class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>
+        <RouterLink class="brand brand-lockup" to="/cms/dashboard" aria-label="Thiên Hà Số" @click="closeMobileMenu">
+          <img class="brand-symbol" src="/images/brand/thien-ha-so.png" alt="" />
+          <span class="brand-name">Thiên Hà Số</span>
+        </RouterLink>
+        <button class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>
       </div>
       <div class="offcanvas-body">
         <template v-for="group in menu" :key="group.label"

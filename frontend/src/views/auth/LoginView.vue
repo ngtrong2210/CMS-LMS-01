@@ -1,7 +1,10 @@
 <template>
   <main class="login-page">
     <aside class="system-panel">
-      <div class="brand"><img class="eduvers-logo" src="/images/eduvers/logo-1.png" alt="Eduvers" /></div>
+      <div class="brand brand-lockup" aria-label="Thiên Hà Số">
+        <img class="brand-symbol" src="/images/brand/thien-ha-so.png" alt="" />
+        <span class="brand-name">Thiên Hà Số</span>
+      </div>
       <div class="system-intro">
         <p class="eyebrow">HỆ THỐNG QUẢN LÝ HỌC TẬP</p>
         <h1>Không gian học tập dành cho học viên và giảng viên.</h1>
@@ -32,7 +35,10 @@
     </aside>
     <section class="form-panel">
       <div class="login-card">
-        <div class="mobile-brand"><img class="eduvers-logo" src="/images/eduvers/logo-2.png" alt="Eduvers" /></div>
+        <div class="mobile-brand brand-lockup" aria-label="Thiên Hà Số">
+          <img class="brand-symbol" src="/images/brand/thien-ha-so.png" alt="" />
+          <span class="brand-name">Thiên Hà Số</span>
+        </div>
         <header class="form-heading">
           <span>ĐĂNG NHẬP TÀI KHOẢN</span>
           <h2>Đăng nhập hệ thống</h2>
@@ -104,7 +110,7 @@
           <i class="bi bi-shield-check"></i> Không chia sẻ thông tin đăng nhập cho người khác.
         </p>
       </div>
-      <footer>© 2026 LearnHub · Hệ thống quản lý học tập</footer>
+      <footer>© 2026 Thiên Hà Số · Hệ thống quản lý học tập</footer>
     </section>
   </main>
 </template>

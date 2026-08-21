@@ -3,3 +3,42 @@
 .interaction-track:focus-visible{box-shadow:0 0 0 4px rgba(var(--eduvers-blue-rgb),.14)}.interaction-playhead{background:var(--eduvers-blue);box-shadow:0 2px 7px rgba(var(--eduvers-blue-rgb),.28)}.timeline-question,.timeline-question.answered,.timeline-current i{color:var(--eduvers-blue)}
 .interaction-options-warning{font-size:.82rem;line-height:1.5}
 .interactive-player.youtube-mode{height:auto;grid-template-rows:auto auto;overflow:visible}.interactive-player.youtube-mode .interactive-stage{height:auto;display:block}.interactive-player.youtube-mode .youtube-player-shell{width:100%}.youtube-interaction-host{padding:1rem;background:#f5f7f6}.youtube-interaction-host .interaction-modal{margin:0 auto;box-shadow:0 12px 32px rgba(10,31,24,.12)}
+
+@media (max-width: 768px) {
+  .interactive-player.mobile-inline:not(.youtube-mode) {
+    height: auto;
+    grid-template-rows: auto auto;
+    overflow: visible;
+  }
+
+  .interactive-player.mobile-inline:not(.youtube-mode) .interactive-stage {
+    aspect-ratio: 16 / 9;
+    height: auto;
+    min-height: 0;
+  }
+
+  .interactive-player.mobile-inline:not(.youtube-mode) .interactive-stage video {
+    aspect-ratio: 16 / 9;
+    height: 100%;
+    max-height: none;
+    object-fit: contain;
+  }
+
+  .interactive-player.mobile-inline .interaction-backdrop {
+    align-items: end;
+    padding:
+      max(0.75rem, env(safe-area-inset-top))
+      max(0.75rem, env(safe-area-inset-right))
+      max(0.75rem, env(safe-area-inset-bottom))
+      max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .interactive-player.mobile-inline .interaction-modal {
+    max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding: 1.25rem;
+  }
+
+  .interactive-player.mobile-inline .interaction-answer {
+    min-height: 48px;
+  }
+}

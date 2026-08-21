@@ -2,15 +2,16 @@
   <div class="lms-shell">
     <div v-if="!route.meta.immersive" class="learning-strip">
       <div class="container">
-        <span><i class="bi bi-mortarboard"></i> Hệ thống học tập trực tuyến LearnHub</span
+        <span><i class="bi bi-mortarboard"></i> Hệ thống học tập trực tuyến Thiên Hà Số</span
         ><span class="d-none d-md-inline"><i class="bi bi-headset"></i> Hỗ trợ học viên: Bộ phận đào tạo</span>
       </div>
     </div>
     <nav v-if="!route.meta.immersive" class="navbar navbar-expand-lg sticky-top lms-nav">
       <div class="container py-2">
-        <RouterLink class="brand" to="/lms/dashboard"
-          ><img class="eduvers-logo" src="/images/eduvers/logo-1.png" alt="Eduvers"
-        /></RouterLink>
+        <RouterLink class="brand brand-lockup" to="/lms/dashboard" aria-label="Thiên Hà Số">
+          <img class="brand-symbol" src="/images/brand/thien-ha-so.png" alt="" />
+          <span class="brand-name">Thiên Hà Số</span>
+        </RouterLink>
         <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#lmsNav">
           <i class="bi bi-list fs-2"></i>
         </button>
@@ -58,7 +59,7 @@
     </main>
     <footer v-if="!route.meta.immersive" class="lms-footer">
       <div class="container">
-        <span>© 2026 LearnHub · Hệ thống quản lý học tập</span><span>Hỗ trợ · Quy định học tập · Bảo mật</span>
+        <span>© 2026 Thiên Hà Số · Hệ thống quản lý học tập</span><span>Hỗ trợ · Quy định học tập · Bảo mật</span>
       </div>
     </footer>
   </div>
@@ -72,7 +73,7 @@ import PageBackButton from '../components/navigation/PageBackButton.vue'
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
-const cachedPages = ['CourseListView', 'CourseDetailView', 'ResultsView', 'SimpleLmsView']
+const cachedPages = ['CourseListView', 'ResultsView', 'SimpleLmsView']
 const avatarUrl = computed(
   () =>
     ({

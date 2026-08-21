@@ -49,3 +49,28 @@
 @media(max-width:991px) {
   .lms-nav .navbar-collapse { border-top: 1px solid rgba(255, 255, 255, .1); }
 }
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+}
+.brand-symbol {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  object-fit: contain;
+}
+.brand-name {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+@media(max-width:575px) {
+  .brand-symbol { width: 36px; height: 36px; flex-basis: 36px; }
+  .brand-name { font-size: .92rem; }
+}

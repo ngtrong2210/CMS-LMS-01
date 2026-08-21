@@ -13,10 +13,7 @@
           <span class="welcome-label">HỌC TẬP MỖI NGÀY</span>
           <h1>Xin chào, {{ summary.fullName }} 👋</h1>
           <p>Tiếp tục hành trình học tập và hoàn thành mục tiêu hôm nay.</p>
-          <RouterLink
-            v-if="courses[0]"
-            class="btn btn-brand"
-            :to="`/lms/courses/${courses[0].id}/lessons/${courses[0].continueLessonId}`"
+          <RouterLink v-if="courses[0]" class="btn btn-brand" :to="courseLessonLink(courses[0])"
             >Tiếp tục học <i class="bi bi-arrow-right ms-1"></i
           ></RouterLink>
         </div>
@@ -63,7 +60,7 @@
               <div class="progress course-progress mb-3">
                 <div class="progress-bar" :style="{ width: course.progress + '%' }"></div>
               </div>
-              <RouterLink class="btn btn-action-view btn-sm" :to="`/lms/courses/${course.id}`"
+              <RouterLink class="btn btn-action-view btn-sm" :to="courseLessonLink(course)"
                 ><i class="bi bi-arrow-right-circle"></i> Mở môn học</RouterLink
               >
             </div>
@@ -124,6 +121,11 @@ async function loadDashboard() {
   } finally {
     loading.value = false
   }
+}
+function courseLessonLink(course) {
+  return course?.continueLessonId
+    ? `/lms/courses/${course.id}/lessons/${course.continueLessonId}`
+    : `/lms/courses/${course.id}`
 }
 </script>
 <style scoped src="../../assets/css/pages/lms/dashboard.css"></style>

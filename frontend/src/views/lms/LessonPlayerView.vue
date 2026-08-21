@@ -1,7 +1,7 @@
 <template>
   <section :class="['lesson-player-page', { 'focus-mode': focusMode, 'video-lesson': isVideoLesson }]">
     <header class="lesson-player-header">
-      <RouterLink class="lesson-back-link" :to="`/lms/courses/${course.id || route.params.courseId}`">
+      <RouterLink class="lesson-back-link" to="/lms/courses">
         <i class="bi bi-arrow-left"></i><span>Trở về môn học</span>
       </RouterLink>
       <div class="lesson-header-context">
@@ -68,6 +68,7 @@
               :key="playerKey"
               :source="video.url"
               :source-type="video.sourceType"
+              :interactive-mode="lesson.type === 'INTERACTIVE_VIDEO'"
               :poster="video.poster"
               :duration-seconds="video.duration"
               :interactions="interactions"

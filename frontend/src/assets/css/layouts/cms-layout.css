@@ -596,3 +596,39 @@
     background: var(--surface);
   }
 }
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+}
+.brand-symbol {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  object-fit: contain;
+}
+.brand-name {
+  display: block;
+  color: var(--eduvers-black);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sidebar-collapsed .sidebar .brand-lockup {
+  justify-content: center;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.sidebar-collapsed .sidebar .brand-name {
+  display: none;
+}
+.sidebar-collapsed .sidebar .brand-symbol {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}

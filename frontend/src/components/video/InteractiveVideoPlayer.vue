@@ -1,5 +1,5 @@
 <template>
-  <div :class="['interactive-player', { 'youtube-mode': isYouTube }]">
+  <div :class="['interactive-player', { 'youtube-mode': isYouTube, 'mobile-inline': inlineInteractivePlayback }]">
     <div class="interactive-stage">
       <YouTubeVideoPlayer
         v-if="source && isYouTube"
@@ -18,7 +18,11 @@
         :poster="poster || undefined"
         controls
         preload="metadata"
-        :controlslist="allowSpeed ? undefined : 'noplaybackrate'"
+        :playsinline="inlineInteractivePlayback"
+        :webkit-playsinline="inlineInteractivePlayback ? '' : undefined"
+        :controlslist="videoControlsList"
+        :disablepictureinpicture="mobileInlinePlayback"
+        :disableremoteplayback="mobileInlinePlayback"
         @loadedmetadata="onLoaded"
         @play="onPlay"
         @timeupdate="onTimeUpdate"
@@ -26,6 +30,8 @@
         @seeked="onSeeked"
         @ratechange="onRateChange"
         @pause="emitProgress"
+        @webkitbeginfullscreen="preventNativeFullscreen"
+        @fullscreenchange="preventStandardVideoFullscreen"
       >
         <track kind="captions" />
       </video>
@@ -154,6 +160,7 @@ import { isYouTubeSource } from '../../utils/videoSources'
 const props = defineProps({
   source: { type: String, default: '' },
   sourceType: { type: String, default: 'LOCAL' },
+  interactiveMode: { type: Boolean, default: true },
   poster: { type: String, default: '' },
   durationSeconds: { type: Number, default: 0 },
   interactions: { type: Array, default: () => [] },
@@ -181,6 +188,14 @@ const videoRef = ref(null),
   currentTime = ref(props.initialTime)
 const normalized = computed(() => normalizeInteractions(props.interactions))
 const isYouTube = computed(() => isYouTubeSource(props.sourceType))
+const inlineInteractivePlayback = computed(() => props.interactiveMode)
+const mobileInlinePlayback = computed(() => props.interactiveMode && isMobilePlaybackEnvironment())
+const videoControlsList = computed(
+  () =>
+    [!props.allowSpeed ? 'noplaybackrate' : '', mobileInlinePlayback.value ? 'nofullscreen noremoteplayback' : '']
+      .filter(Boolean)
+      .join(' ') || undefined
+)
 let engine = createInteractionEngine(normalized.value, props.answeredInteractionIds)
 const formatTime = formatInteractionTime
 const canSkip = computed(() => Boolean(activeQuestion.value?.allowSkip || !activeQuestion.value?.required))
@@ -205,6 +220,42 @@ const currentPercent = computed(() =>
 const canTimelineSeek = computed(() => props.previewMode || props.allowSeek)
 
 watch(() => props.resetKey, resetPlayer)
+watch(videoRef, configureInlinePlayback, { flush: 'post' })
+function isMobilePlaybackEnvironment() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false
+  return (
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches
+  )
+}
+function configureInlinePlayback(element) {
+  if (!element || !inlineInteractivePlayback.value) return
+  element.playsInline = true
+  element.setAttribute('playsinline', '')
+  element.setAttribute('webkit-playsinline', '')
+  if (videoControlsList.value) element.setAttribute('controlslist', videoControlsList.value)
+  else element.removeAttribute('controlslist')
+  if (mobileInlinePlayback.value) {
+    element.disablePictureInPicture = true
+    element.disableRemotePlayback = true
+  }
+}
+function preventNativeFullscreen(event) {
+  if (!inlineInteractivePlayback.value) return
+  const element = event.currentTarget
+  configureInlinePlayback(element)
+  element.pause()
+  try {
+    element.webkitExitFullscreen?.()
+  } catch {
+    // Safari cũ có thể phát sự kiện trước khi trạng thái fullscreen hoàn tất.
+  }
+}
+function preventStandardVideoFullscreen() {
+  if (!mobileInlinePlayback.value || document.fullscreenElement !== videoRef.value) return
+  const exitRequest = document.exitFullscreen?.()
+  exitRequest?.catch?.(() => {})
+}
 function resetEngine(at = 0) {
   engine = createInteractionEngine(normalized.value, props.answeredInteractionIds)
   engine.loadAt(at)
