@@ -2,8 +2,10 @@ namespace LmsCms.Application.DTOs;
 
 using System.ComponentModel.DataAnnotations;
 
-public sealed record LoginRequest(string Username, string Password);
-public sealed record RefreshTokenRequest(string RefreshToken);
+public sealed record LoginRequest(
+    [Required, StringLength(100)] string Username,
+    [Required, StringLength(200)] string Password);
+public sealed record RefreshTokenRequest([Required, StringLength(500)] string RefreshToken);
 public sealed record UserDto(long Id, string Username, string FullName, string Email, string Role, IReadOnlyCollection<string> Permissions);
 public sealed record AuthResponse(string AccessToken, string RefreshToken, DateTime ExpiresAt, UserDto User);
 public sealed class CourseListItemDto
@@ -89,15 +91,29 @@ public sealed class CourseSaveRequest
     [Range(0, 100)] public decimal PassingScore { get; init; }
     [RegularExpression("DRAFT|PUBLISHED|ARCHIVED")] public string Status { get; init; } = "DRAFT";
 }
-public sealed record VideoProgressRequest(long LessonId, long VideoId, decimal CurrentTime, decimal MaxWatchedTime, decimal WatchPercent);
-public sealed record SubmitAnswerRequest(long LessonId, long? VideoId, long? InteractionId, long QuestionId, IReadOnlyCollection<string> Answers, decimal? TimeInVideo, int? TimeSpent);
+public sealed record VideoProgressRequest(
+    [Range(1, long.MaxValue)] long LessonId,
+    [Range(1, long.MaxValue)] long VideoId,
+    [Range(0, double.MaxValue)] decimal CurrentTime,
+    [Range(0, double.MaxValue)] decimal MaxWatchedTime,
+    [Range(0, 100)] decimal WatchPercent);
+public sealed record SubmitAnswerRequest(
+    [Range(1, long.MaxValue)] long LessonId,
+    [Range(1, long.MaxValue)] long? VideoId,
+    [Range(1, long.MaxValue)] long? InteractionId,
+    [Range(1, long.MaxValue)] long QuestionId,
+    [Required, MinLength(1), MaxLength(100)] IReadOnlyCollection<string> Answers,
+    [Range(0, double.MaxValue)] decimal? TimeInVideo,
+    [Range(0, 86400)] int? TimeSpent);
 public sealed record AnswerResultDto(long AnswerId, bool? IsCorrect, decimal ScoreAwarded, decimal CurrentLessonScore, int AttemptNumber, string ReviewStatus, string? Explanation);
-public sealed record InteractiveContentSettingsRequest(
-    [property: RegularExpression("REQUIRED_QUESTIONS|ALL_QUESTIONS|PASSING_SCORE")] string CompletionRule,
-    bool RequireReading,
-    [property: Range(0, 100)] decimal PassingScore,
-    bool ShowResultImmediately,
-    bool ShowScore);
+public sealed class InteractiveContentSettingsRequest
+{
+    [RegularExpression("REQUIRED_QUESTIONS|ALL_QUESTIONS|PASSING_SCORE")] public string CompletionRule { get; init; } = "REQUIRED_QUESTIONS";
+    public bool RequireReading { get; init; } = true;
+    [Range(0, 100)] public decimal PassingScore { get; init; } = 70;
+    public bool ShowResultImmediately { get; init; } = true;
+    public bool ShowScore { get; init; } = true;
+}
 public sealed class ContentInteractionSaveRequest
 {
     [Range(1, long.MaxValue)] public long QuestionId { get; init; }
@@ -109,15 +125,22 @@ public sealed class ContentInteractionSaveRequest
     [Range(1, int.MaxValue)] public int SortOrder { get; init; } = 1;
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
 }
-public sealed record InteractiveContentAnswerRequest(
-    [property: Range(1, long.MaxValue)] long ContentInteractionId,
-    [property: Range(1, long.MaxValue)] long QuestionId,
-    [property: MinLength(1)] IReadOnlyCollection<string> Answers,
-    int? TimeSpentSeconds);
-public sealed record InteractiveReadingProgressRequest(
-    [property: Range(0, 100)] decimal ReadingProgressPercent,
-    [property: Range(0, 100)] decimal LastScrollPercent);
-public sealed record PreviewAnswerRequest(long InteractionId, long QuestionId, IReadOnlyCollection<string> Answers);
+public sealed class InteractiveContentAnswerRequest
+{
+    [Range(1, long.MaxValue)] public long ContentInteractionId { get; init; }
+    [Range(1, long.MaxValue)] public long QuestionId { get; init; }
+    [Required, MinLength(1)] public IReadOnlyCollection<string> Answers { get; init; } = [];
+    public int? TimeSpentSeconds { get; init; }
+}
+public sealed class InteractiveReadingProgressRequest
+{
+    [Range(0, 100)] public decimal ReadingProgressPercent { get; init; }
+    [Range(0, 100)] public decimal LastScrollPercent { get; init; }
+}
+public sealed record PreviewAnswerRequest(
+    [Range(1, long.MaxValue)] long InteractionId,
+    [Range(1, long.MaxValue)] long QuestionId,
+    [Required, MinLength(1), MaxLength(100)] IReadOnlyCollection<string> Answers);
 public sealed record PreviewAnswerResultDto(bool? IsCorrect, decimal ScoreAwarded, string ReviewStatus, string? Explanation);
 public sealed record PlayerDataDto(object? Lesson, object? Course, object? Video, object? Progress, IReadOnlyCollection<object> Interactions, IReadOnlyCollection<object> AnsweredInteractions);
 public sealed class ChapterSaveRequest
@@ -136,7 +159,7 @@ public sealed class LessonSaveRequest
     [Range(1, int.MaxValue)] public int SortOrder { get; init; } = 1;
     public bool IsRequired { get; init; } = true;
     [Range(0, 100)] public decimal? PassingScore { get; init; }
-    public string? ContentHtml { get; init; }
+    [StringLength(1000000)] public string? ContentHtml { get; init; }
     [StringLength(1000)] public string? DocumentUrl { get; init; }
     [StringLength(250)] public string? AssignmentFolderName { get; init; }
     public DateTime? AssignmentStartAt { get; init; }
@@ -172,7 +195,7 @@ public sealed class VideoAssetSaveRequest
     [StringLength(150)] public string? MimeType { get; init; }
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
     [StringLength(1000)] public string? ChangeSummary { get; init; }
-    public IReadOnlyCollection<long> LessonIds { get; init; } = [];
+    [MaxLength(500)] public IReadOnlyCollection<long> LessonIds { get; init; } = [];
 }
 public sealed class VideoDuplicateRequest
 {
@@ -181,7 +204,7 @@ public sealed class VideoDuplicateRequest
 public sealed class VideoShareSaveRequest
 {
     [RegularExpression("PRIVATE|SELECTED|SCHOOL")] public string ShareScope { get; init; } = "PRIVATE";
-    public IReadOnlyCollection<long> TeacherIds { get; init; } = [];
+    [MaxLength(500)] public IReadOnlyCollection<long> TeacherIds { get; init; } = [];
 }
 public sealed class VideoAttachRequest
 {
@@ -212,20 +235,27 @@ public sealed class ReorderRequest
 {
     [Required, MinLength(1)] public IReadOnlyCollection<ReorderItem> Items { get; init; } = [];
 }
-public sealed record QuestionOptionInput(string OptionCode, string OptionText, bool IsCorrect, int SortOrder);
-public sealed record AnswerKeyInput(string AnswerText, bool IsCaseSensitive, int SortOrder);
+public sealed record QuestionOptionInput(
+    [Required, StringLength(20)] string OptionCode,
+    [Required, StringLength(2000)] string OptionText,
+    bool IsCorrect,
+    [Range(1, int.MaxValue)] int SortOrder);
+public sealed record AnswerKeyInput(
+    [Required, StringLength(2000)] string AnswerText,
+    bool IsCaseSensitive,
+    [Range(1, int.MaxValue)] int SortOrder);
 public sealed class QuestionSaveRequest
 {
     [RegularExpression("SINGLE_CHOICE|MULTIPLE_CHOICE|TRUE_FALSE|SHORT_ANSWER")] public string QuestionType { get; init; } = "SINGLE_CHOICE";
-    [Required] public string QuestionText { get; init; } = "";
-    public string? Description { get; init; }
-    public string? Explanation { get; init; }
+    [Required, StringLength(10000)] public string QuestionText { get; init; } = "";
+    [StringLength(10000)] public string? Description { get; init; }
+    [StringLength(10000)] public string? Explanation { get; init; }
     [RegularExpression("EASY|MEDIUM|HARD")] public string Difficulty { get; init; } = "EASY";
     [Range(0, 10000)] public decimal DefaultScore { get; init; } = 10;
-    public string? ShortAnswerMode { get; init; }
+    [RegularExpression("EXACT_MATCH|CONTAINS|MANUAL_REVIEW")] public string? ShortAnswerMode { get; init; }
     [RegularExpression("ACTIVE|INACTIVE")] public string Status { get; init; } = "ACTIVE";
-    public IReadOnlyCollection<QuestionOptionInput> Options { get; init; } = [];
-    public IReadOnlyCollection<AnswerKeyInput> AnswerKeys { get; init; } = [];
+    [MaxLength(100)] public IReadOnlyCollection<QuestionOptionInput> Options { get; init; } = [];
+    [MaxLength(100)] public IReadOnlyCollection<AnswerKeyInput> AnswerKeys { get; init; } = [];
 }
 public sealed class EnrollmentCreateRequest
 {
@@ -245,9 +275,9 @@ public sealed class AcademicCatalogSaveRequest
     public int? FinishYear { get; init; }
     public DateTime? StartAt { get; init; }
     public DateTime? FinishAt { get; init; }
-    public int? YearId { get; init; }
+    [Range(1, int.MaxValue)] public int? YearId { get; init; }
     [Range(1, 3)] public byte? Semester { get; init; }
-    public long? ClassSubjectId { get; init; }
+    [Range(1, long.MaxValue)] public long? ClassSubjectId { get; init; }
     [StringLength(50)] public string? ClassId { get; init; }
     [StringLength(50)] public string? SubjectId { get; init; }
     [StringLength(50)] public string? TeacherId { get; init; }
@@ -255,7 +285,7 @@ public sealed class AcademicCatalogSaveRequest
     [Range(0, 50)] public byte CreditCount { get; init; }
     [Range(0, 10000)] public int TheoryQuantity { get; init; }
     [Range(0, 10000)] public int PracticeQuantity { get; init; }
-    public long? TimetableId { get; init; }
+    [Range(1, long.MaxValue)] public long? TimetableId { get; init; }
     [Range(2, 8)] public byte? DayOfWeek { get; init; }
     [Range(1, 30)] public byte? StartPeriod { get; init; }
     [Range(1, 30)] public byte? EndPeriod { get; init; }
@@ -270,14 +300,14 @@ public sealed class AssignStudentsToClassRequest
 {
     [Range(1, int.MaxValue)] public int DataGroupId { get; init; } = 1;
     [Required, StringLength(50)] public string ClassId { get; init; } = "";
-    [Required, MinLength(1)] public IReadOnlyCollection<long> StudentUserIds { get; init; } = [];
+    [Required, MinLength(1), MaxLength(1000)] public IReadOnlyCollection<long> StudentUserIds { get; init; } = [];
 }
 
 public sealed class StudySessionStartRequest
 {
-    public long? CourseId { get; init; }
-    public long? ChapterId { get; init; }
-    public long? LessonId { get; init; }
+    [Range(1, long.MaxValue)] public long? CourseId { get; init; }
+    [Range(1, long.MaxValue)] public long? ChapterId { get; init; }
+    [Range(1, long.MaxValue)] public long? LessonId { get; init; }
     [StringLength(1000)] public string? PageUrl { get; init; }
     [StringLength(100)] public string? ClientSessionKey { get; init; }
 }
@@ -290,7 +320,7 @@ public sealed class StudySessionEndRequest
 public sealed class AssignmentGradeRequest
 {
     [Range(0, 10000)] public decimal? Score { get; init; }
-    public string? Feedback { get; init; }
+    [StringLength(5000)] public string? Feedback { get; init; }
     [RegularExpression("GRADE|RETURN")] public string Action { get; init; } = "GRADE";
 }
 
@@ -302,18 +332,18 @@ public sealed class QuizSaveRequest
     [Range(1, 600)] public int? TimeLimitMinutes { get; init; }
     [Range(1, 20)] public int MaxAttempts { get; init; } = 1;
     public bool ShuffleQuestions { get; init; }
-    [MinLength(1)] public IReadOnlyCollection<long> QuestionIds { get; init; } = Array.Empty<long>();
+    [MinLength(1), MaxLength(500)] public IReadOnlyCollection<long> QuestionIds { get; init; } = Array.Empty<long>();
 }
 
 public sealed class QuizAnswerRequest
 {
     [Range(1, long.MaxValue)] public long QuestionId { get; init; }
-    public string? AnswerText { get; init; }
+    [StringLength(10000)] public string? AnswerText { get; init; }
 }
 
 public sealed class QuizSubmitRequest
 {
-    [MinLength(1)] public IReadOnlyCollection<QuizAnswerRequest> Answers { get; init; } = Array.Empty<QuizAnswerRequest>();
+    [MinLength(1), MaxLength(500)] public IReadOnlyCollection<QuizAnswerRequest> Answers { get; init; } = Array.Empty<QuizAnswerRequest>();
 }
 
 public sealed record AssignmentSubmissionFile(
@@ -322,3 +352,8 @@ public sealed record AssignmentSubmissionFile(
     string FileUrl,
     long FileSize,
     string MimeType);
+
+public sealed record LearningDocumentPreview(
+    string FileType,
+    string Html,
+    string Title);

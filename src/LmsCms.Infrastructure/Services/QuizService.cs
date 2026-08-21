@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using Dapper;
+using LmsCms.Application.Common;
 using LmsCms.Application.DTOs;
 using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure.Data;
@@ -22,6 +23,7 @@ public sealed class QuizService(ISqlConnectionFactory connections) : IQuizServic
 
     public async Task<object> SaveAsync(long lessonId, QuizSaveRequest request, long actorId, bool isAdmin, CancellationToken cancellationToken = default)
     {
+        var questionIds = InputGuard.PositiveDistinctIds(request.QuestionIds, "Danh sách câu hỏi");
         using var connection = connections.CreateConnection();
         return await connection.QuerySingleAsync(new CommandDefinition(
             "dbo.LMS_Quiz_Save",
@@ -34,7 +36,7 @@ public sealed class QuizService(ISqlConnectionFactory connections) : IQuizServic
                 request.TimeLimitMinutes,
                 request.MaxAttempts,
                 request.ShuffleQuestions,
-                QuestionIDsJson = JsonSerializer.Serialize(request.QuestionIds.Where(id => id > 0).Distinct()),
+                QuestionIDsJson = JsonSerializer.Serialize(questionIds),
                 ActorID = actorId,
                 IsAdmin = isAdmin
             },
@@ -70,6 +72,8 @@ public sealed class QuizService(ISqlConnectionFactory connections) : IQuizServic
 
     public async Task<object> SubmitAttemptAsync(long quizAttemptId, long studentId, QuizSubmitRequest request, CancellationToken cancellationToken = default)
     {
+        if (request.Answers.Any(answer => answer.QuestionId <= 0))
+            throw new ArgumentException("Mã câu hỏi phải lớn hơn 0.");
         using var connection = connections.CreateConnection();
         var answers = request.Answers
             .Where(answer => answer.QuestionId > 0)

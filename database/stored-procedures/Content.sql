@@ -630,6 +630,8 @@ As
 Begin
     Set Nocount On;
 
+    Declare @SearchPattern Nvarchar(1010) = N'%' + Replace(Replace(Replace(Isnull(@Search, N''), N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
+
     Select
         dbo.VideoAssets.Id,
         dbo.VideoAssets.Title,
@@ -744,7 +746,7 @@ Begin
         And (@Status Is Null Or @Status = '' Or @Status = 'ALL' Or dbo.VideoAssets.Status = @Status)
         And (@Usage Is Null Or @Usage = '' Or @Usage = 'ALL' Or (@Usage = 'USED' And Isnull(useInfo.UsageCount, 0) > 0) Or (@Usage = 'UNUSED' And Isnull(useInfo.UsageCount, 0) = 0))
         And (@Source Is Null Or @Source = '' Or @Source = 'ALL' Or dbo.VideoAssets.SourceType = @Source)
-        And (@Search Is Null Or @Search = '' Or dbo.VideoAssets.Title Like '%' + @Search + '%' Or dbo.VideoAssets.OriginalFileName Like '%' + @Search + '%' Or dbo.Users.FullName Like '%' + @Search + '%')
+        And (@Search Is Null Or @Search = '' Or dbo.VideoAssets.Title Like @SearchPattern Or dbo.VideoAssets.OriginalFileName Like @SearchPattern Or dbo.Users.FullName Like @SearchPattern)
     Order By
         dbo.VideoAssets.CreatedAt Desc,
         dbo.VideoAssets.Id Desc;

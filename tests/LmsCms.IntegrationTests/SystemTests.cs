@@ -866,6 +866,87 @@ public sealed class SystemTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task FullSubjectDemo_HasFiveChaptersAndEverySupportedLessonType()
+    {
+        await _factory.Services.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var connectionFactory = _factory.Services.GetRequiredService<ISqlConnectionFactory>();
+        using var connection = connectionFactory.CreateConnection();
+
+        var courseId = await connection.QuerySingleAsync<long>("""
+            Select Top (1)
+                dbo.SIM_Courses.CourseID
+            From dbo.SIM_Courses
+            Inner Join dbo.SIM_Class_Subject On dbo.SIM_Class_Subject.DataGroupID = dbo.SIM_Courses.DataGroupID And dbo.SIM_Class_Subject.ClassSubjectID = dbo.SIM_Courses.ClassSubjectID
+            Where (dbo.SIM_Class_Subject.SubjectID = N'WEB101')
+                And (dbo.SIM_Courses.IsDeleted = 0)
+            Order By
+                dbo.SIM_Courses.CourseID
+            """);
+
+        var completeChapterCount = await connection.ExecuteScalarAsync<int>("""
+            Select
+                Count(*)
+            From
+            (
+                Select
+                    dbo.SIM_Chapters.ChapterID
+                From dbo.SIM_Chapters
+                Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.ChapterID = dbo.SIM_Chapters.ChapterID And dbo.SIM_Lessons.IsDeleted = 0
+                Where (dbo.SIM_Chapters.CourseID = @CourseID)
+                    And (dbo.SIM_Chapters.Title Like N'Chương [1-5]:%')
+                    And (dbo.SIM_Chapters.IsDeleted = 0)
+                Group By
+                    dbo.SIM_Chapters.ChapterID
+                Having Count(Distinct dbo.SIM_Lessons.LessonType) = 7
+            ) CompleteChapter
+            """, new { CourseID = courseId });
+
+        Assert.Equal(5, completeChapterCount);
+        Assert.Equal(5, await connection.ExecuteScalarAsync<int>("""
+            Select
+                Count(Distinct dbo.SIM_LessonResources.LessonID)
+            From dbo.SIM_LessonResources
+            Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.LessonID = dbo.SIM_LessonResources.LessonID
+            Inner Join dbo.SIM_Chapters On dbo.SIM_Chapters.ChapterID = dbo.SIM_Lessons.ChapterID
+            Where (dbo.SIM_Chapters.CourseID = @CourseID)
+                And (dbo.SIM_Chapters.Title Like N'Chương [1-5]:%')
+                And (dbo.SIM_LessonResources.IsDeleted = 0)
+            """, new { CourseID = courseId }));
+        Assert.Equal(5, await connection.ExecuteScalarAsync<int>("""
+            Select
+                Count(*)
+            From dbo.LMS_Quizzes
+            Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.LessonID = dbo.LMS_Quizzes.LessonID
+            Inner Join dbo.SIM_Chapters On dbo.SIM_Chapters.ChapterID = dbo.SIM_Lessons.ChapterID
+            Where (dbo.SIM_Chapters.CourseID = @CourseID)
+                And (dbo.SIM_Chapters.Title Like N'Chương [1-5]:%')
+                And ((Select Count(*) From dbo.LMS_QuizQuestions Where dbo.LMS_QuizQuestions.QuizID = dbo.LMS_Quizzes.QuizID) >= 4)
+                And ((Select Count(Distinct dbo.LMS_Questions.QuestionType) From dbo.LMS_QuizQuestions Inner Join dbo.LMS_Questions On dbo.LMS_Questions.QuestionID = dbo.LMS_QuizQuestions.QuestionID Where dbo.LMS_QuizQuestions.QuizID = dbo.LMS_Quizzes.QuizID) = 4)
+            """, new { CourseID = courseId }));
+        Assert.Equal(5, await connection.ExecuteScalarAsync<int>("""
+            Select
+                Count(*)
+            From dbo.LMS_InteractiveContents
+            Inner Join dbo.SIM_Lessons On dbo.SIM_Lessons.LessonID = dbo.LMS_InteractiveContents.LessonID
+            Inner Join dbo.SIM_Chapters On dbo.SIM_Chapters.ChapterID = dbo.SIM_Lessons.ChapterID
+            Where (dbo.SIM_Chapters.CourseID = @CourseID)
+                And (dbo.SIM_Chapters.Title Like N'Chương [1-5]:%')
+                And ((Select Count(*) From dbo.LMS_ContentInteractions Where dbo.LMS_ContentInteractions.InteractiveContentID = dbo.LMS_InteractiveContents.InteractiveContentID And dbo.LMS_ContentInteractions.IsDeleted = 0) >= 4)
+            """, new { CourseID = courseId }));
+        Assert.Equal(5, await connection.ExecuteScalarAsync<int>("""
+            Select
+                Count(Distinct dbo.SIM_Lessons.LessonID)
+            From dbo.SIM_Lessons
+            Inner Join dbo.SIM_Chapters On dbo.SIM_Chapters.ChapterID = dbo.SIM_Lessons.ChapterID
+            Where (dbo.SIM_Chapters.CourseID = @CourseID)
+                And (dbo.SIM_Chapters.Title Like N'Chương [1-5]:%')
+                And (dbo.SIM_Lessons.LessonType = 'INTERACTIVE_VIDEO')
+                And (dbo.SIM_Lessons.VideoID Is Not Null)
+                And ((Select Count(*) From dbo.LMS_VideoInteractions Where dbo.LMS_VideoInteractions.VideoID = dbo.SIM_Lessons.VideoID And dbo.LMS_VideoInteractions.VideoVersionID = dbo.SIM_Lessons.VideoVersionID And dbo.LMS_VideoInteractions.IsDeleted = 0) >= 4)
+            """, new { CourseID = courseId }));
+    }
+
+    [Fact]
     public async Task ContentCrud_AndReusableVideoLibrary_PersistToSql()
     {
         await AuthorizeAs("admin");

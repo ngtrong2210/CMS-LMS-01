@@ -302,7 +302,7 @@ Begin
 End;
 
 If Not Exists (Select 1 From sys.check_constraints Where name = N'CK_SIM_Lessons_LessonType')
-    Alter Table dbo.SIM_Lessons Add Constraint CK_SIM_Lessons_LessonType Check (LessonType In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT'));
+    Alter Table dbo.SIM_Lessons Add Constraint CK_SIM_Lessons_LessonType Check (LessonType In ('VIDEO', 'INTERACTIVE_VIDEO', 'QUIZ', 'DOCUMENT', 'EDITOR', 'ASSIGNMENT', 'INTERACTIVE_CONTENT'));
 
 If Object_id(N'dbo.SIM_LessonResources', N'U') Is Null
 Begin

@@ -1,5 +1,5 @@
 <template>
-  <section :class="['lesson-player-page', { 'focus-mode': focusMode }]">
+  <section :class="['lesson-player-page', { 'focus-mode': focusMode, 'video-lesson': isVideoLesson }]">
     <header class="lesson-player-header">
       <RouterLink class="lesson-back-link" :to="`/lms/courses/${course.id || route.params.courseId}`">
         <i class="bi bi-arrow-left"></i><span>Trở về môn học</span>
@@ -33,12 +33,24 @@
       <i class="bi bi-exclamation-circle fs-1 text-danger"></i>
       <h1 class="h4 mt-3">Không thể mở bài học</h1>
       <p class="text-secondary">{{ error }}</p>
-      <button class="btn btn-action-refresh" @click="loadPlayer"><i class="bi bi-arrow-clockwise"></i> Thử lại</button>
+      <button class="btn btn-action-refresh" @click="loadPlayer()"><i class="bi bi-arrow-clockwise"></i> Thử lại</button>
     </div>
     <template v-else>
       <div :class="['player-grid', { 'sidebar-closed': !sidebarOpen || focusMode }]">
         <div class="video-area">
-          <div class="current-lesson-heading">
+          <Transition name="lesson-switch">
+            <div v-if="switchingLesson" class="lesson-switch-overlay" role="status" aria-live="polite">
+              <span class="spinner-border"></span>
+              <strong>Đang chuyển bài học...</strong>
+              <small>Đang tải nội dung tiếp theo</small>
+            </div>
+          </Transition>
+          <div
+            :class="[
+              'current-lesson-heading',
+              `${lessonTypeClass(lesson.type)}-surface`,
+            ]"
+          >
             <span :class="['lesson-type-icon', lessonTypeClass(lesson.type)]">
               <i :class="['bi', lessonTypeMeta(lesson.type).icon]"></i>
             </span>
@@ -70,6 +82,12 @@
               @progress="handleProgress"
               @answered="handleAnswered"
             />
+            <InteractiveContentViewer
+              v-else-if="lesson.type === 'INTERACTIVE_CONTENT'"
+              :lesson-id="lesson.id"
+              @score-change="currentScore = $event"
+              @completed="handleInteractiveCompleted"
+            />
             <article v-else-if="lesson.type === 'EDITOR'" class="learning-content editor-content">
               <div class="content-type-icon"><i class="bi bi-journal-richtext"></i></div>
               <div class="lesson-html" v-html="sanitizedContentHtml"></div>
@@ -97,6 +115,21 @@
                   :title="`Tài liệu ${lesson.title}`"
                   loading="eager"
                 ></iframe>
+                <div v-else-if="isDocxDocument" class="docx-preview-shell">
+                  <div v-if="documentPreviewLoading" class="document-preview-status">
+                    <span class="spinner-border spinner-border-sm"></span> Đang mở nội dung Word...
+                  </div>
+                  <article
+                    v-else-if="documentPreviewHtml"
+                    class="docx-preview-content"
+                    v-html="sanitizedDocumentPreviewHtml"
+                  ></article>
+                  <div v-else class="document-file-card">
+                    <i class="bi bi-file-earmark-word"></i>
+                    <strong>Không thể hiển thị nội dung Word</strong>
+                    <span>{{ documentPreviewError || 'Bạn vẫn có thể mở hoặc tải file gốc.' }}</span>
+                  </div>
+                </div>
                 <div v-else class="document-file-card">
                   <i class="bi bi-file-earmark-arrow-down"></i>
                   <strong>{{ documentFileName }}</strong>
@@ -142,6 +175,41 @@
                     ><small>Mở hoặc tải đề bài đính kèm</small></span
                   ></a
                 >
+                <div v-if="lesson.documentUrl" class="assignment-document-preview">
+                  <div class="document-preview-heading">
+                    <div>
+                      <i class="bi bi-eye-fill"></i>
+                      <strong>Nội dung đề bài</strong>
+                    </div>
+                    <small>{{ isPdfDocument ? 'PDF' : isDocxDocument ? 'DOCX' : 'Tệp đính kèm' }}</small>
+                  </div>
+                  <iframe
+                    v-if="isPdfDocument"
+                    :src="documentAssetUrl"
+                    :title="`Đề bài ${lesson.title}`"
+                    loading="eager"
+                  ></iframe>
+                  <div v-else-if="isDocxDocument" class="docx-preview-shell">
+                    <div v-if="documentPreviewLoading" class="document-preview-status">
+                      <span class="spinner-border spinner-border-sm"></span> Đang mở nội dung Word...
+                    </div>
+                    <article
+                      v-else-if="documentPreviewHtml"
+                      class="docx-preview-content"
+                      v-html="sanitizedDocumentPreviewHtml"
+                    ></article>
+                    <div v-else class="document-file-card compact">
+                      <i class="bi bi-file-earmark-word"></i>
+                      <strong>Không thể hiển thị nội dung Word</strong>
+                      <span>{{ documentPreviewError || 'Bạn vẫn có thể mở hoặc tải file gốc ở phía trên.' }}</span>
+                    </div>
+                  </div>
+                  <div v-else class="document-file-card compact">
+                    <i class="bi bi-file-earmark-arrow-down"></i>
+                    <strong>Định dạng này chưa hỗ trợ xem trực tiếp</strong>
+                    <span>Hãy dùng liên kết phía trên để mở hoặc tải tài liệu.</span>
+                  </div>
+                </div>
               </section>
               <div v-if="assignmentAvailability" class="assignment-availability">
                 <i class="bi bi-info-circle"></i> {{ assignmentAvailability }}
@@ -149,10 +217,18 @@
               <form v-else class="assignment-form" @submit.prevent="showSubmitConfirm = true">
                 <div class="submission-heading">
                   <div>
-                    <small>NỘP BÀI</small>
-                    <h3>Chọn cách hoàn thành bài tập</h3>
+                    <small>{{ isEditingSubmitted ? 'CHỈNH SỬA BÀI ĐÃ NỘP' : 'NỘP BÀI' }}</small>
+                    <h3>{{ isEditingSubmitted ? 'Cập nhật bài làm trước hạn nộp' : 'Chọn cách hoàn thành bài tập' }}</h3>
                   </div>
-                  <span>{{ lesson.maxSubmissionAttempts }} lần nộp tối đa</span>
+                  <span v-if="isEditingSubmitted">Lần {{ editableSubmission.attemptNumber }}</span>
+                  <span v-else>{{ lesson.maxSubmissionAttempts }} lần nộp tối đa</span>
+                </div>
+                <div v-if="isEditingSubmitted" class="editable-submission-notice">
+                  <i class="bi bi-pencil-square"></i>
+                  <span>
+                    <strong>Bài đã nộp vẫn được phép chỉnh sửa</strong>
+                    <small>Mọi thay đổi sẽ cập nhật vào lần nộp hiện tại và không tính thêm lượt.</small>
+                  </span>
                 </div>
                 <div class="submission-mode-switch" role="group" aria-label="Cách nộp bài">
                   <button
@@ -188,6 +264,17 @@
                   <strong>{{ submissionFile?.name || 'Chọn file bài làm' }}</strong>
                   <span>Kéo thả hoặc bấm để chọn file · tối đa {{ lesson.maxSubmissionFileSizeMB }} MB</span>
                 </label>
+                <a
+                  v-if="submissionMode === 'file' && editableSubmission?.fileUrl && !submissionFile"
+                  class="current-submission-file"
+                  :href="resolveApiAssetUrl(editableSubmission.fileUrl)"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <i class="bi bi-file-earmark-check-fill"></i>
+                  <span><strong>{{ editableSubmission.fileName }}</strong><small>File đang được lưu trong bài đã nộp</small></span>
+                  <i class="bi bi-box-arrow-up-right"></i>
+                </a>
                 <button
                   v-if="submissionMode === 'file' && submissionFile"
                   type="button"
@@ -212,24 +299,55 @@
                     <i class="bi bi-floppy"></i> Lưu nháp</button
                   ><button class="btn btn-action-save assignment-submit" :disabled="submitting || !canSubmitAssignment">
                     <span v-if="submitting" class="spinner-border spinner-border-sm"></span
-                    ><i v-else class="bi bi-send-check"></i> Nộp bài ngay
+                    ><i v-else class="bi bi-send-check"></i>
+                    {{ isEditingSubmitted ? 'Cập nhật bài đã nộp' : 'Nộp bài ngay' }}
                   </button>
                 </div>
               </form>
               <div v-if="submissions.length" class="submission-history">
                 <h3>Lịch sử nộp bài</h3>
-                <div v-for="item in submissions" :key="item.id">
-                  <span class="attempt">Lần {{ item.attemptNumber }}</span>
-                  <div>
-                    <strong>{{ submissionStatus(item.status) }}</strong
-                    ><small
-                      >{{ dateTimeText(item.submittedAt)
-                      }}<template v-if="item.fileName"> · {{ item.fileName }}</template></small
-                    ><small v-if="item.feedback" class="teacher-feedback">Nhận xét: {{ item.feedback }}</small>
+                <div v-for="item in submissions" :key="item.id" class="submission-history-item">
+                  <div class="submission-record-main">
+                    <span class="attempt">Lần {{ item.attemptNumber }}</span>
+                    <div>
+                      <strong>{{ submissionStatus(item.status) }}</strong
+                      ><small>{{ dateTimeText(item.submittedAt) }}</small
+                      ><small v-if="item.feedback" class="teacher-feedback">Nhận xét: {{ item.feedback }}</small>
+                    </div>
+                    <button
+                      v-if="canEditSubmission(item)"
+                      type="button"
+                      class="edit-submission-button"
+                      @click="editSubmission(item)"
+                    >
+                      <i class="bi bi-pencil-square"></i> Sửa bài
+                    </button>
+                    <span v-if="item.score != null" class="submission-score"
+                      >{{ item.score }}/{{ lesson.assignmentMaxScore }} điểm</span
+                    >
                   </div>
-                  <span v-if="item.score != null" class="submission-score"
-                    >{{ item.score }}/{{ lesson.assignmentMaxScore }} điểm</span
-                  >
+                  <details class="submission-detail">
+                    <summary><i class="bi bi-eye"></i> Xem nội dung bài đã nộp</summary>
+                    <div class="submission-detail-content">
+                      <div v-if="item.submissionText" class="submitted-text">
+                        <strong>Nội dung soạn trực tuyến</strong>
+                        <p>{{ item.submissionText }}</p>
+                      </div>
+                      <a
+                        v-if="item.fileUrl"
+                        class="submitted-file"
+                        :href="resolveApiAssetUrl(item.fileUrl)"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                        <span><strong>{{ item.fileName }}</strong><small>Mở hoặc tải file bài làm</small></span>
+                      </a>
+                      <p v-if="!item.submissionText && !item.fileUrl" class="submission-detail-empty">
+                        Bài nộp này không có nội dung hoặc file đính kèm.
+                      </p>
+                    </div>
+                  </details>
                 </div>
               </div>
             </article>
@@ -328,6 +446,91 @@
             </div>
           </div>
         </div>
+        <div class="lesson-support-column">
+          <nav class="lesson-tabs" aria-label="Nội dung bổ sung của bài học">
+            <button
+              v-for="tab in lessonTabs"
+              :key="tab.key"
+              type="button"
+              :class="{ active: activeTab === tab.key }"
+              @click="activeTab = tab.key"
+            >
+              <i :class="['bi', tab.icon]"></i> {{ tab.label }}
+              <span v-if="tab.key === 'discussion' && discussionCount">{{ discussionCount }}</span>
+            </button>
+          </nav>
+          <div v-if="activeTab === 'overview'">
+            <div v-if="isVideoLesson" class="app-card p-4 mt-4">
+              <h2 class="h5 fw-bold">Mốc câu hỏi tương tác</h2>
+              <div v-if="interactions.length" class="interaction-list">
+                <button
+                  v-for="item in interactions"
+                  :key="item.id"
+                  type="button"
+                  :class="{ answered: item.answered }"
+                  @click="playerRef?.openQuestion(item)"
+                >
+                  <span>{{ formatTime(item.timeSeconds) }}</span
+                  ><i :class="['bi', item.answered ? 'bi-check-circle-fill' : 'bi-patch-question']"></i>
+                  <div>
+                    <strong>{{ item.label }}</strong
+                    ><small>{{ questionTypeLabel(item.type) }} • {{ item.score }} điểm</small>
+                  </div>
+                </button>
+              </div>
+              <p v-else class="text-secondary mb-0">Bài học này không có câu hỏi tương tác.</p>
+            </div>
+            <div
+              v-if="!isVideoLesson && !['ASSIGNMENT', 'INTERACTIVE_CONTENT'].includes(lesson.type)"
+              class="lesson-completion app-card mt-4"
+            >
+              <div>
+                <strong>Hoàn thành nội dung này?</strong
+                ><small>Hệ thống chỉ ghi nhận thời gian hợp lệ từ heartbeat khi trang đang hoạt động.</small>
+              </div>
+              <button class="btn btn-action-save" :disabled="completing" @click="markLessonComplete">
+                <span v-if="completing" class="spinner-border spinner-border-sm"></span
+                ><i v-else class="bi bi-check2-circle"></i> Đánh dấu hoàn thành
+              </button>
+            </div>
+          </div>
+          <section v-else-if="activeTab === 'resources'" class="lesson-resource-tab app-card">
+            <div v-if="lesson.documentUrl" class="resource-list-item">
+              <span :class="['lesson-type-icon', lessonTypeClass('DOCUMENT')]"
+                ><i class="bi bi-file-earmark-pdf-fill"></i
+              ></span>
+              <div>
+                <strong>{{ documentFileName }}</strong
+                ><small>Tài liệu đính kèm của bài học</small>
+              </div>
+              <a :href="documentAssetUrl" target="_blank" rel="noopener"><i class="bi bi-download"></i> Tải xuống</a>
+            </div>
+            <div v-else class="discussion-empty">
+              <i class="bi bi-folder2-open"></i><strong>Chưa có tài nguyên đính kèm</strong>
+            </div>
+          </section>
+          <LessonDiscussion
+            v-else-if="activeTab === 'discussion'"
+            :lesson-id="lesson.id"
+            @count-change="discussionCount = $event"
+          />
+
+          <nav class="lesson-navigation" aria-label="Điều hướng bài học">
+            <RouterLink v-if="previousLesson" :to="lessonUrl(previousLesson)" class="previous">
+              <i class="bi bi-arrow-left"></i>
+              <span
+                ><small>Bài trước</small><strong>{{ previousLesson.title }}</strong></span
+              >
+            </RouterLink>
+            <span v-else></span>
+            <RouterLink v-if="nextLesson" :to="lessonUrl(nextLesson)" class="next">
+              <span
+                ><small>Bài tiếp theo</small><strong>{{ nextLesson.title }}</strong></span
+              >
+              <i class="bi bi-arrow-right"></i>
+            </RouterLink>
+          </nav>
+        </div>
         <button
           v-if="sidebarOpen && !focusMode"
           type="button"
@@ -383,86 +586,6 @@
           </div>
         </aside>
       </div>
-      <nav class="lesson-tabs" aria-label="Nội dung bổ sung của bài học">
-        <button
-          v-for="tab in lessonTabs"
-          :key="tab.key"
-          type="button"
-          :class="{ active: activeTab === tab.key }"
-          @click="activeTab = tab.key"
-        >
-          <i :class="['bi', tab.icon]"></i> {{ tab.label }}
-          <span v-if="tab.key === 'discussion' && discussionCount">{{ discussionCount }}</span>
-        </button>
-      </nav>
-      <div v-if="activeTab === 'overview'">
-        <div v-if="isVideoLesson" class="app-card p-4 mt-4">
-          <h2 class="h5 fw-bold">Mốc câu hỏi tương tác</h2>
-          <div v-if="interactions.length" class="interaction-list">
-            <button
-              v-for="item in interactions"
-              :key="item.id"
-              type="button"
-              :class="{ answered: item.answered }"
-              @click="playerRef?.openQuestion(item)"
-            >
-              <span>{{ formatTime(item.timeSeconds) }}</span
-              ><i :class="['bi', item.answered ? 'bi-check-circle-fill' : 'bi-patch-question']"></i>
-              <div>
-                <strong>{{ item.label }}</strong
-                ><small>{{ questionTypeLabel(item.type) }} • {{ item.score }} điểm</small>
-              </div>
-            </button>
-          </div>
-          <p v-else class="text-secondary mb-0">Bài học này không có câu hỏi tương tác.</p>
-        </div>
-        <div v-if="!isVideoLesson && lesson.type !== 'ASSIGNMENT'" class="lesson-completion app-card mt-4">
-          <div>
-            <strong>Hoàn thành nội dung này?</strong
-            ><small>Hệ thống chỉ ghi nhận thời gian hợp lệ từ heartbeat khi trang đang hoạt động.</small>
-          </div>
-          <button class="btn btn-action-save" :disabled="completing" @click="markLessonComplete">
-            <span v-if="completing" class="spinner-border spinner-border-sm"></span
-            ><i v-else class="bi bi-check2-circle"></i> Đánh dấu hoàn thành
-          </button>
-        </div>
-      </div>
-      <section v-else-if="activeTab === 'resources'" class="lesson-resource-tab app-card">
-        <div v-if="lesson.documentUrl" class="resource-list-item">
-          <span :class="['lesson-type-icon', lessonTypeClass('DOCUMENT')]"
-            ><i class="bi bi-file-earmark-pdf-fill"></i
-          ></span>
-          <div>
-            <strong>{{ documentFileName }}</strong
-            ><small>Tài liệu đính kèm của bài học</small>
-          </div>
-          <a :href="documentAssetUrl" target="_blank" rel="noopener"><i class="bi bi-download"></i> Tải xuống</a>
-        </div>
-        <div v-else class="discussion-empty">
-          <i class="bi bi-folder2-open"></i><strong>Chưa có tài nguyên đính kèm</strong>
-        </div>
-      </section>
-      <LessonDiscussion
-        v-else-if="activeTab === 'discussion'"
-        :lesson-id="lesson.id"
-        @count-change="discussionCount = $event"
-      />
-
-      <nav class="lesson-navigation" aria-label="Điều hướng bài học">
-        <RouterLink v-if="previousLesson" :to="lessonUrl(previousLesson)" class="previous">
-          <i class="bi bi-arrow-left"></i>
-          <span
-            ><small>Bài trước</small><strong>{{ previousLesson.title }}</strong></span
-          >
-        </RouterLink>
-        <span v-else></span>
-        <RouterLink v-if="nextLesson" :to="lessonUrl(nextLesson)" class="next">
-          <span
-            ><small>Bài tiếp theo</small><strong>{{ nextLesson.title }}</strong></span
-          >
-          <i class="bi bi-arrow-right"></i>
-        </RouterLink>
-      </nav>
 
       <div v-if="showSubmitConfirm" class="app-modal-backdrop" @click.self="showSubmitConfirm = false">
         <div
@@ -472,9 +595,12 @@
           aria-labelledby="submit-assignment-title"
         >
           <span class="confirm-icon"><i class="bi bi-send-check-fill"></i></span>
-          <small>XÁC NHẬN NỘP BÀI</small>
+          <small>{{ isEditingSubmitted ? 'XÁC NHẬN CẬP NHẬT' : 'XÁC NHẬN NỘP BÀI' }}</small>
           <h3 id="submit-assignment-title">Bạn đã kiểm tra bài làm?</h3>
-          <p>Sau khi nộp, bài làm được ghi nhận là một lượt nộp chính thức và gửi đến giảng viên.</p>
+          <p v-if="isEditingSubmitted">
+            Nội dung mới sẽ thay thế bài đã nộp trong cùng lượt hiện tại và được gửi lại đến giảng viên.
+          </p>
+          <p v-else>Sau khi nộp, bài làm được ghi nhận là một lượt nộp chính thức và gửi đến giảng viên.</p>
           <dl>
             <div>
               <dt>Hình thức</dt>
@@ -488,7 +614,7 @@
           <div>
             <button type="button" class="btn-comment-plain" @click="showSubmitConfirm = false">Kiểm tra lại</button>
             <button type="button" class="btn-comment-primary" @click="confirmSubmitAssignment">
-              <i class="bi bi-send-fill"></i> Xác nhận nộp
+              <i class="bi bi-send-fill"></i> {{ isEditingSubmitted ? 'Xác nhận cập nhật' : 'Xác nhận nộp' }}
             </button>
           </div>
         </div>
@@ -505,6 +631,7 @@ import { resolveApiAssetUrl } from '../../api/apiConfig'
 import { questionTypeLabel } from '../../utils/displayLabels'
 import { formatInteractionTime } from '../../utils/learningRules'
 import InteractiveVideoPlayer from '../../components/video/InteractiveVideoPlayer.vue'
+import InteractiveContentViewer from '../../components/learning/InteractiveContentViewer.vue'
 import LessonDiscussion from '../../components/learning/LessonDiscussion.vue'
 import { normalizeVideoSource } from '../../utils/videoSources'
 import { sanitizeLearningHtml } from '../../utils/sanitizeHtml'
@@ -513,6 +640,7 @@ import { lessonTypeClass, lessonTypeMeta } from '../../utils/lessonTypes'
 const route = useRoute(),
   playerRef = ref(null),
   loading = ref(true),
+  switchingLesson = ref(false),
   error = ref(''),
   interactions = ref([]),
   chapters = ref([]),
@@ -533,6 +661,10 @@ const route = useRoute(),
   activeTab = ref('overview'),
   showSubmitConfirm = ref(false),
   discussionCount = ref(0),
+  documentPreviewHtml = ref(''),
+  documentPreviewLoading = ref(false),
+  documentPreviewError = ref(''),
+  loadedCourseContentId = ref(0),
   expandedChapters = ref(new Set())
 const quiz = reactive({
   id: 0,
@@ -591,6 +723,15 @@ const lessonCount = computed(() => chapters.value.reduce((total, chapter) => tot
     return decodeURIComponent(path.split('/').pop() || 'Tài liệu bài học')
   }),
   isPdfDocument = computed(() => /\.pdf(?:$|[?#])/i.test(lesson.documentUrl || '')),
+  isDocxDocument = computed(() => /\.docx(?:$|[?#])/i.test(lesson.documentUrl || '')),
+  sanitizedDocumentPreviewHtml = computed(() => sanitizeLearningHtml(documentPreviewHtml.value)),
+  latestSubmission = computed(() => submissions.value[0] || null),
+  editableSubmission = computed(() =>
+    canEditSubmission(latestSubmission.value) ? latestSubmission.value : null
+  ),
+  isEditingSubmitted = computed(() =>
+    ['SUBMITTED', 'RETURNED'].includes(editableSubmission.value?.status)
+  ),
   canSubmitAssignment = computed(() =>
     submissionMode.value === 'file' ? Boolean(submissionFile.value) : Boolean(submissionText.value.trim())
   ),
@@ -601,10 +742,12 @@ const lessonCount = computed(() => chapters.value.reduce((total, chapter) => tot
     const now = Date.now()
     if (lesson.assignmentStartAt && now < new Date(lesson.assignmentStartAt).getTime())
       return `Bài tập mở lúc ${dateTimeText(lesson.assignmentStartAt)}.`
+    if (latestSubmission.value?.status === 'GRADED')
+      return 'Bài làm đã được giáo viên chấm. Bạn có thể xem lại nội dung nhưng không thể chỉnh sửa.'
     if (lesson.dueAt && now > new Date(lesson.dueAt).getTime() && !lesson.allowLateSubmission)
       return `Đã hết hạn nộp lúc ${dateTimeText(lesson.dueAt)}.`
     const submittedAttempts = submissions.value.filter((item) => item.status !== 'DRAFT').length
-    if (submittedAttempts >= lesson.maxSubmissionAttempts)
+    if (!editableSubmission.value && submittedAttempts >= lesson.maxSubmissionAttempts)
       return `Bạn đã sử dụng đủ ${lesson.maxSubmissionAttempts} lần nộp.`
     return ''
   }),
@@ -654,11 +797,15 @@ watch(
     activeTab.value = 'overview'
     showSubmitConfirm.value = false
     discussionCount.value = 0
-    void Promise.all([saveProgress(), stopStudySession(false)]).finally(loadPlayer)
+    switchingLesson.value = true
+    void Promise.allSettled([saveProgress(), stopStudySession(false)]).finally(() =>
+      loadPlayer({ preserveShell: true })
+    )
   }
 )
-async function loadPlayer() {
-  loading.value = true
+async function loadPlayer({ preserveShell = false } = {}) {
+  if (preserveShell) switchingLesson.value = true
+  else loading.value = true
   error.value = ''
   try {
     const data = await axiosClient.get(`/lms/lessons/${Number(route.params.lessonId)}/player`, {
@@ -733,15 +880,17 @@ async function loadPlayer() {
     )
     lastSavedAt.value = progress.currentTime
     playerKey.value++
-    if (course.id) {
+    if (course.id && loadedCourseContentId.value !== course.id) {
       const detail = await axiosClient.get(`/lms/courses/${course.id}`, { params: { _fresh: Date.now() } })
       mapCourseContent(detail)
+      loadedCourseContentId.value = course.id
     }
     submissionText.value = ''
     submissionFile.value = null
     submissionMode.value = 'editor'
     assignmentMessage.value = ''
     assignmentError.value = ''
+    await loadDocumentPreview()
     if (lesson.type === 'ASSIGNMENT') await loadSubmissions()
     else submissions.value = []
     if (lesson.type === 'QUIZ') await loadQuiz()
@@ -751,6 +900,26 @@ async function loadPlayer() {
     error.value = e.message
   } finally {
     loading.value = false
+    switchingLesson.value = false
+  }
+}
+async function loadDocumentPreview() {
+  documentPreviewHtml.value = ''
+  documentPreviewError.value = ''
+  documentPreviewLoading.value = false
+  if (!lesson.documentUrl || !isDocxDocument.value) return
+
+  documentPreviewLoading.value = true
+  try {
+    const preview = await axiosClient.get(`/lms/lessons/${lesson.id}/document-preview`, {
+      params: { _fresh: Date.now() }
+    })
+    documentPreviewHtml.value = pick(preview, 'html', 'Html') || ''
+    if (!documentPreviewHtml.value) documentPreviewError.value = 'Tài liệu Word không có nội dung để hiển thị.'
+  } catch (e) {
+    documentPreviewError.value = e.message || 'Không thể đọc nội dung tài liệu Word.'
+  } finally {
+    documentPreviewLoading.value = false
   }
 }
 let studyTimer
@@ -796,14 +965,30 @@ async function loadSubmissions() {
     status: pick(row, 'SubmissionStatus', 'submissionStatus'),
     score: pick(row, 'Score', 'score'),
     fileName: pick(row, 'OriginalFileName', 'originalFileName'),
+    fileUrl: pick(row, 'FileUrl', 'fileUrl') || '',
     submissionText: pick(row, 'SubmissionText', 'submissionText') || '',
-    feedback: pick(row, 'Feedback', 'feedback') || ''
+    feedback: pick(row, 'Feedback', 'feedback') || '',
+    isLate: Boolean(pick(row, 'IsLate', 'isLate'))
   }))
-  const draft = submissions.value.find((item) => item.status === 'DRAFT')
-  if (draft && !submissionText.value) {
-    submissionText.value = draft.submissionText
-    if (draft.submissionText) submissionMode.value = 'editor'
+  const editable = submissions.value[0]
+  if (canEditSubmission(editable) && !submissionText.value && !submissionFile.value) {
+    submissionText.value = editable.submissionText
+    submissionMode.value = editable.submissionText ? 'editor' : 'file'
   }
+}
+function canEditSubmission(item) {
+  if (!item || !['DRAFT', 'SUBMITTED', 'RETURNED'].includes(item.status)) return false
+  if (lesson.dueAt && Date.now() > new Date(lesson.dueAt).getTime()) return false
+  return true
+}
+function editSubmission(item) {
+  if (!canEditSubmission(item)) return
+  submissionText.value = item.submissionText || ''
+  submissionFile.value = null
+  submissionMode.value = item.submissionText ? 'editor' : 'file'
+  assignmentMessage.value = 'Bạn đang chỉnh sửa lần nộp hiện tại. Hãy cập nhật trước hạn nộp.'
+  assignmentError.value = ''
+  document.querySelector('.assignment-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 function selectSubmissionFile(event) {
   submissionFile.value = event.target.files?.[0] || null
@@ -866,6 +1051,13 @@ async function markLessonComplete() {
     await loadPlayer()
   } finally {
     completing.value = false
+  }
+}
+async function handleInteractiveCompleted() {
+  await stopStudySession(true)
+  if (course.id) {
+    const detail = await axiosClient.get(`/lms/courses/${course.id}`, { params: { _fresh: Date.now() } })
+    mapCourseContent(detail)
   }
 }
 function resetQuiz() {
@@ -981,6 +1173,7 @@ function submissionStatus(value) {
   )
 }
 function mapCourseContent(data) {
+  const previouslyExpanded = new Set(expandedChapters.value)
   const chapterRows = pick(data, 'chapters', 'Chapters') || [],
     lessonRows = pick(data, 'lessons', 'Lessons') || []
   chapters.value = chapterRows
@@ -1005,11 +1198,11 @@ function mapCourseContent(data) {
     })
     .sort((first, second) => first.sortOrder - second.sortOrder || first.id - second.id)
 
-  expandedChapters.value = new Set(
-    chapters.value
-      .filter((chapter) => chapter.lessons.some((item) => item.id === lesson.id))
-      .map((chapter) => chapter.id)
-  )
+  const availableChapterIds = new Set(chapters.value.map((chapter) => chapter.id))
+  const nextExpanded = new Set([...previouslyExpanded].filter((chapterId) => availableChapterIds.has(chapterId)))
+  const activeChapter = chapters.value.find((chapter) => chapter.lessons.some((item) => item.id === lesson.id))
+  if (activeChapter) nextExpanded.add(activeChapter.id)
+  expandedChapters.value = nextExpanded
 }
 function toggleChapter(chapterId) {
   const next = new Set(expandedChapters.value)

@@ -31,6 +31,22 @@ public sealed class LmsController(ILearningService learning, IAssignmentStorageS
         var data = await learning.GetPlayerAsync(lessonId, UserId, cancellationToken);
         return data is null ? NotFound(ApiResponse<PlayerDataDto>.Fail("Không tìm thấy bài học hoặc bạn chưa được ghi danh.")) : Ok(ApiResponse<PlayerDataDto>.Ok(data));
     }
+    [HttpGet("lessons/{lessonId:long}/document-preview")]
+    public async Task<ActionResult<ApiResponse<LearningDocumentPreview>>> GetDocumentPreview(long lessonId, CancellationToken cancellationToken)
+    {
+        var player = await learning.GetPlayerAsync(lessonId, UserId, cancellationToken);
+        if (player is null) return NotFound(ApiResponse<LearningDocumentPreview>.Fail("Không tìm thấy bài học hoặc bạn chưa được ghi danh."));
+
+        if (player.Lesson is not IDictionary<string, object> lesson)
+            return UnprocessableEntity(ApiResponse<LearningDocumentPreview>.Fail("Dữ liệu bài học không hợp lệ."));
+        var fileUrl = lesson.FirstOrDefault(item => item.Key.Equals("DocumentUrl", StringComparison.OrdinalIgnoreCase)).Value?.ToString();
+        if (string.IsNullOrWhiteSpace(fileUrl)) return NotFound(ApiResponse<LearningDocumentPreview>.Fail("Bài học chưa có tài liệu đính kèm."));
+
+        var preview = await assignmentStorage.CreateDocumentPreviewAsync(fileUrl, cancellationToken);
+        return preview is null
+            ? UnprocessableEntity(ApiResponse<LearningDocumentPreview>.Fail("Định dạng tài liệu này chưa hỗ trợ xem trực tiếp."))
+            : Ok(ApiResponse<LearningDocumentPreview>.Ok(preview));
+    }
     [HttpPost("progress/video")]
     public async Task<ActionResult<ApiResponse<object>>> SaveProgress(VideoProgressRequest request, CancellationToken cancellationToken)
     {

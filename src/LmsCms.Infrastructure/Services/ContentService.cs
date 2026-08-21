@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using Dapper;
+using LmsCms.Application.Common;
 using LmsCms.Application.DTOs;
 using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure.Data;
@@ -9,6 +10,15 @@ namespace LmsCms.Infrastructure.Services;
 
 public sealed class ContentService(ISqlConnectionFactory connections, IVideoStorageService videoStorage) : IContentService
 {
+    private static readonly HashSet<string> AllowedProcedureNames = new(StringComparer.Ordinal)
+    {
+        "dbo.LMS_Chapter_Create", "dbo.LMS_Chapter_Update", "dbo.LMS_Chapter_Delete", "dbo.LMS_Chapter_Reorder",
+        "dbo.LMS_Lesson_Create", "dbo.LMS_Lesson_Update", "dbo.LMS_Lesson_Delete", "dbo.LMS_Lesson_Reorder",
+        "dbo.LMS_Video_Create", "dbo.LMS_Video_Update", "dbo.LMS_VideoLibrary_Create", "dbo.LMS_VideoLibrary_Update",
+        "dbo.LMS_VideoLibrary_Duplicate", "dbo.LMS_VideoLibrary_Delete", "dbo.LMS_VideoLibrary_Attach", "dbo.LMS_Video_AttachToLesson",
+        "dbo.LMS_VideoInteraction_Create", "dbo.LMS_VideoInteraction_Update", "dbo.LMS_VideoInteraction_Delete", "dbo.LMS_VideoInteraction_Reorder",
+        "dbo.LMS_InteractiveContent_SaveSettings", "dbo.LMS_ContentInteraction_Create", "dbo.LMS_ContentInteraction_Update", "dbo.LMS_ContentInteraction_Delete"
+    };
     public async Task<IReadOnlyCollection<object>> GetChaptersAsync(long courseId, long actorId, bool isAdmin, CancellationToken ct = default)
     {
         using var db = connections.CreateConnection();
@@ -29,7 +39,7 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
         var sourceType = ValidateVideoSource(r.SourceType, r.VideoUrl);
         return ScalarId(id is null?"dbo.LMS_Video_Create":"dbo.LMS_Video_Update",new{Id=id,LessonId=lessonId,r.Title,SourceType=sourceType,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.AllowSeek,r.AllowSpeed,r.RequiredWatchPercent,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
     }
-    public async Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search,string? access,string? source,string? usage,string? status,long actorId,bool isAdmin,CancellationToken ct=default){using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoLibrary_GetList",new{Search=search,Access=NormalizeFilter(access),Source=NormalizeFilter(source),Usage=NormalizeFilter(usage),Status=NormalizeFilter(status),ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
+    public async Task<IReadOnlyCollection<object>> GetVideoLibraryAsync(string? search,string? access,string? source,string? usage,string? status,long actorId,bool isAdmin,CancellationToken ct=default){search=InputGuard.OptionalText(search,500,"Từ khóa tìm kiếm");access=NormalizeFilter(access,"ALL","MINE","SHARED","SCHOOL");source=NormalizeFilter(source,"ALL","LOCAL","YOUTUBE");usage=NormalizeFilter(usage,"ALL","USED","UNUSED");status=NormalizeFilter(status,"ALL","ACTIVE","INACTIVE");using var db=connections.CreateConnection();return(await db.QueryAsync(new CommandDefinition("dbo.LMS_VideoLibrary_GetList",new{Search=search,Access=access,Source=source,Usage=usage,Status=status,ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct))).Cast<object>().ToArray();}
     public async Task<object> GetVideoUsageAsync(long id,long actorId,bool isAdmin,CancellationToken ct=default)
     {
         using var db=connections.CreateConnection();
@@ -46,7 +56,7 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     public Task<bool> UpdateVideoAssetAsync(long id,VideoAssetSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)
     {
         var sourceType = ValidateVideoSource(r.SourceType, r.VideoUrl);
-        var lessonIds=r.LessonIds.Where(x=>x>0).Distinct().ToArray();
+        var lessonIds=InputGuard.PositiveDistinctIds(r.LessonIds,"Danh sách bài học");
         return Affected("dbo.LMS_VideoLibrary_Update",new{Id=id,r.Title,SourceType=sourceType,r.VideoUrl,r.PosterUrl,r.DurationSeconds,r.OriginalFileName,r.FileSize,r.MimeType,r.Status,LessonIdsJson=JsonSerializer.Serialize(lessonIds),r.ChangeSummary,ActorId=actorId,IsAdmin=isAdmin},ct);
     }
     public Task<long> DuplicateVideoAssetAsync(long id,VideoDuplicateRequest r,long actorId,bool isAdmin,CancellationToken ct=default)
@@ -64,7 +74,7 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     {
         var scope=(r.ShareScope??"PRIVATE").Trim().ToUpperInvariant();
         if (scope is not ("PRIVATE" or "SELECTED" or "SCHOOL")) throw new ArgumentException("Phạm vi chia sẻ không hợp lệ.");
-        var teacherIds=r.TeacherIds.Where(x=>x>0).Distinct().ToArray();
+        var teacherIds=InputGuard.PositiveDistinctIds(r.TeacherIds,"Danh sách giảng viên");
         using var db=connections.CreateConnection();
         await db.ExecuteScalarAsync<long>(new CommandDefinition("dbo.LMS_VideoLibrary_Sharing_Save",new{Id=id,ShareScope=scope,TeacherIdsJson=JsonSerializer.Serialize(teacherIds),ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct));
     }
@@ -74,7 +84,8 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
     public async Task<PreviewAnswerResultDto> PreviewAnswerAsync(long videoId,PreviewAnswerRequest r,long actorId,bool isAdmin,CancellationToken ct=default)
     {
         using var db=connections.CreateConnection();
-        var answerText=string.Join("|",r.Answers.Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x.Trim().ToUpperInvariant()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x=>x,StringComparer.OrdinalIgnoreCase));
+        var answers=InputGuard.TextItems(r.Answers,100,10000,"Câu trả lời");
+        var answerText=string.Join("|",answers.Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x.Trim().ToUpperInvariant()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x=>x,StringComparer.OrdinalIgnoreCase));
         return await db.QuerySingleAsync<PreviewAnswerResultDto>(new CommandDefinition("dbo.LMS_VideoInteraction_PreviewAnswer",new{VideoId=videoId,r.InteractionId,r.QuestionId,AnswerText=answerText,ActorId=actorId,IsAdmin=isAdmin},commandType:CommandType.StoredProcedure,cancellationToken:ct));
     }
     public Task<long> CreateInteractionAsync(long videoId,InteractionSaveRequest r,long actorId,bool isAdmin,CancellationToken ct=default)=>ScalarId("dbo.LMS_VideoInteraction_Create",new{VideoId=videoId,r.QuestionId,r.TimeSeconds,r.EndTimeSeconds,r.InteractionType,r.Required,r.PauseVideo,r.AllowSkip,r.Score,r.AttemptLimit,r.SortOrder,r.Status,ActorId=actorId,IsAdmin=isAdmin},ct);
@@ -111,9 +122,10 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
             throw;
         }
     }
-    private async Task<long> ScalarId(string procedure,object args,CancellationToken ct){using var db=connections.CreateConnection();return await db.QuerySingleAsync<long>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct));}
-    private async Task<bool> Affected(string procedure,object args,CancellationToken ct){using var db=connections.CreateConnection();return await db.ExecuteScalarAsync<int>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct))>0;}
-    private async Task Reorder(string procedure,ReorderRequest request,long actorId,bool isAdmin,CancellationToken ct){using var db=connections.CreateConnection();db.Open();using var tx=db.BeginTransaction();try{foreach(var item in request.Items)await db.ExecuteAsync(new CommandDefinition(procedure,new{item.Id,item.SortOrder,ActorId=actorId,IsAdmin=isAdmin},transaction:tx,commandType:CommandType.StoredProcedure,cancellationToken:ct));tx.Commit();}catch{tx.Rollback();throw;}}
+    private async Task<long> ScalarId(string procedure,object args,CancellationToken ct){EnsureStoredProcedureAllowed(procedure);using var db=connections.CreateConnection();return await db.QuerySingleAsync<long>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct));}
+    private async Task<bool> Affected(string procedure,object args,CancellationToken ct){EnsureStoredProcedureAllowed(procedure);using var db=connections.CreateConnection();return await db.ExecuteScalarAsync<int>(new CommandDefinition(procedure,args,commandType:CommandType.StoredProcedure,cancellationToken:ct))>0;}
+    private async Task Reorder(string procedure,ReorderRequest request,long actorId,bool isAdmin,CancellationToken ct){EnsureStoredProcedureAllowed(procedure);using var db=connections.CreateConnection();db.Open();using var tx=db.BeginTransaction();try{foreach(var item in request.Items)await db.ExecuteAsync(new CommandDefinition(procedure,new{item.Id,item.SortOrder,ActorId=actorId,IsAdmin=isAdmin},transaction:tx,commandType:CommandType.StoredProcedure,cancellationToken:ct));tx.Commit();}catch{tx.Rollback();throw;}}
+    private static void EnsureStoredProcedureAllowed(string procedure){if(!AllowedProcedureNames.Contains(procedure))throw new InvalidOperationException("Stored procedure is not allowed for this service.");}
     private string ValidateVideoSource(string? sourceType, string? videoUrl)
     {
         if (string.IsNullOrWhiteSpace(videoUrl)) throw new ArgumentException("Nguồn video không được để trống.");
@@ -155,5 +167,5 @@ public sealed class ContentService(ISqlConnectionFactory connections, IVideoStor
         videoId=candidate;
         return true;
     }
-    private static string NormalizeFilter(string? value)=>string.IsNullOrWhiteSpace(value)?"ALL":value.Trim().ToUpperInvariant();
+    private static string NormalizeFilter(string? value,params string[] allowedValues)=>InputGuard.OptionalChoice(value,"Bộ lọc",allowedValues)??"ALL";
 }

@@ -9,6 +9,8 @@ As
 Begin
     Set Nocount On;
 
+    Declare @SearchPattern Nvarchar(1010) = N'%' + Replace(Replace(Replace(Isnull(@Search, N''), N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
+
     ;
 
     With
@@ -46,7 +48,7 @@ Begin
             Where (dbo.Courses.IsDeleted = 0)
                 And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
                 And (@Status Is Null Or @Status = '' Or dbo.Courses.Status = @Status)
-                And (@Search Is Null Or @Search = '' Or dbo.Courses.Title Like '%' + @Search + '%' Or dbo.Courses.Code Like '%' + @Search + '%')
+                And (@Search Is Null Or @Search = '' Or dbo.Courses.Title Like @SearchPattern Or dbo.Courses.Code Like @SearchPattern)
     )
     Select
         *
@@ -64,7 +66,7 @@ Begin
     Where (dbo.Courses.IsDeleted = 0)
         And (@IsAdmin = 1 Or dbo.Courses.TeacherId = @ActorId)
         And (@Status Is Null Or @Status = '' Or dbo.Courses.Status = @Status)
-        And (@Search Is Null Or @Search = '' Or dbo.Courses.Title Like '%' + @Search + '%' Or dbo.Courses.Code Like '%' + @Search + '%');
+        And (@Search Is Null Or @Search = '' Or dbo.Courses.Title Like @SearchPattern Or dbo.Courses.Code Like @SearchPattern);
 
 End
 Go

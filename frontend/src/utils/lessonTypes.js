@@ -1,6 +1,7 @@
 const LESSON_TYPE_MAP = Object.freeze({
   VIDEO: { label: 'Video', icon: 'bi-play-fill', tone: 'blue' },
   INTERACTIVE_VIDEO: { label: 'Video tương tác', icon: 'bi-play-fill', tone: 'blue' },
+  INTERACTIVE_CONTENT: { label: 'Bài học tương tác', icon: 'bi-journal-check', tone: 'teal' },
   EDITOR: { label: 'Bài đọc', icon: 'bi-file-text-fill', tone: 'cyan' },
   CONTENT: { label: 'Bài đọc', icon: 'bi-file-text-fill', tone: 'cyan' },
   DOCUMENT: { label: 'Tài liệu PDF', icon: 'bi-file-earmark-pdf-fill', tone: 'red' },

@@ -7,6 +7,8 @@ As
 Begin
     Set Nocount On;
 
+    Declare @SearchPattern Nvarchar(1010) = N'%' + Replace(Replace(Replace(Isnull(@Search, N''), N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
+
     Select
         dbo.Questions.Id,
         dbo.Questions.QuestionType,
@@ -21,7 +23,7 @@ Begin
     Inner Join dbo.Users On dbo.Users.Id = dbo.Questions.CreatedBy
     Where (dbo.Questions.IsDeleted = 0)
         And (@Type Is Null Or @Type = '' Or dbo.Questions.QuestionType = @Type)
-        And (@Search Is Null Or @Search = '' Or dbo.Questions.QuestionText Like '%' + @Search + '%')
+        And (@Search Is Null Or @Search = '' Or dbo.Questions.QuestionText Like @SearchPattern)
     Order By dbo.Questions.CreatedAt Desc
     Offset (@Page - 1) * @PageSize Rows
     Fetch Next @PageSize Rows Only;
@@ -31,7 +33,7 @@ Begin
     From dbo.Questions
     Where (dbo.Questions.IsDeleted = 0)
         And (@Type Is Null Or @Type = '' Or dbo.Questions.QuestionType = @Type)
-        And (@Search Is Null Or @Search = '' Or dbo.Questions.QuestionText Like '%' + @Search + '%');
+        And (@Search Is Null Or @Search = '' Or dbo.Questions.QuestionText Like @SearchPattern);
 End
 Go
 
@@ -161,7 +163,8 @@ Create Or Alter Procedure dbo.LMS_Question_Update
     @DefaultScore Decimal(8, 2),
     @ShortAnswerMode Varchar(30) = Null,
     @Status Varchar(30),
-    @ActorId Bigint
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
 As
 Begin
     Set Nocount On;
@@ -182,10 +185,11 @@ Begin
         Status = @Status,
         UpdatedAt = Sysutcdatetime()
     Where (Id = @Id)
-        And (IsDeleted = 0);
+        And (IsDeleted = 0)
+        And (@IsAdmin = 1 Or CreatedBy = @ActorId);
 
     If @@Rowcount = 0
-        Throw 50002, N'Không tìm thấy câu hỏi.', 1;
+        Throw 50003, N'Không tìm thấy câu hỏi hoặc bạn không có quyền sửa.', 1;
 
     Insert dbo.AuditLogs
     (
@@ -308,7 +312,8 @@ Go
 
 Create Or Alter Procedure dbo.LMS_Question_Delete
     @Id Bigint,
-    @ActorId Bigint
+    @ActorId Bigint,
+    @IsAdmin Bit = 0
 As
 Begin
     Set Nocount On;
@@ -317,9 +322,13 @@ Begin
     Set IsDeleted = 1,
         UpdatedAt = Sysutcdatetime()
     Where (Id = @Id)
-        And (IsDeleted = 0);
+        And (IsDeleted = 0)
+        And (@IsAdmin = 1 Or CreatedBy = @ActorId);
 
     Declare @Rows Int = @@Rowcount;
+
+    If @Rows = 0
+        Throw 50003, N'Không tìm thấy câu hỏi hoặc bạn không có quyền xóa.', 1;
 
     If @Rows > 0
     Begin

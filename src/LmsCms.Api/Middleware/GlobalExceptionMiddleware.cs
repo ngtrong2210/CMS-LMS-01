@@ -31,7 +31,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
             logger.LogWarning("Business rule rejected request. Code: {Code}, TraceId: {TraceId}", exception.Number, context.TraceIdentifier);
             context.Response.StatusCode = status;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(exception.Message));
+            await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(GetPublicBusinessMessage(exception.Number)));
         }
         catch (Exception exception)
         {
@@ -41,4 +41,18 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
             await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("Đã xảy ra lỗi hệ thống.", context.TraceIdentifier));
         }
     }
+
+    private static string GetPublicBusinessMessage(int errorNumber) => errorNumber switch
+    {
+        50001 => "Dữ liệu yêu cầu không hợp lệ.",
+        50002 => "Không tìm thấy dữ liệu yêu cầu.",
+        50003 => "Bạn không có quyền thực hiện thao tác này.",
+        50004 => "Không thể thực hiện thao tác ở trạng thái hiện tại.",
+        50005 => "Dữ liệu đã phát sinh kết quả và không thể thay đổi trực tiếp.",
+        50006 => "Thao tác xung đột với dữ liệu hiện tại.",
+        50007 => "Dữ liệu vượt quá giới hạn cho phép.",
+        50008 => "Chức năng hiện không khả dụng.",
+        50009 => "Loại dữ liệu không được hỗ trợ.",
+        _ => "Không thể xử lý yêu cầu."
+    };
 }

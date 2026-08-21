@@ -28,7 +28,13 @@ const routes = [
       {
         path: 'courses/:courseId/lessons/:lessonId',
         component: () => import('../views/lms/LessonPlayerView.vue'),
-        meta: { title: 'Bài học', backTo: (route) => `/lms/courses/${route.params.courseId}` }
+        meta: {
+          title: 'Bài học',
+          backTo: (route) => `/lms/courses/${route.params.courseId}`,
+          hideBack: true,
+          fullWidth: true,
+          immersive: true
+        }
       },
       {
         path: 'results',

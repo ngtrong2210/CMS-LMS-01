@@ -117,8 +117,8 @@ public interface IQuestionService
     Task<PagedResult<object>> GetListAsync(string? search, string? type, int page, int pageSize, CancellationToken ct = default);
     Task<object?> GetByIdAsync(long id, CancellationToken ct = default);
     Task<long> CreateAsync(QuestionSaveRequest request, long actorId, CancellationToken ct = default);
-    Task<bool> UpdateAsync(long id, QuestionSaveRequest request, long actorId, CancellationToken ct = default);
-    Task<bool> DeleteAsync(long id, long actorId, CancellationToken ct = default);
+    Task<bool> UpdateAsync(long id, QuestionSaveRequest request, long actorId, bool isAdmin, CancellationToken ct = default);
+    Task<bool> DeleteAsync(long id, long actorId, bool isAdmin, CancellationToken ct = default);
 }
 public interface IStudentService
 {
@@ -140,6 +140,7 @@ public interface IAssignmentStorageService
 {
     Task<AssignmentSubmissionFile> SaveTeacherResourceAsync(long lessonId, Stream content, string originalFileName, string contentType, long fileSize, CancellationToken cancellationToken = default);
     Task<AssignmentSubmissionFile> SaveStudentSubmissionAsync(long lessonId, long studentUserId, Stream content, string originalFileName, string contentType, long fileSize, CancellationToken cancellationToken = default);
+    Task<LearningDocumentPreview?> CreateDocumentPreviewAsync(string fileUrl, CancellationToken cancellationToken = default);
 }
 public enum ProjectStorageArea { Cache, Temp, Exports, Processing }
 public sealed record ProjectStoredFile(string RelativePath, long FileSize, DateTime CreatedAtUtc);

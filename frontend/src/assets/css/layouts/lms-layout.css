@@ -39,6 +39,12 @@
   border-color: #fff;
 }
 .lms-content { background: transparent; }
+.lms-content.full-width {
+  max-width: none;
+}
+.lms-content.immersive {
+  min-height: 100vh;
+}
 
 @media(max-width:991px) {
   .lms-nav .navbar-collapse { border-top: 1px solid rgba(255, 255, 255, .1); }

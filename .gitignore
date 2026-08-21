@@ -10,6 +10,10 @@ logs/
 appsettings.Local.json
 appsettings.Production.json
 /storage/temp/
+/storage/cache/
+/storage/exports/
+/storage/processing/
+/storage/local-app-data/
 *.user
 *.suo
 .vs/

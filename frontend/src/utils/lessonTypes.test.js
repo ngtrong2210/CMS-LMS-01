@@ -17,6 +17,15 @@ describe('lessonTypes', () => {
     expect(lessonTypeClass('QUIZ')).toBe('lesson-type-purple')
   })
 
+  it('hiển thị đúng bài học đọc hiểu tương tác', () => {
+    expect(lessonTypeMeta('INTERACTIVE_CONTENT')).toEqual({
+      label: 'Bài học tương tác',
+      icon: 'bi-journal-check',
+      tone: 'teal'
+    })
+    expect(lessonTypeClass('INTERACTIVE_CONTENT')).toBe('lesson-type-teal')
+  })
+
   it('trả về kiểu dự phòng an toàn cho dữ liệu lạ', () => {
     expect(lessonTypeMeta('UNKNOWN')).toEqual({
       label: 'Bài học',

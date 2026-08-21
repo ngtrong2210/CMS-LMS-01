@@ -11,6 +11,8 @@ public sealed class CourseService(ISqlConnectionFactory connections) : ICourseSe
 {
     public async Task<PagedResult<CourseListItemDto>> GetListAsync(string? search, string? status, int page, int pageSize, long actorId, bool isAdmin, CancellationToken cancellationToken = default)
     {
+        search = InputGuard.OptionalText(search, 500, "Từ khóa tìm kiếm");
+        status = InputGuard.OptionalChoice(status, "Trạng thái", "DRAFT", "PUBLISHED", "ARCHIVED");
         using var connection = connections.CreateConnection();
         using var results = await connection.QueryMultipleAsync(new CommandDefinition("dbo.LMS_Course_GetList", new { Search = search, Status = status, Page = page, PageSize = pageSize, ActorId=actorId, IsAdmin=isAdmin }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
         var items = (await results.ReadAsync<CourseListItemDto>()).ToArray();

@@ -1,3 +1,5 @@
+Set Quoted_identifier On;
+Go
 Create Or Alter Procedure dbo.LMS_InteractiveContent_GetForTeacher
     @LessonID Bigint,
     @ActorUserID Bigint,
@@ -45,7 +47,20 @@ Begin
         dbo.LMS_Questions.QuestionText,
         dbo.LMS_Questions.Explanation,
         dbo.LMS_Questions.Difficulty,
-        dbo.LMS_Questions.DefaultScore
+        dbo.LMS_Questions.DefaultScore,
+        (
+            Select
+                dbo.LMS_QuestionOptions.QuestionOptionID Id,
+                dbo.LMS_QuestionOptions.OptionCode,
+                dbo.LMS_QuestionOptions.OptionText,
+                dbo.LMS_QuestionOptions.SortOrder
+            From dbo.LMS_QuestionOptions
+            Where (dbo.LMS_QuestionOptions.QuestionId = dbo.LMS_Questions.QuestionID)
+                And (dbo.LMS_QuestionOptions.IsDeleted = 0)
+            Order By
+                dbo.LMS_QuestionOptions.SortOrder
+            For Json Path
+        ) Options
     From dbo.LMS_InteractiveContents
     Inner Join dbo.LMS_ContentInteractions On dbo.LMS_ContentInteractions.InteractiveContentID = dbo.LMS_InteractiveContents.InteractiveContentID
     Inner Join dbo.LMS_Questions On dbo.LMS_Questions.QuestionID = dbo.LMS_ContentInteractions.QuestionID
@@ -358,7 +373,8 @@ Begin
             dbo.LMS_StudentAnswers.QuestionId QuestionID,
             dbo.LMS_StudentAnswers.AnswerText,
             Case When dbo.LMS_InteractiveContents.ShowResultImmediately = 1 Then dbo.LMS_StudentAnswers.IsCorrect Else Null End IsCorrect,
-            dbo.LMS_StudentAnswers.ScoreAwarded,
+            Case When dbo.LMS_InteractiveContents.ShowScore = 1 Then dbo.LMS_StudentAnswers.ScoreAwarded Else 0 End ScoreAwarded,
+            Case When dbo.LMS_InteractiveContents.ShowResultImmediately = 1 Then dbo.LMS_Questions.Explanation Else Null End Explanation,
             dbo.LMS_StudentAnswers.ReviewStatus,
             dbo.LMS_StudentAnswers.AttemptNumber,
             dbo.LMS_StudentAnswers.AnsweredAt,
@@ -366,6 +382,7 @@ Begin
         From dbo.LMS_StudentAnswers
         Inner Join dbo.LMS_ContentInteractions On dbo.LMS_ContentInteractions.ContentInteractionID = dbo.LMS_StudentAnswers.ContentInteractionID
         Inner Join dbo.LMS_InteractiveContents On dbo.LMS_InteractiveContents.InteractiveContentID = dbo.LMS_ContentInteractions.InteractiveContentID
+        Inner Join dbo.LMS_Questions On dbo.LMS_Questions.QuestionID = dbo.LMS_StudentAnswers.QuestionId
         Where (dbo.LMS_StudentAnswers.StudentUserID = @StudentUserID)
             And (dbo.LMS_StudentAnswers.LessonId = @LessonID)
     )
@@ -375,6 +392,7 @@ Begin
         LatestAnswers.AnswerText,
         LatestAnswers.IsCorrect,
         LatestAnswers.ScoreAwarded,
+        LatestAnswers.Explanation,
         LatestAnswers.ReviewStatus,
         LatestAnswers.AttemptNumber,
         LatestAnswers.AnsweredAt
@@ -385,10 +403,11 @@ Begin
         Cast(Coalesce(dbo.LMS_StudentLessonProgress.ProgressPercent, 0) As Decimal(5, 2)) ProgressPercent,
         Cast(Coalesce(dbo.LMS_StudentLessonProgress.ReadingProgressPercent, 0) As Decimal(5, 2)) ReadingProgressPercent,
         Cast(Coalesce(dbo.LMS_StudentLessonProgress.LastScrollPercent, 0) As Decimal(5, 2)) LastScrollPercent,
-        Cast(Coalesce(dbo.LMS_StudentLessonProgress.Score, 0) As Decimal(8, 2)) Score,
+        Cast(Case When dbo.LMS_InteractiveContents.ShowScore = 1 Then Coalesce(dbo.LMS_StudentLessonProgress.Score, 0) Else 0 End As Decimal(8, 2)) Score,
         Cast(Coalesce(dbo.LMS_StudentLessonProgress.Completed, 0) As Bit) Completed,
         dbo.LMS_StudentLessonProgress.CompletedAt
     From dbo.SIM_Lessons
+    Inner Join dbo.LMS_InteractiveContents On dbo.LMS_InteractiveContents.LessonID = dbo.SIM_Lessons.LessonID
     Left Join dbo.LMS_StudentLessonProgress On dbo.LMS_StudentLessonProgress.LessonId = dbo.SIM_Lessons.LessonID And dbo.LMS_StudentLessonProgress.StudentUserID = @StudentUserID
     Where (dbo.SIM_Lessons.LessonID = @LessonID);
 End
@@ -556,6 +575,7 @@ Begin
     Declare @Score Decimal(8, 2);
     Declare @AttemptLimit Int;
     Declare @ShowResultImmediately Bit;
+    Declare @ShowScore Bit;
     Declare @CorrectAnswer Nvarchar(Max);
     Declare @IsCorrect Bit;
     Declare @AttemptNumber Int;
@@ -568,6 +588,7 @@ Begin
         @Score = dbo.LMS_ContentInteractions.Score,
         @AttemptLimit = dbo.LMS_ContentInteractions.AttemptLimit,
         @ShowResultImmediately = dbo.LMS_InteractiveContents.ShowResultImmediately,
+        @ShowScore = dbo.LMS_InteractiveContents.ShowScore,
         @Explanation = dbo.LMS_Questions.Explanation
     From dbo.LMS_ContentInteractions
     Inner Join dbo.LMS_InteractiveContents On dbo.LMS_InteractiveContents.InteractiveContentID = dbo.LMS_ContentInteractions.InteractiveContentID
@@ -669,6 +690,18 @@ Begin
         Where (dbo.LMS_QuestionOptions.QuestionId = @QuestionID)
             And (dbo.LMS_QuestionOptions.IsDeleted = 0);
 
+    Declare @RecalculateResult Table
+    (
+        TotalQuestions Int,
+        AnsweredQuestions Int,
+        RequiredQuestions Int,
+        AnsweredRequired Int,
+        Score Decimal(5, 2),
+        ProgressPercent Decimal(5, 2),
+        Completed Bit
+    );
+
+    Insert Into @RecalculateResult
     Exec dbo.LMS_InteractiveContent_Recalculate @LessonID, @StudentUserID;
 
     Declare @CurrentLessonScore Decimal(8, 2) = 0;
@@ -683,8 +716,8 @@ Begin
     Select
         @StudentAnswerID AnswerId,
         Case When @ShowResultImmediately = 1 Then @IsCorrect Else Null End IsCorrect,
-        Case When @IsCorrect = 1 Then @Score Else 0 End ScoreAwarded,
-        @CurrentLessonScore CurrentLessonScore,
+        Case When @ShowResultImmediately = 1 And @ShowScore = 1 And @IsCorrect = 1 Then @Score Else 0 End ScoreAwarded,
+        Case When @ShowScore = 1 Then @CurrentLessonScore Else 0 End CurrentLessonScore,
         @AttemptNumber AttemptNumber,
         Case When @IsCorrect Is Null Then 'PENDING_REVIEW' Else 'AUTO_GRADED' End ReviewStatus,
         Case When @ShowResultImmediately = 1 Then @Explanation Else Null End Explanation;

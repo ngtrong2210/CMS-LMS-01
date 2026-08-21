@@ -1,12 +1,12 @@
 <template>
   <div class="lms-shell">
-    <div class="learning-strip">
+    <div v-if="!route.meta.immersive" class="learning-strip">
       <div class="container">
         <span><i class="bi bi-mortarboard"></i> Hệ thống học tập trực tuyến LearnHub</span
         ><span class="d-none d-md-inline"><i class="bi bi-headset"></i> Hỗ trợ học viên: Bộ phận đào tạo</span>
       </div>
     </div>
-    <nav class="navbar navbar-expand-lg sticky-top lms-nav">
+    <nav v-if="!route.meta.immersive" class="navbar navbar-expand-lg sticky-top lms-nav">
       <div class="container py-2">
         <RouterLink class="brand" to="/lms/dashboard"
           ><img class="eduvers-logo" src="/images/eduvers/logo-1.png" alt="Eduvers"
@@ -39,7 +39,16 @@
         </div>
       </div>
     </nav>
-    <main class="container py-4 py-lg-5 lms-content">
+    <main
+      :class="[
+        'lms-content',
+        route.meta.immersive
+          ? 'container-fluid full-width immersive p-0'
+          : route.meta.fullWidth
+            ? 'container-fluid full-width px-2 px-lg-3 py-3'
+            : 'container py-4 py-lg-5'
+      ]"
+    >
       <div v-if="!route.meta.hideBack" class="lms-back-row"><PageBackButton /></div>
       <RouterView v-slot="{ Component }">
         <KeepAlive :include="cachedPages" :max="6">
@@ -47,7 +56,7 @@
         </KeepAlive>
       </RouterView>
     </main>
-    <footer class="lms-footer">
+    <footer v-if="!route.meta.immersive" class="lms-footer">
       <div class="container">
         <span>© 2026 LearnHub · Hệ thống quản lý học tập</span><span>Hỗ trợ · Quy định học tập · Bảo mật</span>
       </div>

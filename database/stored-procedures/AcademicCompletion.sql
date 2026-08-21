@@ -5,6 +5,7 @@ Create Or Alter Procedure dbo.LMS_ClassSubject_Workspace_Ensure
 As
 Begin
     Set Nocount On;
+
     Set Xact_abort On;
 
     Declare @DataGroupID Int;
@@ -183,14 +184,34 @@ Begin
 
     Declare @AssignmentSubmissionID Bigint;
     Declare @AttemptNumber Int;
+    Declare @CurrentSubmissionStatus Varchar(30);
+
+    If Exists
+    (
+        Select 1
+        From dbo.LMS_AssignmentSubmissions
+        Where (dbo.LMS_AssignmentSubmissions.LessonID = @LessonID)
+            And (dbo.LMS_AssignmentSubmissions.StudentUserID = @StudentUserID)
+            And (dbo.LMS_AssignmentSubmissions.SubmissionStatus = 'GRADED')
+    )
+        Throw 50006, N'Bài làm đã được giáo viên chấm nên không thể chỉnh sửa.', 1;
 
     Select Top (1)
         @AssignmentSubmissionID = dbo.LMS_AssignmentSubmissions.AssignmentSubmissionID,
-        @AttemptNumber = dbo.LMS_AssignmentSubmissions.AttemptNumber
+        @AttemptNumber = dbo.LMS_AssignmentSubmissions.AttemptNumber,
+        @CurrentSubmissionStatus = dbo.LMS_AssignmentSubmissions.SubmissionStatus
     From dbo.LMS_AssignmentSubmissions With (Updlock, Holdlock)
     Where (dbo.LMS_AssignmentSubmissions.LessonID = @LessonID)
         And (dbo.LMS_AssignmentSubmissions.StudentUserID = @StudentUserID)
-        And (dbo.LMS_AssignmentSubmissions.SubmissionStatus = 'DRAFT')
+        And
+        (
+            (dbo.LMS_AssignmentSubmissions.SubmissionStatus = 'DRAFT')
+            Or
+            (
+                dbo.LMS_AssignmentSubmissions.SubmissionStatus In ('SUBMITTED', 'RETURNED')
+                And (@DueAt Is Null Or Sysutcdatetime() <= @DueAt)
+            )
+        )
     Order By dbo.LMS_AssignmentSubmissions.AttemptNumber Desc;
 
     If @AssignmentSubmissionID Is Null
@@ -236,7 +257,7 @@ Begin
             FileSize = Coalesce(@FileSize, FileSize),
             MimeType = Coalesce(@MimeType, MimeType),
             SubmittedAt = Sysutcdatetime(),
-            SubmissionStatus = Iif(@Action = 'SUBMIT', 'SUBMITTED', 'DRAFT'),
+            SubmissionStatus = Case When @CurrentSubmissionStatus In ('SUBMITTED', 'RETURNED') Then 'SUBMITTED' Else Iif(@Action = 'SUBMIT', 'SUBMITTED', 'DRAFT') End,
             IsLate = Iif(@Action = 'SUBMIT' And @DueAt Is Not Null And Sysutcdatetime() > @DueAt, 1, 0)
         Where (dbo.LMS_AssignmentSubmissions.AssignmentSubmissionID = @AssignmentSubmissionID);
     End;
@@ -271,7 +292,7 @@ Begin
     Select
         @AssignmentSubmissionID AssignmentSubmissionID,
         @AttemptNumber AttemptNumber,
-        Iif(@Action = 'SUBMIT', 'SUBMITTED', 'DRAFT') SubmissionStatus;
+        Case When @CurrentSubmissionStatus In ('SUBMITTED', 'RETURNED') Then 'SUBMITTED' Else Iif(@Action = 'SUBMIT', 'SUBMITTED', 'DRAFT') End SubmissionStatus;
 End
 Go
 
@@ -308,6 +329,16 @@ Begin
 
     If @AssignmentStartAt Is Not Null And Sysutcdatetime() < @AssignmentStartAt
         Throw 50006, N'Bài tập chưa đến thời gian mở.', 1;
+
+    If Exists
+    (
+        Select 1
+        From dbo.LMS_AssignmentSubmissions
+        Where (dbo.LMS_AssignmentSubmissions.LessonID = @LessonID)
+            And (dbo.LMS_AssignmentSubmissions.StudentUserID = @StudentUserID)
+            And (dbo.LMS_AssignmentSubmissions.SubmissionStatus = 'GRADED')
+    )
+        Throw 50006, N'Bài làm đã được giáo viên chấm nên không thể chỉnh sửa.', 1;
 
     If Upper(@Action) = 'SUBMIT' And @DueAt Is Not Null And Sysutcdatetime() > @DueAt And @AllowLateSubmission = 0
         Throw 50006, N'Bài tập đã hết hạn nộp.', 1;
@@ -352,6 +383,8 @@ As
 Begin
     Set Nocount On;
 
+    Declare @SearchPattern Nvarchar(510) = N'%' + Replace(Replace(Replace(Isnull(@Search, N''), N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
+
     Select
         dbo.LMS_AssignmentSubmissions.AssignmentSubmissionID,
         dbo.LMS_AssignmentSubmissions.AttemptNumber,
@@ -392,7 +425,7 @@ Begin
     Where (@IsAdmin = 1 Or dbo.SIM_Courses.TeacherUserID = @ActorID)
         And (@ClassSubjectID Is Null Or dbo.SIM_Courses.ClassSubjectID = @ClassSubjectID)
         And (@Status Is Null Or @Status = '' Or dbo.LMS_AssignmentSubmissions.SubmissionStatus = @Status)
-        And (@Search Is Null Or @Search = '' Or dbo.SYS_Users.FullName Like N'%' + @Search + N'%' Or dbo.SYS_Users.StudentCode Like N'%' + @Search + N'%' Or dbo.SIM_Lessons.Title Like N'%' + @Search + N'%')
+        And (@Search Is Null Or @Search = '' Or dbo.SYS_Users.FullName Like @SearchPattern Or dbo.SYS_Users.StudentCode Like @SearchPattern Or dbo.SIM_Lessons.Title Like @SearchPattern)
     Order By
         Case When dbo.LMS_AssignmentSubmissions.SubmissionStatus In ('SUBMITTED', 'LATE') Then 0 Else 1 End,
         dbo.LMS_AssignmentSubmissions.SubmittedAt Desc;

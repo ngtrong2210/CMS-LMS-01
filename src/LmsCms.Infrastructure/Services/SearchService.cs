@@ -1,6 +1,7 @@
 using System.Data;
 using Dapper;
 using LmsCms.Application.Interfaces;
+using LmsCms.Application.Common;
 using LmsCms.Infrastructure.Data;
 
 namespace LmsCms.Infrastructure.Services;
@@ -9,7 +10,7 @@ public sealed class SearchService(ISqlConnectionFactory connections) : ISearchSe
 {
     public async Task<IReadOnlyCollection<object>> SearchAsync(string search, long actorId, bool isAdmin, int limit = 60, CancellationToken cancellationToken = default)
     {
-        var term = search.Trim();
+        var term = InputGuard.OptionalText(search, 250, "Từ khóa tìm kiếm") ?? string.Empty;
         if (term.Length < 2) return Array.Empty<object>();
         using var connection = connections.CreateConnection();
         var rows = await connection.QueryAsync(new CommandDefinition(

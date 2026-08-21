@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using LmsCms.Application.DTOs;
 using LmsCms.Application.Interfaces;
+using LmsCms.Application.Common;
 using LmsCms.Infrastructure.Data;
 
 namespace LmsCms.Infrastructure.Services;
@@ -10,6 +11,9 @@ public sealed class TeachingService(ISqlConnectionFactory connections) : ITeachi
 {
     public async Task<IReadOnlyCollection<object>> GetAssignmentSubmissionsAsync(long? classSubjectId, string? status, string? search, long actorId, bool isAdmin, CancellationToken cancellationToken = default)
     {
+        if (classSubjectId <= 0) throw new ArgumentException("Mã môn học lớp phải lớn hơn 0.");
+        status = InputGuard.OptionalChoice(status, "Trạng thái", "DRAFT", "SUBMITTED", "GRADED", "RETURNED");
+        search = InputGuard.OptionalText(search, 250, "Từ khóa tìm kiếm");
         using var connection = connections.CreateConnection();
         return (await connection.QueryAsync(new CommandDefinition(
             "dbo.LMS_AssignmentSubmission_GetForTeacher",

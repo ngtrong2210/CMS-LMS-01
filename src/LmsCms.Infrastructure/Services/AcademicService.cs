@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using Dapper;
+using LmsCms.Application.Common;
 using LmsCms.Application.DTOs;
 using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure.Data;
@@ -88,6 +89,7 @@ public sealed class AcademicService(ISqlConnectionFactory connections) : IAcadem
 
     public async Task<object> AssignStudentsToClassAsync(AssignStudentsToClassRequest request, long actorId, CancellationToken cancellationToken = default)
     {
+        var studentUserIds = InputGuard.PositiveDistinctIds(request.StudentUserIds, "Danh sách học viên");
         using var connection = connections.CreateConnection();
         return await connection.QuerySingleAsync(new CommandDefinition(
             "dbo.LMS_Academic_Student_AssignClass",
@@ -95,7 +97,7 @@ public sealed class AcademicService(ISqlConnectionFactory connections) : IAcadem
             {
                 request.DataGroupId,
                 request.ClassId,
-                StudentUserIDsJson = JsonSerializer.Serialize(request.StudentUserIds.Distinct()),
+                StudentUserIDsJson = JsonSerializer.Serialize(studentUserIds),
                 ActorID = actorId
             },
             commandType: CommandType.StoredProcedure,

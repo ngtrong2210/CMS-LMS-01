@@ -4,10 +4,12 @@ using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure;
 using LmsCms.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Http.Features;
+using LmsCms.Api.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
@@ -15,7 +17,15 @@ builder.Services.Configure<MediaStorageOptions>(builder.Configuration.GetSection
 builder.Services.Configure<ProjectStorageOptions>(builder.Configuration.GetSection(ProjectStorageOptions.SectionName));
 var maxVideoFileSize = builder.Configuration.GetValue<long>($"{MediaStorageOptions.SectionName}:MaxVideoFileSizeMB", 500) * 1024L * 1024L;
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxVideoFileSize);
-builder.Services.AddControllers();
+if (builder.Environment.IsDevelopment())
+{
+    var dataProtectionPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "storage", "cache", "data-protection"));
+    Directory.CreateDirectory(dataProtectionPath);
+    builder.Services.AddDataProtection()
+        .SetApplicationName("LmsCms.Local")
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath));
+}
+builder.Services.AddControllers(options => options.Filters.Add<PositiveRouteIdFilter>());
 builder.Services.AddInfrastructure();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

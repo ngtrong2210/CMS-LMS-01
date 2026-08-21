@@ -82,7 +82,10 @@ public sealed class DatabaseInitializer(IConfiguration configuration, IWebHostEn
     {
         var configured = configuration.GetValue<string>("Database:ScriptsPath") ?? "../../database";
         if (Path.IsPathRooted(configured)) throw new InvalidOperationException("Database:ScriptsPath phải là đường dẫn tương đối.");
+        var projectRoot = Path.GetFullPath(Path.Combine(environment.ContentRootPath, "..", ".."));
         var path = Path.GetFullPath(Path.Combine(environment.ContentRootPath, configured.Replace('/', Path.DirectorySeparatorChar)));
+        if (!path.StartsWith(projectRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Database:ScriptsPath phải nằm trong project hiện tại.");
         return Directory.Exists(path) ? path : throw new DirectoryNotFoundException($"Không tìm thấy thư mục SQL scripts: {path}");
     }
 }

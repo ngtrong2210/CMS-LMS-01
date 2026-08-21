@@ -7,6 +7,8 @@ As
 Begin
     Set Nocount On;
 
+    Declare @SearchPattern Nvarchar(510) = N'%' + Replace(Replace(Replace(Isnull(@Search, N''), N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
+
     Select
         dbo.Users.Id,
         dbo.Users.StudentCode,
@@ -23,7 +25,7 @@ Begin
     Where (dbo.Users.StudentCode Is Not Null)
         And (dbo.Users.IsDeleted = 0)
         And (@Status Is Null Or @Status = '' Or dbo.Users.Status = @Status)
-        And (@Search Is Null Or @Search = '' Or dbo.Users.FullName Like '%' + @Search + '%' Or dbo.Users.StudentCode Like '%' + @Search + '%' Or dbo.Users.Email Like '%' + @Search + '%')
+        And (@Search Is Null Or @Search = '' Or dbo.Users.FullName Like @SearchPattern Or dbo.Users.StudentCode Like @SearchPattern Or dbo.Users.Email Like @SearchPattern)
     Group By
         dbo.Users.Id,
         dbo.Users.StudentCode,
@@ -42,7 +44,7 @@ Begin
     Where (dbo.Users.StudentCode Is Not Null)
         And (dbo.Users.IsDeleted = 0)
         And (@Status Is Null Or @Status = '' Or dbo.Users.Status = @Status)
-        And (@Search Is Null Or @Search = '' Or dbo.Users.FullName Like '%' + @Search + '%' Or dbo.Users.StudentCode Like '%' + @Search + '%' Or dbo.Users.Email Like '%' + @Search + '%');
+        And (@Search Is Null Or @Search = '' Or dbo.Users.FullName Like @SearchPattern Or dbo.Users.StudentCode Like @SearchPattern Or dbo.Users.Email Like @SearchPattern);
 End
 Go
 

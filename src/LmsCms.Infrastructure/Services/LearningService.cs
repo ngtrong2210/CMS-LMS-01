@@ -1,5 +1,6 @@
 using System.Data;
 using Dapper;
+using LmsCms.Application.Common;
 using LmsCms.Application.DTOs;
 using LmsCms.Application.Interfaces;
 using LmsCms.Infrastructure.Data;
@@ -62,7 +63,8 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
     public async Task<AnswerResultDto> SubmitAnswerAsync(long studentId, SubmitAnswerRequest request, CancellationToken cancellationToken = default)
     {
         using var connection = connections.CreateConnection();
-        var answerText = string.Join("|", request.Answers
+        var answers = InputGuard.TextItems(request.Answers, 100, 10000, "Câu trả lời");
+        var answerText = string.Join("|", answers
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.Trim().ToUpperInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -88,7 +90,8 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
     public async Task<AnswerResultDto> SubmitInteractiveContentAnswerAsync(long lessonId, long studentId, InteractiveContentAnswerRequest request, CancellationToken cancellationToken = default)
     {
         using var connection = connections.CreateConnection();
-        var answerText = string.Join("|", request.Answers
+        var answers = InputGuard.TextItems(request.Answers, 100, 10000, "Câu trả lời");
+        var answerText = string.Join("|", answers
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.Trim().ToUpperInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -194,6 +197,7 @@ public sealed class LearningService(ISqlConnectionFactory connections) : ILearni
 
     private async Task<object> SaveAssignmentAsync(long lessonId, long studentId, string? submissionText, AssignmentSubmissionFile? file, string action, CancellationToken cancellationToken)
     {
+        submissionText = InputGuard.BoundedText(submissionText, 100000, "Nội dung bài làm");
         using var connection = connections.CreateConnection();
         return await connection.QuerySingleAsync(new CommandDefinition(
             "dbo.LMS_AssignmentSubmission_Save",
