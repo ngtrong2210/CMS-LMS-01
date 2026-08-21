@@ -49,3 +49,12 @@ Không commit connection string, JWT key, FTP password hoặc Vercel token. Cấ
 ## Media
 
 `LmsCms.Api.csproj` loại `wwwroot/Media/**/*` khỏi publish. Backend tự tạo các thư mục Media còn thiếu khi khởi động, nhưng không thay thế file người dùng đã upload.
+
+## Xác minh release 2026-08-21
+
+- Commit nguồn: `331001d` trên nhánh `main`.
+- SQL master hoàn tất với marker `PRODUCTION_SYNC_COMPLETED`.
+- Backend package được giải nén thành công trên SmarterASP.NET và không chứa thư mục Media.
+- Health check backend và SQL Server đều `Healthy`.
+- Asset frontend production trùng với bản build local: `index-D5jOVIRD.js`.
+- Lệnh Vercel CLI không tạo deployment mới do tài khoản CLI hiện tại không thuộc team `2nt1`. Vì production đã phục vụ đúng cùng artifact, trạng thái được ghi nhận là đồng bộ artifact, không ghi nhận là một Vercel redeploy mới.
