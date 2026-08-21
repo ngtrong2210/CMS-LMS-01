@@ -56,7 +56,7 @@
     <div v-if="deleteTarget" class="app-modal-backdrop" @click.self="deleteTarget = null">
       <div class="app-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-comment-title">
         <span class="confirm-icon danger"><i class="bi bi-trash3"></i></span>
-        <small>XÁC NHẬN THAO TÁC</small>
+        <small>Xác nhận thao tác</small>
         <h3 id="delete-comment-title">Xóa bình luận?</h3>
         <p>Các câu trả lời phía dưới vẫn được giữ lại để không làm mất mạch thảo luận.</p>
         <div>

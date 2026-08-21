@@ -84,7 +84,7 @@
       <form class="app-card form-modal" @submit.prevent="saveChapter">
         <div class="modal-heading">
           <div>
-            <small>CHƯƠNG MÔN HỌC</small>
+            <small>Chương môn học</small>
             <h2>{{ chapterForm.id ? 'Sửa chương' : 'Thêm chương' }}</h2>
           </div>
           <button type="button" class="btn-close" @click="chapterModal = false"></button>
@@ -111,7 +111,7 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-action-cancel" @click="chapterModal = false">
+          <button type="button" class="btn btn-action-cancel btn-action-outline" @click="chapterModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-action-save" :disabled="saving">
             <span v-if="saving" class="spinner-border spinner-border-sm"></span
@@ -132,52 +132,54 @@
       >
         <div class="modal-heading">
           <div>
-            <small>BÀI HỌC</small>
+            <small>Bài học</small>
             <h2>{{ lessonForm.id ? 'Sửa bài học' : 'Thêm bài học' }}</h2>
           </div>
           <button type="button" class="btn-close" @click="lessonModal = false"></button>
         </div>
         <div class="row g-3">
           <div class="col-12">
-            <label class="form-label">Tên bài học</label
-            ><input v-model.trim="lessonForm.title" class="form-control" required maxlength="500" />
-          </div>
-          <div class="col-12">
-            <label class="form-label">Mô tả</label
-            ><textarea v-model.trim="lessonForm.description" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Loại bài</label
-            ><select v-model="lessonForm.lessonType" class="form-select">
-              <option value="INTERACTIVE_VIDEO">Video tương tác</option>
-              <option value="VIDEO">Video</option>
-              <option value="QUIZ">Bài kiểm tra</option>
-              <option value="DOCUMENT">Tài liệu PDF / file</option>
-              <option value="EDITOR">Bài học soạn thảo</option>
-              <option value="INTERACTIVE_CONTENT">Bài học tương tác</option>
-              <option value="ASSIGNMENT">Bài tập nộp file</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Thứ tự</label
-            ><input v-model.number="lessonForm.sortOrder" class="form-control" type="number" min="1" />
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Điểm đạt</label
-            ><input v-model.number="lessonForm.passingScore" class="form-control" type="number" min="0" max="100" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Trạng thái</label
-            ><select v-model="lessonForm.status" class="form-select">
-              <option value="ACTIVE">Hoạt động</option>
-              <option value="INACTIVE">Tạm ẩn</option>
-            </select>
-          </div>
-          <div class="col-md-6 check-row">
-            <input id="requiredLesson" v-model="lessonForm.isRequired" class="form-check-input" type="checkbox" /><label
-              for="requiredLesson"
-              >Bài học bắt buộc</label
-            >
+            <div class="lesson-overview-grid">
+              <div class="lesson-field lesson-field-title">
+                <label class="form-label">Tên bài học</label>
+                <input v-model.trim="lessonForm.title" class="form-control" required maxlength="500" />
+              </div>
+              <div class="lesson-field lesson-field-type">
+                <label class="form-label">Loại bài</label>
+                <select v-model="lessonForm.lessonType" class="form-select">
+                  <option value="INTERACTIVE_VIDEO">Video tương tác</option>
+                  <option value="VIDEO">Video</option>
+                  <option value="QUIZ">Bài kiểm tra</option>
+                  <option value="DOCUMENT">Tài liệu PDF / file</option>
+                  <option value="EDITOR">Bài học soạn thảo</option>
+                  <option value="INTERACTIVE_CONTENT">Bài học tương tác</option>
+                  <option value="ASSIGNMENT">Bài tập nộp file</option>
+                </select>
+              </div>
+              <div class="lesson-field lesson-field-status">
+                <label class="form-label">Trạng thái</label>
+                <select v-model="lessonForm.status" class="form-select">
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="INACTIVE">Tạm ẩn</option>
+                </select>
+              </div>
+              <div class="lesson-field lesson-field-description">
+                <label class="form-label">Mô tả</label>
+                <textarea v-model.trim="lessonForm.description" class="form-control" rows="2"></textarea>
+              </div>
+              <div class="lesson-field lesson-field-order">
+                <label class="form-label">Thứ tự</label>
+                <input v-model.number="lessonForm.sortOrder" class="form-control" type="number" min="1" />
+              </div>
+              <div class="lesson-field lesson-field-score">
+                <label class="form-label">Điểm đạt</label>
+                <input v-model.number="lessonForm.passingScore" class="form-control" type="number" min="0" max="100" />
+              </div>
+              <label class="lesson-required-toggle" for="requiredLesson">
+                <input id="requiredLesson" v-model="lessonForm.isRequired" class="form-check-input" type="checkbox" />
+                <span>Bài học bắt buộc</span>
+              </label>
+            </div>
           </div>
           <div v-if="['EDITOR', 'INTERACTIVE_CONTENT'].includes(lessonForm.lessonType)" class="col-12">
             <label class="form-label"><i class="bi bi-pencil-square"></i> Nội dung soạn thảo</label>
@@ -236,71 +238,125 @@
               <label><input v-model="lessonForm.interactiveShowResult" type="checkbox" /> Hiện đúng / sai ngay</label>
               <label><input v-model="lessonForm.interactiveShowScore" type="checkbox" /> Hiện điểm</label>
             </div>
-            <div class="col-12 interactive-question-picker">
-              <label v-for="question in interactiveQuestionBank" :key="question.id" class="interactive-bank-row">
-                <input
-                  :checked="isInteractiveQuestionSelected(question.id)"
-                  type="checkbox"
-                  class="form-check-input"
-                  @change="toggleInteractiveQuestion(question, $event.target.checked)"
-                />
-                <span class="interactive-bank-copy">
-                  <strong>{{ question.text }}</strong>
-                  <small>{{ questionTypeLabel(question.type) }} · Mặc định {{ question.score }} điểm</small>
-                </span>
-              </label>
-              <p v-if="!interactiveQuestionBank.length" class="text-secondary mb-0">
-                Ngân hàng chưa có câu hỏi hoạt động.
-              </p>
-            </div>
-            <div v-if="lessonForm.interactiveMappings.length" class="col-12 interactive-selected-list">
-              <article v-for="(mapping, index) in lessonForm.interactiveMappings" :key="mapping.questionId">
-                <span class="interactive-order">{{ index + 1 }}</span>
-                <div class="interactive-selected-copy">
-                  <strong>{{ mapping.questionText }}</strong>
-                  <small>{{ questionTypeLabel(mapping.questionType) }}</small>
+            <div class="col-12 interactive-question-workspace">
+              <section class="interactive-bank-panel">
+                <header class="interactive-panel-heading">
+                  <div>
+                    <span>NGÂN HÀNG CÂU HỎI</span>
+                    <h4>Tìm và chọn câu hỏi</h4>
+                  </div>
+                  <strong>{{ interactiveQuestionTotal }} câu</strong>
+                </header>
+                <div class="interactive-bank-toolbar">
+                  <label class="interactive-search-box">
+                    <i class="bi bi-search"></i>
+                    <input
+                      v-model.trim="interactiveQuestionSearch"
+                      class="form-control"
+                      placeholder="Tìm nhanh theo nội dung câu hỏi..."
+                    />
+                  </label>
+                  <select v-model="interactiveQuestionType" class="form-select" aria-label="Lọc loại câu hỏi">
+                    <option value="">Tất cả loại câu hỏi</option>
+                    <option value="SINGLE_CHOICE">Một lựa chọn</option>
+                    <option value="MULTIPLE_CHOICE">Nhiều lựa chọn</option>
+                    <option value="TRUE_FALSE">Đúng / Sai</option>
+                    <option value="SHORT_ANSWER">Trả lời ngắn</option>
+                  </select>
                 </div>
-                <label>Điểm <input v-model.number="mapping.score" type="number" min="0" max="10000" /></label>
-                <label
-                  >Lượt
-                  <input
-                    v-model.number="mapping.attemptLimit"
-                    type="number"
-                    min="1"
-                    max="100"
-                    :disabled="!mapping.allowRetry"
-                /></label>
-                <label class="compact-check"><input v-model="mapping.required" type="checkbox" /> Bắt buộc</label>
-                <label class="compact-check"><input v-model="mapping.allowRetry" type="checkbox" /> Thử lại</label>
-                <div class="interactive-order-actions" aria-label="Sắp xếp câu hỏi">
-                  <button
-                    type="button"
-                    class="btn btn-action-view btn-sm"
-                    title="Đưa câu hỏi lên"
-                    :disabled="index === 0"
-                    @click="moveInteractiveMapping(index, -1)"
+                <div class="interactive-question-picker">
+                  <div v-if="interactiveQuestionLoading" class="interactive-bank-state">
+                    <span class="spinner-border spinner-border-sm"></span> Đang tìm câu hỏi...
+                  </div>
+                  <label
+                    v-for="question in interactiveQuestionBank"
+                    v-else
+                    :key="question.id"
+                    class="interactive-bank-row"
                   >
-                    <i class="bi bi-arrow-up"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-action-view btn-sm"
-                    title="Đưa câu hỏi xuống"
-                    :disabled="index === lessonForm.interactiveMappings.length - 1"
-                    @click="moveInteractiveMapping(index, 1)"
-                  >
-                    <i class="bi bi-arrow-down"></i>
-                  </button>
+                    <input
+                      :checked="isInteractiveQuestionSelected(question.id)"
+                      type="checkbox"
+                      class="form-check-input"
+                      @change="toggleInteractiveQuestion(question, $event.target.checked)"
+                    />
+                    <span class="interactive-bank-copy">
+                      <strong>{{ question.text }}</strong>
+                      <small>{{ questionTypeLabel(question.type) }} · Mặc định {{ question.score }} điểm</small>
+                    </span>
+                  </label>
+                  <p v-if="!interactiveQuestionLoading && !interactiveQuestionBank.length" class="interactive-bank-state">
+                    Không tìm thấy câu hỏi phù hợp.
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  class="btn btn-action-delete btn-sm"
-                  title="Bỏ khỏi bài"
-                  @click="removeInteractiveMapping(index)"
-                >
-                  <i class="bi bi-trash"></i>
-                </button>
-              </article>
+                <small v-if="interactiveQuestionTotal > interactiveQuestionBank.length" class="interactive-result-note">
+                  Đang hiển thị {{ interactiveQuestionBank.length }}/{{ interactiveQuestionTotal }} câu. Hãy tìm kiếm hoặc lọc loại để thu hẹp kết quả.
+                </small>
+              </section>
+
+              <section class="interactive-selected-panel">
+                <header class="interactive-panel-heading">
+                  <div>
+                    <span>CÂU HỎI TRONG BÀI</span>
+                    <h4>Sắp xếp và thiết lập</h4>
+                  </div>
+                  <strong>{{ lessonForm.interactiveMappings.length }} đã chọn</strong>
+                </header>
+                <div v-if="lessonForm.interactiveMappings.length" class="interactive-selected-list">
+                  <article v-for="(mapping, index) in lessonForm.interactiveMappings" :key="mapping.questionId">
+                    <span class="interactive-order">{{ index + 1 }}</span>
+                    <div class="interactive-selected-copy">
+                      <strong>{{ mapping.questionText }}</strong>
+                      <small>{{ questionTypeLabel(mapping.questionType) }}</small>
+                    </div>
+                    <label>Điểm <input v-model.number="mapping.score" type="number" min="0" max="10000" /></label>
+                    <label
+                      >Lượt
+                      <input
+                        v-model.number="mapping.attemptLimit"
+                        type="number"
+                        min="1"
+                        max="100"
+                        :disabled="!mapping.allowRetry"
+                    /></label>
+                    <label class="compact-check"><input v-model="mapping.required" type="checkbox" /> Bắt buộc</label>
+                    <label class="compact-check"><input v-model="mapping.allowRetry" type="checkbox" /> Thử lại</label>
+                    <div class="interactive-order-actions" aria-label="Sắp xếp câu hỏi">
+                      <button
+                        type="button"
+                        class="btn btn-action-view btn-sm"
+                        title="Đưa câu hỏi lên"
+                        :disabled="index === 0"
+                        @click="moveInteractiveMapping(index, -1)"
+                      >
+                        <i class="bi bi-arrow-up"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-action-view btn-sm"
+                        title="Đưa câu hỏi xuống"
+                        :disabled="index === lessonForm.interactiveMappings.length - 1"
+                        @click="moveInteractiveMapping(index, 1)"
+                      >
+                        <i class="bi bi-arrow-down"></i>
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-action-delete btn-sm"
+                      title="Bỏ khỏi bài"
+                      @click="removeInteractiveMapping(index)"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </article>
+                </div>
+                <div v-else class="interactive-selected-empty">
+                  <i class="bi bi-ui-checks-grid"></i>
+                  <strong>Chưa chọn câu hỏi</strong>
+                  <span>Tìm câu hỏi ở cột bên trái và tích chọn để thêm vào bài học.</span>
+                </div>
+              </section>
             </div>
           </template>
           <template v-if="['DOCUMENT', 'ASSIGNMENT'].includes(lessonForm.lessonType)">
@@ -434,7 +490,7 @@
           </template>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-action-cancel" @click="lessonModal = false">
+          <button type="button" class="btn btn-action-cancel btn-action-outline" @click="lessonModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-action-save" :disabled="saving">
             <span v-if="saving" class="spinner-border spinner-border-sm"></span
@@ -448,7 +504,7 @@
       <div class="app-card library-modal">
         <div class="modal-heading">
           <div>
-            <small>VIDEO DÙNG CHUNG</small>
+            <small>Video dùng chung</small>
             <h2>Chọn video cho “{{ targetLesson?.title }}”</h2>
             <p>Một video thư viện có thể gắn vào nhiều môn và bài học.</p>
           </div>
@@ -487,7 +543,7 @@
       <form class="app-card quick-question-modal" @submit.prevent="saveQuickQuestion">
         <div class="modal-heading">
           <div>
-            <small>NGÂN HÀNG CÂU HỎI</small>
+            <small>Ngân hàng câu hỏi</small>
             <h2>Tạo nhanh câu hỏi</h2>
           </div>
           <button type="button" class="btn-close" @click="quickQuestionModal = false"></button>
@@ -547,7 +603,7 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-action-cancel" @click="quickQuestionModal = false">
+          <button type="button" class="btn btn-action-cancel btn-action-outline" @click="quickQuestionModal = false">
             <i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-action-save" :disabled="saving"><i class="bi bi-check-lg"></i> Lưu và chọn</button>
         </div>
@@ -558,7 +614,7 @@
       <div class="app-card interactive-preview-modal">
         <div class="modal-heading">
           <div>
-            <small>XEM NHƯ HỌC VIÊN</small>
+            <small>Xem như học viên</small>
             <h2>{{ lessonForm.title || 'Bài học tương tác' }}</h2>
           </div>
           <button class="btn-close" @click="previewInteractive = false"></button>
@@ -615,7 +671,7 @@
           }}
         </p>
         <div class="modal-actions">
-          <button class="btn btn-action-cancel" @click="deleteTarget = null"><i class="bi bi-x-lg"></i> Hủy</button
+          <button class="btn btn-action-cancel btn-action-outline" @click="deleteTarget = null"><i class="bi bi-x-lg"></i> Hủy</button
           ><button class="btn btn-action-delete" :disabled="saving" @click="removeTarget">
             <i class="bi bi-trash"></i> Xóa
           </button>
@@ -651,7 +707,11 @@ const chapterModal = ref(false),
   interactiveOriginalIds = ref([]),
   quickQuestionModal = ref(false),
   previewInteractive = ref(false),
-  videoSearch = ref('')
+  videoSearch = ref(''),
+  interactiveQuestionSearch = ref(''),
+  interactiveQuestionType = ref(''),
+  interactiveQuestionTotal = ref(0),
+  interactiveQuestionLoading = ref(false)
 const lessonEditor = ref(null),
   lessonFile = ref(null)
 const chapterForm = reactive(blankChapter()),
@@ -661,9 +721,14 @@ const pick = (source, ...names) =>
   names.map((name) => source?.[name]).find((value) => value !== undefined && value !== null)
 const formatTime = formatInteractionTime
 let videoTimer
+let interactiveQuestionTimer
 watch(videoSearch, () => {
   clearTimeout(videoTimer)
   videoTimer = setTimeout(loadVideoAssets, 250)
+})
+watch([interactiveQuestionSearch, interactiveQuestionType], () => {
+  clearTimeout(interactiveQuestionTimer)
+  interactiveQuestionTimer = setTimeout(loadInteractiveQuestionBank, 250)
 })
 watch(
   () => lessonForm.lessonType,
@@ -1000,13 +1065,9 @@ async function loadQuizEditor(lessonId) {
   )
 }
 async function loadInteractiveEditor(lessonId) {
-  const bank = await axiosClient.get('/questions', { params: { pageSize: 100, _fresh: Date.now() } })
-  interactiveQuestionBank.value = (pick(bank, 'items', 'Items') || []).map((row) => ({
-    id: Number(pick(row, 'Id', 'id')),
-    text: pick(row, 'QuestionText', 'questionText') || '',
-    type: pick(row, 'QuestionType', 'questionType') || '',
-    score: Number(pick(row, 'DefaultScore', 'defaultScore') || 10)
-  }))
+  interactiveQuestionSearch.value = ''
+  interactiveQuestionType.value = ''
+  await loadInteractiveQuestionBank()
   lessonForm.interactiveMappings = []
   interactiveOriginalIds.value = []
   if (!lessonId) return
@@ -1031,6 +1092,33 @@ async function loadInteractiveEditor(lessonId) {
     options: parseQuestionOptions(pick(row, 'Options', 'options'))
   }))
   interactiveOriginalIds.value = lessonForm.interactiveMappings.map((item) => item.id)
+}
+async function loadInteractiveQuestionBank() {
+  interactiveQuestionLoading.value = true
+  try {
+    const bank = await axiosClient.get('/questions', {
+      params: {
+        search: interactiveQuestionSearch.value || undefined,
+        type: interactiveQuestionType.value || undefined,
+        page: 1,
+        pageSize: 100,
+        _fresh: Date.now()
+      }
+    })
+    interactiveQuestionBank.value = (pick(bank, 'items', 'Items') || []).map((row) => ({
+      id: Number(pick(row, 'Id', 'id')),
+      text: pick(row, 'QuestionText', 'questionText') || '',
+      type: pick(row, 'QuestionType', 'questionType') || '',
+      score: Number(pick(row, 'DefaultScore', 'defaultScore') || 10)
+    }))
+    interactiveQuestionTotal.value = Number(pick(bank, 'total', 'Total') || interactiveQuestionBank.value.length)
+  } catch (error) {
+    interactiveQuestionBank.value = []
+    interactiveQuestionTotal.value = 0
+    show(error.message, 'danger')
+  } finally {
+    interactiveQuestionLoading.value = false
+  }
 }
 async function saveInteractiveEditor(lessonId) {
   await axiosClient.put(`/lessons/${lessonId}/interactive-content/settings`, {

@@ -148,7 +148,7 @@
       <form class="app-card form-modal" @submit.prevent="saveSettings">
         <div class="modal-heading">
           <div>
-            <small>THIẾT LẬP MÔN HỌC LỚP</small>
+            <small>Thiết lập môn học lớp</small>
             <h2>{{ settings.title }}</h2>
             <p>{{ settings.context }}</p>
           </div>

@@ -118,7 +118,7 @@
       <form class="app-card grading-modal" @submit.prevent="grade('GRADE')">
         <div class="modal-heading">
           <div>
-            <small>CHẤM BÀI · LẦN {{ selected.attemptNumber }}</small>
+            <small>Chấm bài · Lần {{ selected.attemptNumber }}</small>
             <h2>{{ selected.lessonTitle }}</h2>
             <p>{{ selected.studentName }} · {{ selected.studentCode }} · {{ selected.className }}</p>
           </div>

@@ -180,7 +180,7 @@
       <form class="app-card upload-modal" @submit.prevent="save">
         <div class="modal-heading">
           <div>
-            <small>{{ form.id ? 'CẬP NHẬT ĐỒNG BỘ VIDEO' : 'VIDEO CỦA TÔI' }}</small>
+            <small>{{ form.id ? 'Cập nhật đồng bộ video' : 'Video của tôi' }}</small>
             <h2>{{ form.id ? 'Sửa video chưa có kết quả' : 'Thêm video vào thư viện' }}</h2>
             <p>
               {{
@@ -311,7 +311,7 @@
       <form class="app-card upload-modal share-modal" @submit.prevent="saveSharing">
         <div class="modal-heading">
           <div>
-            <small>QUYỀN TRUY CẬP VIDEO</small>
+            <small>Quyền truy cập video</small>
             <h2>Chia sẻ “{{ shareForm.title }}”</h2>
             <p>Chỉ cấp quyền nhìn thấy và sử dụng trong bài học; người nhận không thể xóa hoặc chia sẻ lại.</p>
           </div>

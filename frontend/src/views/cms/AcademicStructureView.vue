@@ -479,7 +479,7 @@
       <form class="app-card academic-modal" @submit.prevent="saveCatalog">
         <div class="modal-heading">
           <div>
-            <small>DANH MỤC ĐÀO TẠO</small>
+            <small>Danh mục đào tạo</small>
             <h2>{{ formTitle }}</h2>
           </div>
           <button type="button" class="btn-close" @click="formModal = false"></button>
@@ -641,7 +641,7 @@
       <form class="app-card academic-modal assign-modal" @submit.prevent="assignStudents">
         <div class="modal-heading">
           <div>
-            <small>PHÂN HỌC VIÊN</small>
+            <small>Phân học viên</small>
             <h2>{{ assignTarget?.className }}</h2>
             <p>Chọn nhiều học viên; hệ thống tự ghi danh các môn LMS của lớp.</p>
           </div>

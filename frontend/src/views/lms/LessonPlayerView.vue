@@ -146,7 +146,7 @@
               <div class="assignment-heading">
                 <span class="content-type-icon"><i class="bi bi-clipboard-check-fill"></i></span>
                 <div>
-                  <small>BÀI TẬP CẦN NỘP</small>
+                  <small>Bài tập cần nộp</small>
                   <h2>{{ lesson.title }}</h2>
                   <p v-if="lesson.dueAt">Hạn nộp: {{ dateTimeText(lesson.dueAt) }}</p>
                   <p v-else>Không giới hạn thời gian nộp.</p>

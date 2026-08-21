@@ -125,6 +125,56 @@
   gap: 0.6rem;
   margin-top: 1.5rem;
 }
+.lesson-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.9rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+.lesson-field {
+  min-width: 0;
+}
+.lesson-field-title {
+  grid-column: span 7;
+}
+.lesson-field-type {
+  grid-column: span 3;
+}
+.lesson-field-status {
+  grid-column: span 2;
+}
+.lesson-field-description {
+  grid-column: span 6;
+}
+.lesson-field-order,
+.lesson-field-score,
+.lesson-required-toggle {
+  grid-column: span 2;
+}
+.lesson-field-description textarea {
+  min-height: 62px;
+  resize: vertical;
+}
+.lesson-required-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 62px;
+  margin-top: 1.8rem;
+  padding: 0.7rem;
+  background: #fff;
+  border-radius: 9px;
+  cursor: pointer;
+  font-weight: 700;
+  text-align: center;
+}
+.lesson-required-toggle .form-check-input {
+  flex: 0 0 auto;
+  margin: 0;
+}
 .check-row {
   display: flex;
   align-items: end;
@@ -133,6 +183,21 @@
 }
 .check-row input {
   margin: 0;
+}
+@media (max-width: 1100px) {
+  .lesson-field-title,
+  .lesson-field-description {
+    grid-column: span 12;
+  }
+  .lesson-field-type,
+  .lesson-field-status {
+    grid-column: span 6;
+  }
+  .lesson-field-order,
+  .lesson-field-score,
+  .lesson-required-toggle {
+    grid-column: span 4;
+  }
 }
 .library-modal {
   width: min(820px, 96vw);
@@ -200,6 +265,24 @@
   place-items: center;
 }
 @media (max-width: 700px) {
+  .lesson-overview-grid {
+    grid-template-columns: 1fr;
+    padding: 0.85rem;
+  }
+  .lesson-field-title,
+  .lesson-field-type,
+  .lesson-field-status,
+  .lesson-field-description,
+  .lesson-field-order,
+  .lesson-field-score,
+  .lesson-required-toggle {
+    grid-column: 1;
+  }
+  .lesson-required-toggle {
+    justify-content: flex-start;
+    min-height: auto;
+    margin-top: 0;
+  }
   .lesson {
     grid-template-columns: 38px 1fr;
   }
@@ -262,7 +345,32 @@
   overflow-wrap: anywhere;
 }
 .interactive-form-modal {
-  width: min(1120px, 97vw);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 24px);
+  max-height: none;
+  overflow: hidden;
+  padding: 0;
+  width: calc(100vw - 24px);
+}
+.interactive-form-modal > .modal-heading {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 1.1rem 1.4rem;
+}
+.interactive-form-modal > .row {
+  align-content: start;
+  flex: 1;
+  margin: 0;
+  overflow: auto;
+  padding: 0 1.4rem 1.4rem;
+  width: 100%;
+}
+.interactive-form-modal > .modal-actions {
+  background: #eef5fa;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.85rem 1.4rem;
 }
 .interactive-authoring-heading {
   align-items: center;
@@ -292,16 +400,83 @@
   display: flex;
   gap: 0.4rem;
 }
-.interactive-question-picker {
-  background: #f8faf9;
-  border-radius: 12px;
+.interactive-question-workspace {
   display: grid;
-  max-height: 260px;
+  gap: 1rem;
+  grid-template-columns: minmax(340px, 0.85fr) minmax(560px, 1.15fr);
+  min-height: 430px;
+}
+.interactive-bank-panel,
+.interactive-selected-panel {
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 430px;
+  overflow: hidden;
+  padding: 1rem;
+}
+.interactive-bank-panel {
+  background: #eaf5fc;
+}
+.interactive-selected-panel {
+  background: #fff0f4;
+}
+.interactive-panel-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+.interactive-panel-heading span {
+  color: #d3224d;
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+.interactive-panel-heading h4 {
+  color: #123553;
+  font-size: 1rem;
+  margin: 0.16rem 0 0;
+}
+.interactive-panel-heading > strong {
+  background: #fff;
+  border-radius: 999px;
+  color: #005099;
+  font-size: 0.72rem;
+  padding: 0.42rem 0.7rem;
+}
+.interactive-bank-toolbar {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.44fr);
+  margin-bottom: 0.75rem;
+}
+.interactive-search-box {
+  position: relative;
+}
+.interactive-search-box > i {
+  color: #607985;
+  left: 0.8rem;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.interactive-search-box .form-control {
+  padding-left: 2.3rem;
+}
+.interactive-question-picker {
+  align-content: start;
+  display: grid;
+  flex: 1;
+  gap: 0.4rem;
+  min-height: 0;
   overflow: auto;
-  padding: 0.5rem;
+  padding-right: 0.25rem;
 }
 .interactive-bank-row {
   align-items: center;
+  background: #fff;
   border-radius: 9px;
   cursor: pointer;
   display: flex;
@@ -309,7 +484,7 @@
   padding: 0.7rem;
 }
 .interactive-bank-row:hover {
-  background: #fff;
+  background: #f7fbfe;
 }
 .interactive-bank-copy {
   display: grid;
@@ -319,8 +494,13 @@
   color: #73837d;
 }
 .interactive-selected-list {
+  align-content: start;
   display: grid;
+  flex: 1;
   gap: 0.55rem;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.25rem;
 }
 .interactive-selected-list article {
   align-items: center;
@@ -330,6 +510,37 @@
   gap: 0.65rem;
   grid-template-columns: 36px minmax(190px, 1fr) 90px 90px auto auto 76px 40px;
   padding: 0.7rem;
+}
+.interactive-bank-state,
+.interactive-selected-empty {
+  align-items: center;
+  color: #6b7e87;
+  display: flex;
+  gap: 0.55rem;
+  justify-content: center;
+  margin: 0;
+  min-height: 150px;
+  text-align: center;
+}
+.interactive-result-note {
+  color: #607985;
+  display: block;
+  font-size: 0.7rem;
+  margin-top: 0.55rem;
+}
+.interactive-selected-empty {
+  flex: 1;
+  flex-direction: column;
+}
+.interactive-selected-empty i {
+  color: #d3224d;
+  font-size: 2rem;
+}
+.interactive-selected-empty strong {
+  color: #123553;
+}
+.interactive-selected-empty span {
+  max-width: 310px;
 }
 .interactive-order {
   background: var(--eduvers-base);
@@ -442,6 +653,15 @@
   font-weight: 800;
   letter-spacing: 0.04em;
 }
+@media (max-width: 1199px) {
+  .interactive-question-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .interactive-bank-panel,
+  .interactive-selected-panel {
+    min-height: 380px;
+  }
+}
 @media (max-width: 850px) {
   .interactive-selected-list article {
     grid-template-columns: 34px 1fr 70px 70px;
@@ -458,6 +678,13 @@
   }
 }
 @media (max-width: 600px) {
+  .interactive-form-modal {
+    height: 100vh;
+    width: 100vw;
+  }
+  .interactive-bank-toolbar {
+    grid-template-columns: 1fr;
+  }
   .interactive-authoring-heading {
     align-items: flex-start;
     display: grid;

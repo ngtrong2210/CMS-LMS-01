@@ -143,6 +143,19 @@
   border-color: #dfe7e4;
 }
 
+.btn.btn-action-cancel.btn-action-outline {
+  color: var(--brand-secondary);
+  background: #fff;
+  border-color: var(--brand-secondary);
+}
+
+.btn.btn-action-cancel.btn-action-outline:hover,
+.btn.btn-action-cancel.btn-action-outline:focus {
+  color: #fff;
+  background: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+
 .btn-icon {
   width: 34px;
   padding-right: 0;

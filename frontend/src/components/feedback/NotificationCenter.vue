@@ -25,7 +25,7 @@
       <section v-if="open" class="notification-panel" aria-label="Danh sách thông báo">
         <header class="notification-header">
           <div>
-            <small>TRUNG TÂM THÔNG BÁO</small>
+            <small>Trung tâm thông báo</small>
             <h2>Thông báo</h2>
           </div>
           <button

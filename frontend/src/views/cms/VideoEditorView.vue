@@ -383,7 +383,7 @@
       <form class="quick-question-dialog app-card" @submit.prevent="saveQuickQuestion">
         <div class="preview-header">
           <div>
-            <small>TẠO NHANH TRONG NGÂN HÀNG</small>
+            <small>Tạo nhanh trong ngân hàng</small>
             <h2>Câu hỏi mới cho video</h2>
           </div>
           <button type="button" class="btn btn-light btn-sm" @click="quickQuestionOpen = false">

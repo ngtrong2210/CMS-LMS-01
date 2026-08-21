@@ -207,23 +207,22 @@
 }
 .lesson-type-icon {
   align-items: center;
-  border-radius: 9px;
-  color: #fff;
+  border-radius: 0;
   display: inline-flex;
   flex: 0 0 34px;
-  font-size: 1rem;
+  font-size: 1.25rem;
   height: 34px;
   justify-content: center;
   width: 34px;
 }
-.lesson-type-blue { background: #1769aa; }
-.lesson-type-cyan { background: #0b8fa8; }
-.lesson-type-red { background: #d13f3f; }
-.lesson-type-orange { background: #e47714; }
-.lesson-type-purple { background: #7651b8; }
-.lesson-type-green { background: #07875a; }
-.lesson-type-slate { background: #617482; }
-.lesson-type-teal { background: #0b8078; }
+.lesson-type-blue { color: #1769aa; background: transparent; }
+.lesson-type-cyan { color: #0b8fa8; background: transparent; }
+.lesson-type-red { color: #d13f3f; background: transparent; }
+.lesson-type-orange { color: #e47714; background: transparent; }
+.lesson-type-purple { color: #7651b8; background: transparent; }
+.lesson-type-green { color: #07875a; background: transparent; }
+.lesson-type-slate { color: #617482; background: transparent; }
+.lesson-type-teal { color: #0b8078; background: transparent; }
 .video-stage {
   height: auto;
   min-height: 500px;
@@ -256,7 +255,7 @@
 }
 .curriculum-heading {
   align-items: center;
-  background: var(--player-navy);
+  background: #102f4d;
   display: flex;
   justify-content: space-between;
   padding: 18px;
@@ -298,19 +297,25 @@
   align-items: center;
   background: #f6f8f9;
   border: 0;
-  color: var(--player-navy);
+  color: #fff;
   display: flex;
   justify-content: space-between;
   padding: 12px 16px;
   text-align: left;
+  transition: filter 0.16s ease;
   width: 100%;
 }
-.chapter:nth-child(6n + 1) .chapter-toggle { background: #fff1f4; }
-.chapter:nth-child(6n + 2) .chapter-toggle { background: #e7f6f0; }
-.chapter:nth-child(6n + 3) .chapter-toggle { background: #e7f1fa; }
-.chapter:nth-child(6n + 4) .chapter-toggle { background: #fff4d2; }
-.chapter:nth-child(6n + 5) .chapter-toggle { background: #f1ecfb; }
-.chapter:nth-child(6n) .chapter-toggle { background: #e8f6f7; }
+.chapter:nth-child(6n + 1) .chapter-toggle { background: #b51f48; }
+.chapter:nth-child(6n + 2) .chapter-toggle { background: #07875a; }
+.chapter:nth-child(6n + 3) .chapter-toggle { background: #005099; }
+.chapter:nth-child(6n + 4) .chapter-toggle { background: #a66b00; }
+.chapter:nth-child(6n + 5) .chapter-toggle { background: #65439a; }
+.chapter:nth-child(6n) .chapter-toggle { background: #087780; }
+.chapter-toggle:hover,
+.chapter-toggle:focus-visible {
+  color: #fff;
+  filter: brightness(1.08);
+}
 .chapter-toggle strong,
 .chapter-toggle small {
   display: block;
@@ -319,7 +324,7 @@
   font-size: 0.83rem;
 }
 .chapter-toggle small {
-  color: var(--player-muted);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 0.68rem;
   margin-top: 3px;
 }
@@ -332,9 +337,25 @@
   display: grid;
   font-size: 0.82rem;
   gap: 10px;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
   padding: 9px 8px;
 }
+.chapter-lessons .lesson-type-icon {
+  width: 26px;
+  height: 26px;
+  flex-basis: 26px;
+  border-radius: 0;
+  background: transparent;
+  font-size: 1.15rem;
+}
+.chapter-lessons .lesson-type-blue { color: #1769aa; }
+.chapter-lessons .lesson-type-cyan { color: #0b8fa8; }
+.chapter-lessons .lesson-type-red { color: #d13f3f; }
+.chapter-lessons .lesson-type-orange { color: #e47714; }
+.chapter-lessons .lesson-type-purple { color: #7651b8; }
+.chapter-lessons .lesson-type-green { color: #07875a; }
+.chapter-lessons .lesson-type-slate { color: #617482; }
+.chapter-lessons .lesson-type-teal { color: #0b8078; }
 .chapter a.active {
   background: #fbe8ee;
   color: var(--player-navy);
@@ -974,14 +995,14 @@
 }
 .content-type-icon {
   align-items: center;
-  background: #fbe8ee;
-  border-radius: 16px;
+  background: transparent;
+  border-radius: 0;
   color: #d3224d;
   display: flex;
-  font-size: 1.6rem;
-  height: 58px;
+  font-size: 2rem;
+  height: 44px;
   justify-content: center;
-  width: 58px;
+  width: 44px;
 }
 .editor-content .lesson-html {
   font-size: 1rem;

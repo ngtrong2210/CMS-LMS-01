@@ -137,7 +137,7 @@
       <form class="app-card enrollment-modal" @submit.prevent="saveEnrollment">
         <div class="modal-heading">
           <div>
-            <small>GHI DANH KHÓA HỌC</small>
+            <small>Ghi danh khóa học</small>
             <h2>Phân học viên vào khóa học</h2>
             <p>Chọn một khóa học và tích chọn một hoặc nhiều học viên.</p>
           </div>
