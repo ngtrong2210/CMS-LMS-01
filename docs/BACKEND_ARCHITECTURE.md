@@ -30,6 +30,16 @@ Frontend bất kỳ (Vue, React, mobile, Web Forms...)
 
 Thư mục `Base` được dành cho object sinh tự động từ cấu trúc bảng. Phần mở rộng tự viết đặt ngoài `Base` bằng `partial class` để không bị ghi đè khi sinh lại.
 
+Object được sinh trực tiếp từ metadata SQL Server bằng project `tools/SimsObjectGenerator`:
+
+```powershell
+dotnet run --project .\tools\SimsObjectGenerator\SimsObjectGenerator.csproj
+```
+
+- `Base/<TableName>Base.cs`: tên bảng/cột/tham số, thuộc tính đúng kiểu SQL, nullable, khóa chính, identity và description.
+- `<TableName>.cs`: phần mở rộng nghiệp vụ do lập trình viên viết, generator chỉ tạo khi file chưa tồn tại.
+- Generator chỉ làm nhiệm vụ ánh xạ schema; kết nối và thao tác dữ liệu vẫn thuộc `SimsData`/`SimsService`.
+
 ### SimsService
 
 - Toàn bộ service nghiệp vụ của LMS/CMS.
