@@ -6,6 +6,9 @@ frontend/dist/
 docs/.vite/
 .vite/
 logs/
+!src/Sims.Api/logs/
+!src/Sims.Api/logs/.gitkeep
+.runtime/
 .env.local
 .env.*.local
 appsettings.Local.json
@@ -22,27 +25,33 @@ appsettings.Production.json
 PROMPT_BACKEND_LMS_API.md
 PROMPT_FRONTEND_LMS_CMS.md
 
+# Local legacy reference copied only for architecture comparison.
+/soure-code-mẫu/WEB-Cấu trúc mẫu hiện có/
+/soure-code-mẫu/data-mau/
+/soure-code-mẫu/*.pdf
+/soure-code-mẫu/*.mp4
+
 # Keep the categorized project media directories, but never commit uploaded files.
-src/LmsCms.Api/wwwroot/Media/Video/*
-!src/LmsCms.Api/wwwroot/Media/Video/.gitkeep
-src/LmsCms.Api/wwwroot/Media/Image/*
-!src/LmsCms.Api/wwwroot/Media/Image/.gitkeep
-src/LmsCms.Api/wwwroot/Media/File/*
-!src/LmsCms.Api/wwwroot/Media/File/.gitkeep
-!src/LmsCms.Api/wwwroot/Media/File/Lessons/
-!src/LmsCms.Api/wwwroot/Media/File/Lessons/Demo/
-!src/LmsCms.Api/wwwroot/Media/File/Lessons/Demo/*.pdf
-src/LmsCms.Api/wwwroot/Media/Thumbnail/*
-!src/LmsCms.Api/wwwroot/Media/Thumbnail/.gitkeep
-src/LmsCms.Api/wwwroot/Media/Audio/*
-!src/LmsCms.Api/wwwroot/Media/Audio/.gitkeep
-src/LmsCms.Api/storage/cache/*
-!src/LmsCms.Api/storage/cache/.gitkeep
-src/LmsCms.Api/storage/temp/*
-!src/LmsCms.Api/storage/temp/.gitkeep
-src/LmsCms.Api/storage/exports/*
-!src/LmsCms.Api/storage/exports/.gitkeep
-src/LmsCms.Api/storage/processing/*
-!src/LmsCms.Api/storage/processing/.gitkeep
-src/LmsCms.Api/logs/*
-!src/LmsCms.Api/logs/.gitkeep
+src/Sims.Api/wwwroot/Media/Video/*
+!src/Sims.Api/wwwroot/Media/Video/.gitkeep
+src/Sims.Api/wwwroot/Media/Image/*
+!src/Sims.Api/wwwroot/Media/Image/.gitkeep
+src/Sims.Api/wwwroot/Media/File/*
+!src/Sims.Api/wwwroot/Media/File/.gitkeep
+!src/Sims.Api/wwwroot/Media/File/Lessons/
+!src/Sims.Api/wwwroot/Media/File/Lessons/Demo/
+!src/Sims.Api/wwwroot/Media/File/Lessons/Demo/*.pdf
+src/Sims.Api/wwwroot/Media/Thumbnail/*
+!src/Sims.Api/wwwroot/Media/Thumbnail/.gitkeep
+src/Sims.Api/wwwroot/Media/Audio/*
+!src/Sims.Api/wwwroot/Media/Audio/.gitkeep
+src/Sims.Api/storage/cache/*
+!src/Sims.Api/storage/cache/.gitkeep
+src/Sims.Api/storage/temp/*
+!src/Sims.Api/storage/temp/.gitkeep
+src/Sims.Api/storage/exports/*
+!src/Sims.Api/storage/exports/.gitkeep
+src/Sims.Api/storage/processing/*
+!src/Sims.Api/storage/processing/.gitkeep
+src/Sims.Api/logs/*
+!src/Sims.Api/logs/.gitkeep

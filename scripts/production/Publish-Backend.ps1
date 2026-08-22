@@ -3,8 +3,8 @@ param()
 
 $ErrorActionPreference = "Stop"
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$solutionPath = Join-Path $projectRoot "LmsCms.sln"
-$apiProject = Join-Path $projectRoot "src\LmsCms.Api\LmsCms.Api.csproj"
+$solutionPath = Join-Path $projectRoot "Sims.sln"
+$apiProject = Join-Path $projectRoot "src\Sims.Api\Sims.Api.csproj"
 $outputPath = Join-Path $projectRoot "artifacts\production\backend"
 $zipPath = Join-Path $projectRoot "artifacts\production\backend-production.zip"
 

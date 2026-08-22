@@ -1,0 +1,6 @@
+@Sims.Api_HostAddress = http://localhost:5270
+
+GET {{Sims.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

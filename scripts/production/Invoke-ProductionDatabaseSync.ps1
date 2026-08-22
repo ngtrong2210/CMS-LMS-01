@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$ConfigurationPath = "src\LmsCms.Api\appsettings.Production.json"
+    [string]$ConfigurationPath = "src\Sims.Api\appsettings.Production.json"
 )
 
 $ErrorActionPreference = "Stop"

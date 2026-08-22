@@ -2,6 +2,8 @@
 
 Hệ thống học tập và quản trị đào tạo gồm Vue 3 + Bootstrap 5, ASP.NET Core .NET 8, Dapper, Stored Procedure và SQL Server.
 
+Kiến trúc backend: [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md).
+
 ## Chạy nhanh
 
 ### 1. Khởi tạo database
@@ -9,7 +11,7 @@ Hệ thống học tập và quản trị đào tạo gồm Vue 3 + Bootstrap 5,
 Thiết lập hai biến môi trường `ConnectionStrings__BootstrapConnection` và `ConnectionStrings__DefaultConnection`, sau đó chạy:
 
 ```powershell
-dotnet run --project src/LmsCms.Api -- --init-db
+dotnet run --project src/Sims.Api -- --init-db
 ```
 
 Database `LMSCMS_DB`, bảng, index, stored procedure và demo data sẽ được tạo idempotent.
@@ -17,7 +19,7 @@ Database `LMSCMS_DB`, bảng, index, stored procedure và demo data sẽ đượ
 ### 2. Chạy API
 
 ```powershell
-dotnet run --project src/LmsCms.Api --urls https://localhost:7001
+dotnet run --project src/Sims.Api --urls https://localhost:7001
 ```
 
 Swagger: `https://localhost:7001/swagger`

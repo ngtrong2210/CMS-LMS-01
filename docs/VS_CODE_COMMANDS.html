@@ -84,7 +84,7 @@
               </div>
               <div class="command-box">
                 <button class="copy-button" type="button" data-copy-target="runBackend">Sao chép</button>
-                <pre id="runBackend"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\src\LmsCms.Api"
+                <pre id="runBackend"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\src\Sims.Api"
 dotnet run --launch-profile http</code></pre>
               </div>
               <p class="success-note">Thành công khi thấy: <code>Now listening on: http://localhost:7001</code></p>
@@ -151,7 +151,7 @@ npm install</code></pre>
               <div class="command-box">
                 <button class="copy-button" type="button" data-copy-target="buildDotnet">Sao chép</button>
                 <pre id="buildDotnet"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS"
-dotnet build .\LmsCms.sln</code></pre>
+dotnet build .\Sims.sln</code></pre>
               </div>
             </article>
             <article class="command-card">
@@ -167,7 +167,7 @@ npm run build</code></pre>
               <div class="command-box">
                 <button class="copy-button" type="button" data-copy-target="testDotnet">Sao chép</button>
                 <pre id="testDotnet"><code>cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS"
-dotnet test .\LmsCms.sln</code></pre>
+dotnet test .\Sims.sln</code></pre>
               </div>
             </article>
             <article class="command-card">
@@ -194,7 +194,7 @@ npm run test</code></pre>
               <pre id="initDatabase"><code>$env:ConnectionStrings__BootstrapConnection="&lt;CHUOI_KET_NOI_SQL_SERVER&gt;"
 $env:ConnectionStrings__DefaultConnection="&lt;CHUOI_KET_NOI_DATABASE_LMSCMS_DB&gt;"
 
-cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\src\LmsCms.Api"
+cd "G:\0.0TOOL\CODEX\CMS-LMS-VueJS\src\Sims.Api"
 dotnet run --launch-profile http -- --init-db</code></pre>
             </div>
             <p class="warning-note">Không chạy lệnh này trong lúc backend khác đang giữ cổng 7001.</p>
@@ -235,7 +235,7 @@ Invoke-WebRequest "http://localhost:7001/swagger/index.html" -UseBasicParsing</c
             <article class="faq-card">
               <h3><code>Required argument missing for --project</code></h3>
               <p>Nguyên nhân: lệnh dừng ngay sau <code>--project</code> và chưa có đường dẫn project.</p>
-              <p>Khắc phục: <code>cd</code> vào <code>src\LmsCms.Api</code>, sau đó chạy <code>dotnet run --launch-profile http</code>.</p>
+              <p>Khắc phục: <code>cd</code> vào <code>src\Sims.Api</code>, sau đó chạy <code>dotnet run --launch-profile http</code>.</p>
             </article>
             <article class="faq-card">
               <h3><code>Could not read package.json</code></h3>

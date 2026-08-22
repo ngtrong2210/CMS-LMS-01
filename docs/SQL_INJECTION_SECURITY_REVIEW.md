@@ -78,32 +78,32 @@ Kết quả: dữ liệu hợp lệ có ký tự đặc biệt được lưu/tì
 
 ## File bảo mật chính đã thêm/sửa
 
-- `src/LmsCms.Api/Filters/PositiveRouteIdFilter.cs`
-- `src/LmsCms.Api/Middleware/GlobalExceptionMiddleware.cs`
-- `src/LmsCms.Api/Program.cs`
-- `src/LmsCms.Api/Controllers/QuestionsController.cs`
-- `src/LmsCms.Application/Common/InputGuard.cs`
-- `src/LmsCms.Application/DTOs/Dtos.cs`
-- `src/LmsCms.Application/Interfaces/Services.cs`
-- `src/LmsCms.Infrastructure/Data/DatabaseInitializer.cs`
-- `src/LmsCms.Infrastructure/Services/AcademicService.cs`
-- `src/LmsCms.Infrastructure/Services/ContentService.cs`
-- `src/LmsCms.Infrastructure/Services/CourseService.cs`
-- `src/LmsCms.Infrastructure/Services/LearningService.cs`
-- `src/LmsCms.Infrastructure/Services/QuestionService.cs`
-- `src/LmsCms.Infrastructure/Services/QuizService.cs`
-- `src/LmsCms.Infrastructure/Services/SearchService.cs`
-- `src/LmsCms.Infrastructure/Services/StudentService.cs`
-- `src/LmsCms.Infrastructure/Services/TeachingService.cs`
+- `src/Sims.Api/Filters/PositiveRouteIdFilter.cs`
+- `src/Sims.Api/Middleware/GlobalExceptionMiddleware.cs`
+- `src/Sims.Api/Program.cs`
+- `src/Sims.Api/Controllers/QuestionsController.cs`
+- `src/SimsService/Common/InputGuard.cs`
+- `src/SimsService/DTOs/Dtos.cs`
+- `src/SimsService/Interfaces/Services.cs`
+- `src/SimsData/Data/DatabaseInitializer.cs`
+- `src/SimsData/Services/AcademicService.cs`
+- `src/SimsData/Services/ContentService.cs`
+- `src/SimsData/Services/CourseService.cs`
+- `src/SimsData/Services/LearningService.cs`
+- `src/SimsData/Services/QuestionService.cs`
+- `src/SimsData/Services/QuizService.cs`
+- `src/SimsData/Services/SearchService.cs`
+- `src/SimsData/Services/StudentService.cs`
+- `src/SimsData/Services/TeachingService.cs`
 - `database/stored-procedures/AcademicCompletion.sql`
 - `database/stored-procedures/Content.sql`
 - `database/stored-procedures/Courses.sql`
 - `database/stored-procedures/Questions.sql`
 - `database/stored-procedures/Students.sql`
 - `frontend/src/views/cms/ContentBuilderView.vue`
-- `tests/LmsCms.IntegrationTests/SecurityTests.cs`
-- `tests/LmsCms.IntegrationTests/AssemblyInfo.cs`
-- `tests/LmsCms.UnitTests/InputGuardTests.cs`
+- `tests/Sims.IntegrationTests/SecurityTests.cs`
+- `tests/Sims.IntegrationTests/AssemblyInfo.cs`
+- `tests/Sims.UnitTests/InputGuardTests.cs`
 
 ## Vị trí còn tồn đọng
 
